@@ -63,6 +63,12 @@
     "postalCode": "605009",
     "addressCountry": "IN"
   },
+  "geo": {
+    "@type": "GeoCoordinates",
+    "latitude": 11.96232,
+    "longitude": 79.79309
+  },
+  "hasMap": "https://maps.app.goo.gl/uXmbjQ9tpviANJpm6",
   "telephone": "+919620364554",
   "email": "nivaastays@gmail.com",
   "url": "https://nivaastays.com/",
@@ -71,6 +77,7 @@
     "https://maps.app.goo.gl/uXmbjQ9tpviANJpm6",
     "https://www.airbnb.co.in/rooms/1437389882932703471",
     "https://www.booking.com/hotel/in/nivaa-stays.html",
+    "https://www.makemytrip.com/hotels/hotel-details/?hotelId=202505101822399166",
     "https://www.agoda.com/en-in/nivaa-stays/hotel/pondicherry-in.html"
   ],
   "priceRange": "₹₹",
@@ -118,7 +125,22 @@
     { "@type": "LocationFeatureSpecification", "name": "24/7 CCTV security", "value": true },
     { "@type": "LocationFeatureSpecification", "name": "Kitchenette", "value": true },
     { "@type": "LocationFeatureSpecification", "name": "Gym", "value": true }
-  ]
+  ],
+  "potentialAction": {
+    "@type": "ReserveAction",
+    "target": {
+      "@type": "EntryPoint",
+      "urlTemplate": "https://wa.me/919620364554?text=Hi%20Nivaa%20Stays%2C%20I%27d%20like%20to%20check%20availability.",
+      "actionPlatform": [
+        "http://schema.org/DesktopWebPlatform",
+        "http://schema.org/MobileWebPlatform"
+      ]
+    },
+    "result": {
+      "@type": "LodgingReservation",
+      "name": "Book Nivaa Stays"
+    }
+  }
 }
 </script>
 
@@ -416,6 +438,10 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="#fff"/></svg>
             Agoda
           </a>
+          <a href="https://www.makemytrip.com/hotels/hotel-details/?hotelId=202505101822399166&_uCurrency=INR&checkin=04262026&checkout=04272026&city=CTAUROVI&country=IN&lat=11.96232&lng=79.79309&locusId=RGPUDD&locusType=region&rank=1&regionNearByExp=3&roomStayQualifier=2e0e&rsc=1e2e0e&searchText=Nivaa+Stays%2C+Near+JIPMER%2C+Pondicherry&topHtlId=202505101822399166&mtkeys=undefined&isPropSearch=T" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-[#e8ebe8] hover:border-gold transition bg-white text-sm font-semibold text-[#E2222A]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z"/></svg>
+            MakeMyTrip
+          </a>
         </div>
       </div>
     </div>
@@ -513,6 +539,46 @@
   </div>
 </section>
 
+<!-- Pondicherry Visitors -->
+<section class="section bg-cream" id="visiting-pondicherry">
+  <div class="max-w-7xl mx-auto px-5">
+    <div class="text-center max-w-2xl mx-auto mb-14">
+      <div class="eyebrow">Visiting Pondicherry?</div>
+      <div class="divider-gold divider-center"></div>
+      <h2 class="serif text-3xl md:text-4xl text-teal">A peaceful retreat for couples & families.</h2>
+      <p class="text-[color:var(--brand-muted)] mt-4 leading-relaxed">Away from the congestion of the city, but never far from where you want to be. Nivaa Stays sits right between Pondicherry and Auroville — so whether it's the French Quarter, the beach, or Matrimandir, everything is an easy ride away. Come back to quiet.</p>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-5 max-w-4xl mx-auto">
+      <div class="audience-card">
+        <div class="eyebrow mb-3">Couples</div>
+        <h3 class="serif text-xl text-teal mb-3">A quiet escape, just the two of you.</h3>
+        <p class="text-[color:var(--brand-muted)] text-sm leading-relaxed mb-5">Skip the noisy hotels and crowded homestays. Enjoy a private, well-designed room with a balcony, greenery, and the kind of stillness that makes a getaway feel like one.</p>
+        <ul class="text-sm text-[color:var(--brand-muted)] space-y-1.5">
+          <li>· Private, tastefully done rooms</li>
+          <li>· Balcony with greenery for morning tea</li>
+          <li>· Peaceful residential neighbourhood</li>
+          <li>· Celebration decor on request</li>
+          <li>· Bike rental to explore at your pace</li>
+        </ul>
+      </div>
+
+      <div class="audience-card">
+        <div class="eyebrow mb-3">Families</div>
+        <h3 class="serif text-xl text-teal mb-3">Space to slow down, together.</h3>
+        <p class="text-[color:var(--brand-muted)] text-sm leading-relaxed mb-5">Pondicherry with kids doesn't have to be chaotic. Book the full house and let the family spread out — a courtyard for the kids, a swing at the entrance, and home-cooked meals when you don't feel like stepping out.</p>
+        <ul class="text-sm text-[color:var(--brand-muted)] space-y-1.5">
+          <li>· Full-house option for complete privacy</li>
+          <li>· Kid-friendly courtyard & open spaces</li>
+          <li>· Home-cooked meals (veg, non-veg, seafood)</li>
+          <li>· Kitchenette for quick snacks & baby food</li>
+          <li>· Safe, CCTV-monitored premises</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- Amenities -->
 <section class="section bg-cream" id="amenities">
   <div class="max-w-7xl mx-auto px-5">
@@ -599,6 +665,30 @@
       </div>
     </div>
 
+    <!-- Food showcase -->
+    <div class="bg-cream rounded-2xl p-6 md:p-10 grid md:grid-cols-2 gap-8 items-center mb-10">
+      <div>
+        <div class="eyebrow">Home-Cooked Food</div>
+        <div class="divider-gold"></div>
+        <h3 class="serif text-2xl md:text-3xl text-teal mb-4">Cooked by our parents. Served with love.</h3>
+        <p class="text-[color:var(--brand-muted)] leading-relaxed mb-4">Authentic home-made food prepared fresh upon order by our parents. Every dish is made from locally procured vegetables, meat, and seafood — no artificial flavours, no added colours, no taste enhancers. Just real, honest food.</p>
+        <ul class="text-[color:var(--brand-muted)] text-sm space-y-1.5 mb-6">
+          <li class="flex gap-2"><span class="text-gold">✓</span> Freshly prepared on order — nothing pre-cooked</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> Locally sourced vegetables, meat & seafood</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> Breakfast, lunch & dinner options</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> Veg, non-veg, chicken, fish, prawn & biryani</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> Preorder min 2 hours before your meal time</li>
+        </ul>
+        <a href="images/nivaa-stays-food-menu.pdf" target="_blank" rel="noopener" class="btn-gold">Check Out Our Menu</a>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <img src="images/food-biryani.webp" alt="Chicken biryani served on banana leaf with sides" class="rounded-xl w-full aspect-square object-cover">
+        <img src="images/food-pongal.jpg" alt="Fresh pongal with vada served on banana leaf" class="rounded-xl w-full aspect-square object-cover">
+        <img src="images/food-idli.jpg" alt="Idli with green chutney and coconut chutney" class="rounded-xl w-full aspect-square object-cover">
+        <img src="images/food-dosa.webp" alt="Crispy benne dosa with sambar and chutneys" class="rounded-xl w-full aspect-square object-cover">
+      </div>
+    </div>
+
     <!-- Celebrations showcase -->
     <div class="bg-cream rounded-2xl p-6 md:p-10 grid md:grid-cols-2 gap-8 items-center">
       <div>
@@ -618,6 +708,26 @@
         <img src="images/celebration-birthday-2.jpg" alt="Birthday decoration with balloons and rose-petal heart at Nivaa Stays" class="rounded-xl w-full aspect-square object-cover col-span-2">
         <img src="images/celebration-birthday-1.jpg" alt="Happy Birthday decoration setup at Nivaa Stays" class="rounded-xl w-full aspect-square object-cover">
         <img src="images/celebration-setup.jpg" alt="Romantic rose-petal bathtub setup for anniversary at Nivaa Stays" class="rounded-xl w-full aspect-square object-cover">
+      </div>
+    </div>
+
+    <!-- Bike Rental showcase -->
+    <div class="bg-cream rounded-2xl p-6 md:p-10 grid md:grid-cols-2 gap-8 items-center mt-10">
+      <div>
+        <div class="eyebrow">Bike Rental</div>
+        <div class="divider-gold"></div>
+        <h3 class="serif text-2xl md:text-3xl text-teal mb-4">A yellow Vespa, White Town & you.</h3>
+        <p class="text-[color:var(--brand-muted)] leading-relaxed mb-4">There's no better way to explore Pondicherry than on two wheels. Our on-demand yellow Vespa is the perfect companion for cruising through White Town's colonial streets, past the infamous yellow buildings, along the promenade, and all the way to Auroville.</p>
+        <ul class="text-[color:var(--brand-muted)] text-sm space-y-1.5 mb-6">
+          <li class="flex gap-2"><span class="text-gold">✓</span> Yellow Vespa — perfect for photos in White Town</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> On-demand availability for guests</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> Explore the French Quarter, beaches & Auroville</li>
+          <li class="flex gap-2"><span class="text-gold">✓</span> No hunting for rental shops — it's right here</li>
+        </ul>
+        <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20rent%20the%20Vespa%20during%20my%20stay%20at%20Nivaa%20Stays." target="_blank" rel="noopener" class="btn-gold">Reserve the Vespa</a>
+      </div>
+      <div>
+        <img src="images/bike-vespa-whitetown.jpg" alt="Yellow Vespa parked in front of colonial building in White Town Pondicherry" class="rounded-xl w-full aspect-square object-cover">
       </div>
     </div>
   </div>
@@ -835,6 +945,9 @@
         <li><a href="student-family-stay-jipmer.html">Student & Parent Stay</a></li>
         <li><a href="conference-stay-jipmer.html">Conference Stay</a></li>
         <li><a href="celebration-stay-pondicherry.html">Birthday & Anniversary</a></li>
+        <li><a href="#visiting-pondicherry">Family Vacation</a></li>
+        <li><a href="#visiting-pondicherry">Couples Getaway</a></li>
+        <li><a href="#visiting-pondicherry">Auroville Exploration</a></li>
       </ul>
     </div>
     <div>
@@ -847,6 +960,7 @@
         <li><a href="https://www.airbnb.co.in/rooms/1437389882932703471" target="_blank" rel="noopener">Airbnb</a></li>
         <li><a href="https://www.booking.com/hotel/in/nivaa-stays.html" target="_blank" rel="noopener">Booking.com</a></li>
         <li><a href="https://www.agoda.com/en-in/nivaa-stays/hotel/pondicherry-in.html" target="_blank" rel="noopener">Agoda</a></li>
+        <li><a href="https://www.makemytrip.com/hotels/hotel-details/?hotelId=202505101822399166&_uCurrency=INR&searchText=Nivaa+Stays%2C+Near+JIPMER%2C+Pondicherry&topHtlId=202505101822399166&isPropSearch=T" target="_blank" rel="noopener">MakeMyTrip</a></li>
       </ul>
     </div>
   </div>
