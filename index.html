@@ -160,12 +160,12 @@
 
 <!-- Sticky Nav -->
 <header class="sticky-nav">
-  <div class="max-w-7xl mx-auto px-5 py-3 flex items-center justify-between">
-    <a href="#top" class="flex items-center gap-3">
-      <img src="assets/logo.png" alt="Nivaa Stays logo" class="h-12 w-12 rounded-full object-cover bg-teal-dark">
-      <div class="hidden sm:block">
-        <div class="text-white serif text-lg leading-tight">Nivaa Stays</div>
-        <div class="text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div>
+  <div class="max-w-7xl mx-auto px-4 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2">
+    <a href="#top" class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <img src="assets/logo.png" alt="Nivaa Stays logo" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
+      <div class="min-w-0">
+        <div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div>
+        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div>
       </div>
     </a>
     <nav class="nav-desktop flex items-center gap-1">
@@ -179,9 +179,12 @@
       <a href="#faq" class="nav-link">FAQ</a>
       <a href="#book" class="btn-gold ml-3 text-sm">Book Now</a>
     </nav>
-    <button class="nav-toggle hidden text-white" onclick="document.getElementById('mobileMenu').classList.toggle('open')" aria-label="Menu">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
+    <div class="nav-mobile-actions hidden items-center gap-2">
+      <a href="#book" class="btn-gold text-xs px-3 py-2">Book</a>
+      <button class="nav-toggle text-white p-1" onclick="document.getElementById('mobileMenu').classList.toggle('open')" aria-label="Menu">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
   </div>
   <div id="mobileMenu" class="mobile-menu bg-teal-dark border-t border-gold/20">
     <div class="px-5 py-4 flex flex-col gap-1">

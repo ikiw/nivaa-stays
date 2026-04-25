@@ -270,7 +270,7 @@ header.sticky-nav {
 
 @media (max-width: 900px) {
   .nav-desktop { display: none; }
-  .nav-toggle { display: inline-flex !important; }
+  .nav-mobile-actions { display: flex !important; }
 }
 
 footer a:hover { color: var(--brand-gold-soft); }
