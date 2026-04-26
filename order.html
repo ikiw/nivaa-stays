@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order Home-Cooked Food | Nivaa Stays Pondicherry</title>
+<meta name="description" content="Order home-cooked breakfast, lunch and dinner from Nivaa Stays — biryani, fish/prawn curry, idly combos, veg meals. Send your order via WhatsApp.">
+<link rel="canonical" href="https://nivaastays.com/order.html">
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .menu-item {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    gap: 1rem; padding: 1rem 0; border-bottom: 1px solid #e8ebe8;
+  }
+  .menu-item:last-child { border-bottom: 0; }
+  .menu-name { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--brand-teal); font-weight: 600; }
+  .menu-desc { font-size: 0.82rem; color: var(--brand-muted); margin-top: 0.2rem; line-height: 1.4; }
+  .menu-price { font-weight: 700; color: var(--brand-teal); white-space: nowrap; }
+  .qty-control {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    border: 1px solid #d4d8d4; border-radius: 999px; padding: 0.2rem;
+    background: #fff;
+  }
+  .qty-btn {
+    width: 28px; height: 28px; border-radius: 999px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--brand-cream); color: var(--brand-teal); font-weight: 700;
+    border: 0; cursor: pointer; transition: background 0.15s;
+  }
+  .qty-btn:hover { background: var(--brand-gold); color: #fff; }
+  .qty-val { min-width: 22px; text-align: center; font-weight: 600; color: var(--brand-teal); }
+  .cart-panel {
+    position: sticky; top: 5rem;
+    background: #fff; border-radius: 16px; border: 1px solid #e8ebe8;
+    padding: 1.5rem;
+  }
+  .cart-line { display: flex; justify-content: space-between; font-size: 0.9rem; padding: 0.4rem 0; color: #2c4a45; }
+  .cart-empty { color: var(--brand-muted); font-style: italic; font-size: 0.9rem; padding: 0.5rem 0; }
+  @media (max-width: 900px) {
+    .cart-panel { position: fixed; bottom: 0; left: 0; right: 0; top: auto; border-radius: 16px 16px 0 0; border-top: 2px solid var(--brand-gold); box-shadow: 0 -8px 24px rgba(0,0,0,0.12); z-index: 30; max-height: 60vh; overflow-y: auto; }
+    .cart-spacer { height: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="sticky-nav">
+  <div class="max-w-7xl mx-auto px-4 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2">
+    <a href="index.html" class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <img src="assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
+      <div class="min-w-0"><div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div><div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div></div>
+    </a>
+    <nav class="flex items-center gap-1">
+      <a href="index.html" class="nav-link hidden md:inline">Home</a>
+      <a href="gallery.html" class="nav-link hidden md:inline">Gallery</a>
+      <a href="index.html#book" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2">Book Now</a>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 6rem;">
+  <div class="max-w-7xl mx-auto px-5">
+    <div class="text-center mb-10">
+      <div class="eyebrow">Special Homefood Menu</div>
+      <div class="divider-gold divider-center"></div>
+      <h1 class="serif text-4xl md:text-5xl text-teal mb-4">Order Home-Cooked Food</h1>
+      <p class="text-[color:var(--brand-muted)] max-w-2xl mx-auto leading-relaxed">Cooked fresh on order by our parents — locally sourced ingredients, no artificial flavours or colours. Pick your items, send via WhatsApp, we confirm and prepare.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-10">
+
+        <div>
+          <h2 class="serif text-2xl text-teal mb-2">Breakfast / Dinner</h2>
+          <div class="divider-gold"></div>
+          <div id="cat-breakfast"></div>
+        </div>
+
+        <div>
+          <h2 class="serif text-2xl text-teal mb-2">Add-ons</h2>
+          <div class="divider-gold"></div>
+          <div id="cat-addons"></div>
+        </div>
+
+        <div>
+          <h2 class="serif text-2xl text-teal mb-2">Lunch</h2>
+          <div class="divider-gold"></div>
+          <div id="cat-lunch"></div>
+        </div>
+
+        <div>
+          <h2 class="serif text-2xl text-teal mb-2">Biryani</h2>
+          <div class="divider-gold"></div>
+          <div id="cat-biryani"></div>
+        </div>
+
+        <div>
+          <h2 class="serif text-2xl text-teal mb-2">Extras</h2>
+          <div class="divider-gold"></div>
+          <div id="cat-extras"></div>
+        </div>
+
+      </div>
+
+      <div>
+        <div class="cart-panel">
+          <h3 class="serif text-xl text-teal mb-3">Your Order</h3>
+          <div id="cart-list"><div class="cart-empty">No items yet. Tap + on any dish to add.</div></div>
+          <div class="border-t border-[#e8ebe8] mt-3 pt-3 flex justify-between font-bold text-teal text-lg">
+            <span>Total</span><span>₹<span id="cart-total">0</span></span>
+          </div>
+          <button id="send-order" class="btn-whatsapp w-full justify-center mt-5" disabled>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            Send Order via WhatsApp
+          </button>
+          <p class="text-xs text-[color:var(--brand-muted)] mt-3 text-center">Please order at least <strong>2 hours</strong> before your meal time.</p>
+        </div>
+      </div>
+    </div>
+    <div class="cart-spacer lg:hidden"></div>
+  </div>
+</section>
+
+<footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="gallery.html" class="underline">Gallery</a></div>
+</footer>
+
+<script>
+document.getElementById('y').textContent = new Date().getFullYear();
+
+const MENU = {
+  breakfast: [
+    { id: 'idly-combo', name: 'Idly Combo', desc: '4 pcs idly, sambar, chutney, podi', price: 100 },
+    { id: 'poori', name: 'Poori / Chappathi', desc: '3 pcs poori or chappathi, potato sagu or veg kurma', price: 100 },
+    { id: 'pongal', name: 'Pongal', desc: 'Ghee pongal, coconut chutney', price: 100 },
+    { id: 'idly-chicken', name: 'Idly–Chicken Combo', desc: '4 pcs idly, chicken curry', price: 180 },
+    { id: 'idly-fish', name: 'Idly–Fish Combo', desc: '4 pcs idly, fish curry', price: 180 },
+    { id: 'veg-maggi', name: 'Veg Maggi', desc: '', price: 60 },
+    { id: 'egg-maggi', name: 'Egg Maggi', desc: '', price: 80 },
+  ],
+  addons: [
+    { id: 'addon-idly', name: 'Extra Idlies', desc: '2 pcs', price: 20 },
+    { id: 'addon-chappathi', name: 'Extra Chappathi', desc: '2 pcs', price: 40 },
+  ],
+  lunch: [
+    { id: 'veg-meals', name: 'Veg Meals', desc: 'Rice + sambar + rasam / curd, veg poriyal, appalam', price: 180 },
+    { id: 'chicken-combo', name: 'Chicken Combo', desc: 'Rice, chicken curry, chicken thokku dry, boiled egg, rasam or curd', price: 250 },
+    { id: 'fishprawn-combo', name: 'Fish / Prawn Combo', desc: 'Rice, fish or prawn curry, fish fry or prawn thokku, boiled egg, rasam or curd', price: 300 },
+  ],
+  biryani: [
+    { id: 'chicken-biryani', name: 'Chicken Biryani', desc: 'Served with raita + boiled egg', price: 150 },
+    { id: 'mutton-biryani', name: 'Mutton Biryani', desc: 'Served with raita + boiled egg', price: 280 },
+  ],
+  extras: [
+    { id: 'fish-fry', name: 'Fish Fry', desc: '2 pcs', price: 150 },
+    { id: 'prawn-thokku', name: 'Prawn Thokku', desc: '', price: 150 },
+    { id: 'extra-rice', name: 'Extra Rice', desc: '', price: 30 },
+  ],
+};
+
+const cart = {};
+
+function renderMenu() {
+  for (const cat of Object.keys(MENU)) {
+    const wrap = document.getElementById('cat-' + cat);
+    wrap.innerHTML = MENU[cat].map(item => `
+      <div class="menu-item">
+        <div class="flex-1 min-w-0">
+          <div class="menu-name">${item.name}</div>
+          ${item.desc ? `<div class="menu-desc">${item.desc}</div>` : ''}
+          <div class="menu-price mt-1 lg:hidden">₹${item.price}</div>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="menu-price hidden lg:block">₹${item.price}</div>
+          <div class="qty-control">
+            <button class="qty-btn" data-act="dec" data-id="${item.id}" aria-label="Decrease">−</button>
+            <span class="qty-val" id="qty-${item.id}">0</span>
+            <button class="qty-btn" data-act="inc" data-id="${item.id}" aria-label="Increase">+</button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function findItem(id) {
+  for (const cat of Object.values(MENU)) {
+    const found = cat.find(i => i.id === id);
+    if (found) return found;
+  }
+}
+
+function updateCart() {
+  const list = document.getElementById('cart-list');
+  const totalEl = document.getElementById('cart-total');
+  const sendBtn = document.getElementById('send-order');
+  const items = Object.entries(cart).filter(([, q]) => q > 0);
+
+  if (items.length === 0) {
+    list.innerHTML = '<div class="cart-empty">No items yet. Tap + on any dish to add.</div>';
+    totalEl.textContent = '0';
+    sendBtn.disabled = true;
+    sendBtn.style.opacity = '0.5';
+    return;
+  }
+
+  let total = 0;
+  list.innerHTML = items.map(([id, qty]) => {
+    const item = findItem(id);
+    const sub = item.price * qty;
+    total += sub;
+    return `<div class="cart-line"><span>${qty} × ${item.name}</span><span>₹${sub}</span></div>`;
+  }).join('');
+  totalEl.textContent = total;
+  sendBtn.disabled = false;
+  sendBtn.style.opacity = '1';
+}
+
+function changeQty(id, delta) {
+  cart[id] = Math.max(0, (cart[id] || 0) + delta);
+  document.getElementById('qty-' + id).textContent = cart[id];
+  updateCart();
+}
+
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.qty-btn');
+  if (!btn) return;
+  changeQty(btn.dataset.id, btn.dataset.act === 'inc' ? 1 : -1);
+});
+
+document.getElementById('send-order').addEventListener('click', () => {
+  const items = Object.entries(cart).filter(([, q]) => q > 0);
+  if (items.length === 0) return;
+  let total = 0;
+  const lines = items.map(([id, qty]) => {
+    const item = findItem(id);
+    const sub = item.price * qty;
+    total += sub;
+    return `• ${qty} × ${item.name} — ₹${sub}`;
+  });
+  const msg = [
+    'Hi Nivaa Stays, I would like to order:',
+    '',
+    ...lines,
+    '',
+    `Total: ₹${total}`,
+    '',
+    '(Please confirm preparation time. Ordered via website.)'
+  ].join('\n');
+  const url = 'https://wa.me/919620364554?text=' + encodeURIComponent(msg);
+  window.open(url, '_blank', 'noopener');
+});
+
+renderMenu();
+updateCart();
+</script>
+</body>
+</html>
