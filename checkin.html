@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Self Check-in | Nivaa Stays</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles.css">
+<style>
+  .form-label { display: block; font-size: 0.85rem; font-weight: 600; color: var(--brand-teal); margin-bottom: 0.4rem; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: 0.7rem 0.9rem;
+    border: 1px solid #d4d8d4; border-radius: 10px;
+    font-size: 0.95rem; color: var(--brand-ink); background: #fff;
+    transition: border 0.15s, box-shadow 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: 0; border-color: var(--brand-gold);
+    box-shadow: 0 0 0 3px rgba(201,162,39,0.15);
+  }
+  .form-textarea { min-height: 90px; resize: vertical; }
+  .form-help { font-size: 0.75rem; color: var(--brand-muted); margin-top: 0.3rem; }
+  .form-required::after { content: ' *'; color: #c0392b; }
+  .booking-card {
+    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-teal-soft) 100%);
+    color: #fff; border-radius: 16px; padding: 1.5rem 1.75rem; margin-bottom: 1.5rem;
+    border: 1px dashed var(--brand-gold);
+  }
+  .booking-card .label { font-size: 0.7rem; letter-spacing: 0.16em; text-transform: uppercase; color: var(--brand-gold-soft); }
+  .booking-card .value { font-family: 'Playfair Display', serif; font-size: 1.05rem; color: #fff; }
+  .booking-card .greet { font-family: 'Playfair Display', serif; font-size: 1.6rem; color: var(--brand-gold); margin-bottom: 1rem; }
+  .loader {
+    width: 28px; height: 28px;
+    border: 3px solid #e8ebe8; border-top-color: var(--brand-gold);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 2rem auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<header class="sticky-nav">
+  <div class="max-w-7xl mx-auto px-4 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2">
+    <a href="index.html" class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <img src="assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
+      <div class="min-w-0"><div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div><div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div></div>
+    </a>
+    <nav class="flex items-center gap-1">
+      <a href="index.html" class="nav-link hidden md:inline">Home</a>
+      <a href="welcome.html" class="nav-link hidden md:inline">Welcome Kit</a>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 6rem;">
+  <div class="max-w-2xl mx-auto px-5">
+    <div class="text-center mb-8">
+      <div class="eyebrow">Self Check-in</div>
+      <div class="divider-gold divider-center"></div>
+      <h1 class="serif text-4xl md:text-5xl text-teal mb-4">Welcome to Nivaa Stays</h1>
+      <p class="text-[color:var(--brand-muted)] leading-relaxed">A quick check-in (under 2 minutes) saves time when you arrive. ID upload is required as per Indian hotel regulations and is kept confidential.</p>
+    </div>
+
+    <!-- Loading state -->
+    <div id="state-loading" class="hidden text-center py-8">
+      <div class="loader"></div>
+      <p class="text-[color:var(--brand-muted)] text-sm">Looking up your booking…</p>
+    </div>
+
+    <!-- Pre-filled booking summary (lookup mode) -->
+    <div id="booking-summary" class="booking-card hidden">
+      <div class="greet" id="bs_greet">Welcome 👋</div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><div class="label">Check-in</div><div class="value" id="bs_checkin">—</div></div>
+        <div><div class="label">Check-out</div><div class="value" id="bs_checkout">—</div></div>
+        <div><div class="label">Room</div><div class="value" id="bs_room">—</div></div>
+        <div><div class="label">Booked via</div><div class="value" id="bs_source">—</div></div>
+      </div>
+    </div>
+
+    <form id="checkin-form" method="POST" action="TODO_APPS_SCRIPT_URL" class="bg-cream rounded-2xl p-6 md:p-8 space-y-5">
+
+      <!-- Walk-in fields (hidden when in lookup mode) -->
+      <div id="walkin-fields" class="space-y-5">
+
+        <div>
+          <label class="form-label form-required" for="guest_name">Full Name</label>
+          <input class="form-input" type="text" id="guest_name" name="guest_name" required autocomplete="name">
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div>
+            <label class="form-label form-required" for="phone">Phone (WhatsApp)</label>
+            <input class="form-input" type="tel" id="phone" name="phone" required placeholder="+91 98xxx xxxxx" autocomplete="tel">
+          </div>
+          <div>
+            <label class="form-label" for="email">Email (optional)</label>
+            <input class="form-input" type="email" id="email" name="email" autocomplete="email">
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div>
+            <label class="form-label form-required" for="checkin_date">Check-in Date</label>
+            <input class="form-input" type="date" id="checkin_date" name="checkin_date" required>
+          </div>
+          <div>
+            <label class="form-label form-required" for="checkout_date">Check-out Date</label>
+            <input class="form-input" type="date" id="checkout_date" name="checkout_date" required>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-5">
+          <div>
+            <label class="form-label form-required" for="room">Room</label>
+            <select class="form-select" id="room" name="room" required>
+              <option value="">Select…</option>
+              <option value="Room 1">Room 1</option>
+              <option value="Room 2">Room 2</option>
+              <option value="Full House">Full House</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label" for="source">Booking Source</label>
+            <select class="form-select" id="source" name="source">
+              <option value="">Select…</option>
+              <option value="Direct">Direct (Walk-in / WhatsApp / Call)</option>
+              <option value="Airbnb">Airbnb</option>
+              <option value="Booking.com">Booking.com</option>
+              <option value="MakeMyTrip">MakeMyTrip</option>
+              <option value="Agoda">Agoda</option>
+            </select>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Lookup-mode email field (shown only in lookup mode since walk-in already has it) -->
+      <div id="lookup-email-field" class="hidden">
+        <label class="form-label" for="email_lookup">Email (optional)</label>
+        <input class="form-input" type="email" id="email_lookup" name="email_lookup" autocomplete="email">
+        <div class="form-help">For your stay confirmation copy at checkout</div>
+      </div>
+
+      <!-- Always shown -->
+      <div>
+        <label class="form-label form-required" for="num_guests">Number of Guests</label>
+        <select class="form-select" id="num_guests" name="num_guests" required>
+          <option value="1">1</option>
+          <option value="2" selected>2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label form-required" for="id_type">ID Type</label>
+        <select class="form-select" id="id_type" name="id_type" required>
+          <option value="">Select…</option>
+          <option value="Aadhaar">Aadhaar</option>
+          <option value="Passport">Passport</option>
+          <option value="Driving License">Driving License</option>
+          <option value="Voter ID">Voter ID</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label form-required" for="id_file_input">Upload ID Photo</label>
+        <input class="form-input" type="file" id="id_file_input" accept="image/*,application/pdf" required>
+        <div class="form-help">Clear photo or PDF of your selected ID. Max 5 MB. Stored privately, used only for hotel registration.</div>
+        <div id="id_preview" class="mt-3 hidden">
+          <img id="id_preview_img" class="rounded-lg max-h-40 border border-[#d4d8d4]" alt="ID preview">
+          <div id="id_preview_name" class="text-xs text-[color:var(--brand-muted)] mt-2"></div>
+        </div>
+        <input type="hidden" name="id_file" id="id_file">
+        <input type="hidden" name="id_filename" id="id_filename">
+        <input type="hidden" name="id_mimetype" id="id_mimetype">
+      </div>
+
+      <div>
+        <label class="form-label" for="arrival_time">Expected Arrival Time</label>
+        <input class="form-input" type="time" id="arrival_time" name="arrival_time">
+        <div class="form-help">Check-in is from 12 PM</div>
+      </div>
+
+      <div>
+        <label class="form-label" for="special_requests">Special Requests</label>
+        <textarea class="form-textarea" id="special_requests" name="special_requests" placeholder="Travelling with a pet? Need help arranging food? Anything else we should know?"></textarea>
+      </div>
+
+      <input type="hidden" name="booking_id" id="booking_id" value="">
+      <input type="hidden" name="mode" id="mode" value="walkin">
+
+      <button type="submit" id="submit_btn" class="btn-gold w-full justify-center text-base">
+        Complete Check-in →
+      </button>
+
+      <p class="text-xs text-[color:var(--brand-muted)] text-center">By submitting you agree to share these details with Nivaa Stays for hotel registration purposes.</p>
+    </form>
+  </div>
+</section>
+
+<footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a></div>
+</footer>
+
+<script>
+  document.getElementById('y').textContent = new Date().getFullYear();
+
+  // Apps Script lookup endpoint — set after Phase 2 deploy
+  const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_URL';
+  const APPS_SCRIPT_READY = !APPS_SCRIPT_URL.startsWith('TODO');
+
+  const params = new URLSearchParams(location.search);
+  const bookingId = params.get('id');
+
+  const $ = id => document.getElementById(id);
+
+  function fmtDate(s) {
+    if (!s) return '—';
+    try {
+      const d = new Date(s);
+      if (isNaN(d)) return s;
+      return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch { return s; }
+  }
+
+  function renderLookup(b) {
+    $('booking-summary').classList.remove('hidden');
+    $('walkin-fields').classList.add('hidden');
+    $('lookup-email-field').classList.remove('hidden');
+    $('mode').value = 'lookup';
+    $('booking_id').value = bookingId;
+
+    $('bs_greet').textContent = `Welcome, ${b.name || 'guest'} 👋`;
+    $('bs_checkin').textContent = fmtDate(b.checkin);
+    $('bs_checkout').textContent = fmtDate(b.checkout);
+    $('bs_room').textContent = b.room || '—';
+    $('bs_source').textContent = b.platform || b.source || 'Direct';
+
+    if (b.num_guests) $('num_guests').value = String(b.num_guests);
+
+    // Walk-in fields are hidden but their `required` attrs would block submit — strip them
+    ['guest_name', 'phone', 'checkin_date', 'checkout_date', 'room'].forEach(id => {
+      const el = $(id);
+      if (el) el.removeAttribute('required');
+    });
+  }
+
+  function renderWalkin() {
+    $('booking-summary').classList.add('hidden');
+    $('walkin-fields').classList.remove('hidden');
+    $('lookup-email-field').classList.add('hidden');
+    $('mode').value = 'walkin';
+    // Default check-in date to today
+    const today = new Date().toISOString().slice(0, 10);
+    if (!$('checkin_date').value) $('checkin_date').value = today;
+  }
+
+  function lookupBooking() {
+    if (!bookingId || !APPS_SCRIPT_READY) {
+      renderWalkin();
+      return;
+    }
+    $('state-loading').classList.remove('hidden');
+    $('checkin-form').classList.add('hidden');
+    fetch(`${APPS_SCRIPT_URL}?lookup=${encodeURIComponent(bookingId)}`)
+      .then(r => r.json())
+      .then(data => {
+        $('state-loading').classList.add('hidden');
+        $('checkin-form').classList.remove('hidden');
+        if (data && data.found) renderLookup(data);
+        else renderWalkin();
+      })
+      .catch(() => {
+        $('state-loading').classList.add('hidden');
+        $('checkin-form').classList.remove('hidden');
+        renderWalkin();
+      });
+  }
+
+  lookupBooking();
+
+  // ID file → base64 + preview
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const fileInput = $('id_file_input');
+  const previewBox = $('id_preview');
+  const previewImg = $('id_preview_img');
+  const previewName = $('id_preview_name');
+  const submitBtn = $('submit_btn');
+
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    if (file.size > MAX_BYTES) {
+      alert('File is larger than 5 MB. Please upload a smaller version.');
+      fileInput.value = '';
+      return;
+    }
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Processing…';
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result;
+      const base64 = dataUrl.split(',')[1];
+      $('id_file').value = base64;
+      $('id_filename').value = file.name;
+      $('id_mimetype').value = file.type;
+      if (file.type.startsWith('image/')) {
+        previewImg.src = dataUrl;
+        previewImg.style.display = '';
+      } else {
+        previewImg.style.display = 'none';
+      }
+      previewName.textContent = `${file.name} (${(file.size/1024).toFixed(0)} KB) ✓`;
+      previewBox.classList.remove('hidden');
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Complete Check-in →';
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+</body>
+</html>
