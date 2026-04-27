@@ -222,7 +222,7 @@
         <input class="form-input" type="file" id="id_file_input" accept="image/*,application/pdf" required>
         <div class="form-help">Clear photo or PDF of your selected ID. Max 5 MB. Stored privately, used only for hotel registration.</div>
         <div id="id_preview" class="mt-3 hidden">
-          <img id="id_preview_img" class="rounded-lg max-h-40 border border-[#d4d8d4]" alt="ID preview">
+          <img id="id_preview_img" class="rounded-lg max-h-40 border border-[#d4d8d4]" alt="ID preview" loading="lazy" decoding="async">
           <div id="id_preview_name" class="text-xs text-[color:var(--brand-muted)] mt-2"></div>
         </div>
         <input type="hidden" name="id_file" id="id_file">
