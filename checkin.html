@@ -39,6 +39,51 @@
     margin: 2rem auto;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+
+  .overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(8, 38, 35, 0.86);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+  .overlay-card {
+    background: #fff; border-radius: 18px;
+    padding: 2.5rem 2rem; max-width: 420px; width: 100%;
+    text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .overlay-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem; color: var(--brand-teal); margin-bottom: 0.6rem;
+  }
+  .overlay-card p { color: var(--brand-muted); font-size: 0.95rem; line-height: 1.55; }
+  .loader-big {
+    width: 56px; height: 56px;
+    border: 5px solid #e8ebe8; border-top-color: var(--brand-gold);
+    border-radius: 50%; animation: spin 0.9s linear infinite;
+    margin: 0 auto 1.4rem;
+  }
+  .overlay-icon {
+    width: 56px; height: 56px; margin: 0 auto 1rem;
+    border-radius: 50%; background: #fef3e6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .overlay-actions { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.6rem; }
+  .overlay-actions a, .overlay-actions button {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 0.75rem 1rem; border-radius: 999px;
+    font-weight: 600; font-size: 0.92rem; text-align: center;
+    transition: all 0.15s;
+  }
+  .overlay-error-detail {
+    margin-top: 1rem; padding: 0.6rem 0.8rem;
+    background: #faf6ec; border-radius: 8px;
+    font-family: monospace; font-size: 0.78rem; color: var(--brand-muted);
+    word-break: break-word;
+  }
 </style>
 </head>
 <body>
@@ -82,7 +127,7 @@
       </div>
     </div>
 
-    <form id="checkin-form" method="POST" action="TODO_APPS_SCRIPT_URL" class="bg-cream rounded-2xl p-6 md:p-8 space-y-5">
+    <form id="checkin-form" class="bg-cream rounded-2xl p-6 md:p-8 space-y-5">
 
       <!-- Walk-in fields (hidden when in lookup mode) -->
       <div id="walkin-fields" class="space-y-5">
@@ -212,11 +257,44 @@
   <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a></div>
 </footer>
 
+<!-- Loading overlay -->
+<div id="loading-overlay" class="overlay" role="status" aria-live="polite">
+  <div class="overlay-card">
+    <div class="loader-big"></div>
+    <h3>Saving your check-in…</h3>
+    <p>Please don't close or refresh this page. This usually takes 5–15 seconds while we securely upload your ID.</p>
+  </div>
+</div>
+
+<!-- Success overlay (brief, before redirect) -->
+<div id="success-overlay" class="overlay" role="status" aria-live="polite">
+  <div class="overlay-card">
+    <div class="overlay-icon" style="background:#e8f5e9; color:#2e7d32;">✓</div>
+    <h3>Check-in complete!</h3>
+    <p>Taking you to your welcome kit…</p>
+  </div>
+</div>
+
+<!-- Error overlay -->
+<div id="error-overlay" class="overlay" role="alert">
+  <div class="overlay-card">
+    <div class="overlay-icon">⚠️</div>
+    <h3>Couldn't complete your check-in</h3>
+    <p>We had trouble saving your details. Please try again, or reach us directly and we'll handle it.</p>
+    <div id="error-detail-wrap" class="overlay-error-detail hidden"><span id="error-detail"></span></div>
+    <div class="overlay-actions">
+      <button id="retry-btn" class="btn-gold">Try Again</button>
+      <a href="https://wa.me/919620364554?text=Hi%2C%20I%27m%20having%20trouble%20with%20self%20check-in." class="btn-whatsapp" target="_blank" rel="noopener">WhatsApp Us</a>
+      <a href="tel:+919620364554" class="btn-outline-teal">Call +91 96203 64554</a>
+    </div>
+  </div>
+</div>
+
 <script>
   document.getElementById('y').textContent = new Date().getFullYear();
 
   // Apps Script lookup endpoint — set after Phase 2 deploy
-  const APPS_SCRIPT_URL = 'TODO_APPS_SCRIPT_URL';
+  const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxkdwbDe8eSoYuapo2xp6XRYmiosBWfACvHVp9D6hOGHnN0c39YHGA-ecZFLhFDrFb/exec';
   const APPS_SCRIPT_READY = !APPS_SCRIPT_URL.startsWith('TODO');
 
   const params = new URLSearchParams(location.search);
@@ -326,6 +404,65 @@
       submitBtn.textContent = 'Complete Check-in →';
     };
     reader.readAsDataURL(file);
+  });
+
+  // ----- Async submit with overlays -----
+  const form = $('checkin-form');
+  const loadingOverlay = $('loading-overlay');
+  const successOverlay = $('success-overlay');
+  const errorOverlay = $('error-overlay');
+  const retryBtn = $('retry-btn');
+
+  function showOverlay(el) { el.classList.add('show'); }
+  function hideOverlay(el) { el.classList.remove('show'); }
+
+  function showError(message) {
+    hideOverlay(loadingOverlay);
+    if (message) {
+      $('error-detail').textContent = message;
+      $('error-detail-wrap').classList.remove('hidden');
+    } else {
+      $('error-detail-wrap').classList.add('hidden');
+    }
+    showOverlay(errorOverlay);
+  }
+
+  retryBtn.addEventListener('click', () => {
+    hideOverlay(errorOverlay);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // Native HTML5 validation
+    if (!form.reportValidity()) return;
+
+    showOverlay(loadingOverlay);
+
+    // Build URLSearchParams from form fields (avoids multipart, keeps CORS simple)
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    for (const [k, v] of formData.entries()) {
+      params.append(k, typeof v === 'string' ? v : '');
+    }
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: params,
+        redirect: 'follow'
+      });
+      if (!res.ok) throw new Error('Server returned ' + res.status);
+      const data = await res.json();
+      if (!data || !data.success) {
+        throw new Error((data && data.error) || 'Unknown error from server');
+      }
+      hideOverlay(loadingOverlay);
+      showOverlay(successOverlay);
+      setTimeout(() => { window.location.replace('welcome.html'); }, 1200);
+    } catch (err) {
+      showError(err && err.message ? err.message : String(err));
+    }
   });
 </script>
 </body>
