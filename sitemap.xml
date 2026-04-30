@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://nivaastays.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://nivaastays.com/gallery.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://nivaastays.com/patient-family-stay-jipmer.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://nivaastays.com/student-family-stay-jipmer.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://nivaastays.com/conference-stay-jipmer.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://nivaastays.com/celebration-stay-pondicherry.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://nivaastays.com/guest-house-near-jipmer.html</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://nivaastays.com/pet-friendly-stay-pondicherry.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://nivaastays.com/full-house-stay-pondicherry.html</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://nivaastays.com/order.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://nivaastays.com/stay-guide.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://nivaastays.com/gallery</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nivaastays.com/patient-family-stay-jipmer</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nivaastays.com/student-family-stay-jipmer</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nivaastays.com/conference-stay-jipmer</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nivaastays.com/celebration-stay-pondicherry</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nivaastays.com/guest-house-near-jipmer</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://nivaastays.com/pet-friendly-stay-pondicherry</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nivaastays.com/full-house-stay-pondicherry</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://nivaastays.com/order</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://nivaastays.com/stay-guide</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
 </urlset>
