@@ -83,3 +83,28 @@ python3 -m http.server 8765
 ## Tracking
 
 Google Ads gtag (`AW-18059444069`) is on every page, injected right after the viewport meta. If adding a new HTML page, copy the gtag block from `index.html`.
+
+## Pricing config
+
+Live rates and the inline rate-picker calendar on `index.html` are driven by `pricing.json`. Three tiers:
+
+| Tier | Default rate | Days |
+|---|---|---|
+| Weekday | ₹2,000 | Mon–Thu nights |
+| Weekend | ₹2,500 | Fri/Sat/Sun nights |
+| Long weekend | ₹3,000 | Full Fri+Sat+Sun block when a holiday in `holidays[]` falls on Mon or Fri |
+
+Files:
+- `pricing.json` — tiers, weekend day indices, holiday list, manual long-weekend overrides. Edit this when:
+  - **A holiday year rolls over** (add the next year's holidays).
+  - **A Tue/Wed/Thu holiday should bump rates** (won't auto-trigger, add to `manualLongWeekends`).
+  - **Rates change** (edit `tiers`).
+- `pricing.js` — pure logic module: `rateForDate()`, `quoteForRange()`, `formatINR()`. No DOM access. Cache-friendly: pass the same `config` object across calls and the long-weekend set is memoized.
+- `calendar-picker.js` — UI module that fetches `pricing.json`, renders a 2-month grid into `<div id="rate-picker">`, and emits a WhatsApp deep link with the booking summary.
+
+Long-weekend trigger logic:
+- Holiday on **Friday** → bump that Fri/Sat/Sun.
+- Holiday on **Monday** → bump the prior Fri/Sat/Sun.
+- Holiday on Tue/Wed/Thu/Sat/Sun → no auto-bump (use `manualLongWeekends` if needed).
+
+Hardcoded price text on landing pages (`*-stay-*.html`, `guest-house-near-jipmer.html`) needs to stay in sync with `pricing.json` manually — the picker only lives on `index.html`. Standard line is `Weekday ₹2,000* · Weekend ₹2,500* · Long weekend ₹3,000*.`

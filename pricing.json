@@ -1,0 +1,23 @@
+{
+  "currency": "INR",
+  "tiers": { "weekday": 2000, "weekend": 2500, "longWeekend": 3000 },
+  "weekendDays": [5, 6, 0],
+  "longWeekendTriggerDays": [1, 5],
+  "horizon": { "from": "2026-05-01", "to": "2027-04-30" },
+  "holidays": [
+    { "date": "2026-05-01", "name": "May Day" },
+    { "date": "2026-08-15", "name": "Independence Day" },
+    { "date": "2026-10-02", "name": "Gandhi Jayanti" },
+    { "date": "2026-10-20", "name": "Diwali" },
+    { "date": "2026-11-08", "name": "Guru Nanak Jayanti" },
+    { "date": "2026-12-25", "name": "Christmas" },
+    { "date": "2027-01-14", "name": "Pongal" },
+    { "date": "2027-01-15", "name": "Thiruvalluvar Day" },
+    { "date": "2027-01-16", "name": "Uzhavar Thirunal" },
+    { "date": "2027-01-26", "name": "Republic Day" },
+    { "date": "2027-04-14", "name": "Tamil New Year / Ambedkar Jayanti" }
+  ],
+  "manualLongWeekends": [
+    { "from": "2026-10-19", "to": "2026-10-21", "name": "Diwali (manual bump)" }
+  ]
+}
