@@ -105,3 +105,102 @@ export function formatINR(n) {
     maximumFractionDigits: 0
   }).format(n);
 }
+
+// Integer hours of early check-in or late checkout. Returns the fee for one side.
+// 0–1 hr free; 2–4 hr → ₹250 per paid hour; 5–6 hr → ₹1,000 flat (transit add-on);
+// 7+ hr → ₹1,500 flat (extended transit, late checkout only). Beyond max → null.
+export function transitFee(hours, config, side /* 'early' | 'late' */) {
+  const t = config.transit;
+  if (hours == null || hours <= t.freeHours) return 0;
+  const max = side === 'early' ? t.maxEarlyHours : t.maxLateHours;
+  if (hours > max) return null;
+  if (hours <= 4) return (hours - t.freeHours) * t.hourlyRate;
+  if (hours <= 6) return t.halfDayFee;
+  return t.extendedFee;
+}
+
+// Apply combined cap across early + late on the same booking.
+export function transitTotal(earlyHours, lateHours, config) {
+  const ef = transitFee(earlyHours, config, 'early');
+  const lf = transitFee(lateHours, config, 'late');
+  if (ef === null || lf === null) return { early: ef, late: lf, total: null, capped: false };
+  const raw = ef + lf;
+  const cap = config.transit.combinedCap;
+  if (raw > cap) return { early: ef, late: lf, total: cap, capped: true };
+  return { early: ef, late: lf, total: raw, capped: false };
+}
+
+// Pick the best-matching auto-discount rule for the given quote, or null.
+// Rules can use any of: minNights, maxNights, allWeekday (future), tierIn (future),
+// dateRange (future). Add more rule types here without touching callers.
+export function autoDiscountFor(quoteContext, config) {
+  const rules = config.autoDiscounts || [];
+  if (!rules.length) return null;
+  const { totalNights } = quoteContext;
+  const matching = rules.filter(r => {
+    if (r.minNights != null && totalNights < r.minNights) return false;
+    if (r.maxNights != null && totalNights > r.maxNights) return false;
+    return true;
+  });
+  if (!matching.length) return null;
+  // Pick highest-value rule. For % vs ₹, compare effective discount on the
+  // subtotal — but caller doesn't pass subtotal here, so fall back to value.
+  // In practice the rules list is short, so caller can sort itself if needed.
+  return matching.reduce((best, r) => (best && best.value > r.value ? best : r));
+}
+
+// Compute capacity + fees for the requested guest count.
+// Charges flat ₹extraGuestFeePerNight for each guest above the included
+// (default × studios) capacity, multiplied by the number of nights.
+export function guestFeeFor(guests, studios, nights, config) {
+  const gp = config.guestPolicy;
+  if (!gp) return { included: 0, max: 0, extras: 0, fee: 0 };
+  const included = gp.defaultPerStudio * studios;
+  const max = gp.maxPerStudio * studios;
+  const clamped = Math.max(1, Math.min(guests || included, max));
+  const extras = Math.max(0, clamped - included);
+  const fee = extras * (gp.extraGuestFeePerNight || 0) * nights;
+  return { included, max, extras, fee, perGuestPerNight: gp.extraGuestFeePerNight || 0 };
+}
+
+// Compute the advance-payment amount required to confirm a booking.
+// Rules are evaluated top-down; first matching rule wins. Each rule may
+// gate on minTotal / maxTotal of the grand total.
+export function advancePaymentFor(grandTotal, config, roomCount = 1) {
+  const cfg = config.advancePayment;
+  if (!cfg || !cfg.rules || !cfg.rules.length) return null;
+  const match = cfg.rules.find(r =>
+    (r.minTotal == null || grandTotal >= r.minTotal) &&
+    (r.maxTotal == null || grandTotal <= r.maxTotal)
+  );
+  if (!match) return null;
+
+  let amt = match.type === 'pct'
+    ? Math.round(grandTotal * match.value / 100)
+    : match.value;
+  if (cfg.minAmount && amt < cfg.minAmount) amt = cfg.minAmount;
+  // maxAmount is per-room — scale by roomCount.
+  const maxCap = cfg.maxAmount ? cfg.maxAmount * roomCount : null;
+  if (maxCap && amt > maxCap) amt = maxCap;
+  if (cfg.roundTo) amt = Math.ceil(amt / cfg.roundTo) * cfg.roundTo;
+  amt = Math.min(amt, grandTotal);
+
+  return {
+    amount: amt,
+    label: match.label || (match.type === 'pct' ? `${match.value}% advance` : `${match.value} advance`),
+    balance: Math.max(0, grandTotal - amt)
+  };
+}
+
+// Compute the effective check-in / check-out time given hours offset.
+export function shiftTime(baseHHmm, hoursEarlier) {
+  const [h, m] = baseHHmm.split(':').map(Number);
+  let mins = h * 60 + m - hoursEarlier * 60;
+  while (mins < 0) mins += 24 * 60;
+  while (mins >= 24 * 60) mins -= 24 * 60;
+  const hh = Math.floor(mins / 60);
+  const mm = mins % 60;
+  const ampm = hh >= 12 ? 'PM' : 'AM';
+  const h12 = ((hh + 11) % 12) + 1;
+  return `${h12}:${String(mm).padStart(2,'0')} ${ampm}`;
+}

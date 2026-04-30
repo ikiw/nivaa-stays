@@ -19,5 +19,40 @@
   ],
   "manualLongWeekends": [
     { "from": "2026-10-19", "to": "2026-10-21", "name": "Diwali (manual bump)" }
-  ]
+  ],
+  "transit": {
+    "defaultCheckIn": "12:00",
+    "defaultCheckOut": "11:00",
+    "earliestCheckIn": "06:00",
+    "latestCheckOut": "20:00",
+    "freeHours": 1,
+    "hourlyRate": 250,
+    "halfDayFee": 1000,
+    "extendedFee": 1500,
+    "maxEarlyHours": 6,
+    "maxLateHours": 9,
+    "combinedCap": 2500
+  },
+  "autoDiscounts": [
+    {
+      "id": "long-stay-4n",
+      "name": "Long stay (4+ nights)",
+      "minNights": 4,
+      "type": "pct",
+      "value": 5
+    }
+  ],
+  "guestPolicy": {
+    "defaultPerStudio": 2,
+    "maxPerStudio": 4,
+    "extraGuestFeePerNight": 500
+  },
+  "advancePayment": {
+    "minAmount": 1000,
+    "maxAmount": 3000,
+    "roundTo": 100,
+    "rules": [
+      { "minTotal": 0, "type": "pct", "value": 30, "label": "30% advance" }
+    ]
+  }
 }
