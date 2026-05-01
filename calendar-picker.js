@@ -88,19 +88,28 @@ function renderMonth(monthStart, isMobile) {
   return html;
 }
 
-function renderBreakdown() {
+function renderInstruction() {
   if (!state.checkIn) {
-    return `<div class="rp-breakdown rp-breakdown-empty">
-      <div class="rp-empty-line">Pick your check-in date on the calendar.</div>
+    return `<div class="rp-instruct">
+      <span class="rp-instruct-step">Step 1 of 2</span>
+      <span class="rp-instruct-text">Tap your <strong>check-in</strong> date below</span>
     </div>`;
   }
   if (!state.checkOut) {
-    return `<div class="rp-breakdown rp-breakdown-empty">
-      <div class="rp-empty-line">Check-in: <strong>${fmtPretty(state.checkIn)}</strong></div>
-      <div class="rp-empty-hint">Now pick your check-out date.</div>
-      <button type="button" class="rp-clear" data-action="clear">Clear</button>
+    return `<div class="rp-instruct rp-instruct-mid">
+      <span class="rp-instruct-step">Step 2 of 2</span>
+      <span class="rp-instruct-text">Check-in <strong>${fmtPretty(state.checkIn)}</strong> — now tap your <strong>check-out</strong></span>
+      <button type="button" class="rp-instruct-clear" data-action="clear">Reset</button>
     </div>`;
   }
+  return `<div class="rp-instruct rp-instruct-done">
+    <span class="rp-instruct-text"><strong>${fmtPretty(state.checkIn)}</strong> → <strong>${fmtPretty(state.checkOut)}</strong></span>
+    <button type="button" class="rp-instruct-clear" data-action="clear">Change dates</button>
+  </div>`;
+}
+
+function renderBreakdown() {
+  if (!state.checkIn || !state.checkOut) return '';
 
   const q = quoteForRange(state.checkIn, state.checkOut, state.config);
   const rows = q.nights.map(n => {
@@ -353,6 +362,7 @@ function render() {
         </div>
         <button type="button" class="rp-nav" data-action="next" aria-label="Next month">›</button>
       </div>
+      ${renderInstruction()}
       <div class="rp-months">
         ${renderMonth(left, false)}
         ${renderMonth(right, false)}
