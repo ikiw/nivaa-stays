@@ -153,6 +153,7 @@
   "containsPlace": [
     {
       "@type": "HotelRoom",
+      "@id": "https://nivaastays.com/#room-blue-suite",
       "name": "Premium Studio 1 · Blue Suite",
       "description": "King-bed studio with French-blue colonial interiors, spa-style bathtub bathroom, AC, in-room kettle and tea setup, premium toiletries.",
       "image": [
@@ -169,24 +170,11 @@
         { "@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true },
         { "@type": "LocationFeatureSpecification", "name": "Smart TV", "value": true },
         { "@type": "LocationFeatureSpecification", "name": "Kettle and tea setup", "value": true }
-      ],
-      "offers": {
-        "@type": "Offer",
-        "url": "https://nivaastays.com/booking",
-        "priceCurrency": "INR",
-        "price": "2000",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "priceCurrency": "INR",
-          "price": "2000",
-          "unitCode": "DAY",
-          "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
-        },
-        "availability": "https://schema.org/InStock"
-      }
+      ]
     },
     {
       "@type": "HotelRoom",
+      "@id": "https://nivaastays.com/#room-family-suite",
       "name": "Premium Studio 2 · Family Suite",
       "description": "King-bed studio with separate reclining seating + dressing area, second bathtub bathroom, AC, premium linen — designed for longer stays and patient-family caregivers.",
       "image": [
@@ -203,21 +191,41 @@
         { "@type": "LocationFeatureSpecification", "name": "Air conditioning", "value": true },
         { "@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true },
         { "@type": "LocationFeatureSpecification", "name": "Smart TV", "value": true }
-      ],
-      "offers": {
-        "@type": "Offer",
-        "url": "https://nivaastays.com/booking",
+      ]
+    }
+  ],
+  "makesOffer": [
+    {
+      "@type": "Offer",
+      "name": "Premium Studio 1 · Blue Suite — per night",
+      "url": "https://nivaastays.com/booking",
+      "priceCurrency": "INR",
+      "price": "2000",
+      "priceSpecification": {
+        "@type": "UnitPriceSpecification",
         "priceCurrency": "INR",
         "price": "2000",
-        "priceSpecification": {
-          "@type": "UnitPriceSpecification",
-          "priceCurrency": "INR",
-          "price": "2000",
-          "unitCode": "DAY",
-          "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
-        },
-        "availability": "https://schema.org/InStock"
-      }
+        "unitCode": "DAY",
+        "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
+      },
+      "availability": "https://schema.org/InStock",
+      "itemOffered": { "@id": "https://nivaastays.com/#room-blue-suite" }
+    },
+    {
+      "@type": "Offer",
+      "name": "Premium Studio 2 · Family Suite — per night",
+      "url": "https://nivaastays.com/booking",
+      "priceCurrency": "INR",
+      "price": "2000",
+      "priceSpecification": {
+        "@type": "UnitPriceSpecification",
+        "priceCurrency": "INR",
+        "price": "2000",
+        "unitCode": "DAY",
+        "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
+      },
+      "availability": "https://schema.org/InStock",
+      "itemOffered": { "@id": "https://nivaastays.com/#room-family-suite" }
     }
   ]
 }
