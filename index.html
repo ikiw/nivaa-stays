@@ -149,7 +149,77 @@
       "@type": "LodgingReservation",
       "name": "Book Nivaa Stays"
     }
-  }
+  },
+  "containsPlace": [
+    {
+      "@type": "HotelRoom",
+      "name": "Premium Studio 1 · Blue Suite",
+      "description": "King-bed studio with French-blue colonial interiors, spa-style bathtub bathroom, AC, in-room kettle and tea setup, premium toiletries.",
+      "image": [
+        "https://nivaastays.com/images/bedroom-premium-king.avif",
+        "https://nivaastays.com/images/bedroom-king-warm-lit.avif",
+        "https://nivaastays.com/images/bathroom-bathtub-one.avif"
+      ],
+      "bed": { "@type": "BedDetails", "numberOfBeds": 1, "typeOfBed": "King" },
+      "occupancy": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
+      "amenityFeature": [
+        { "@type": "LocationFeatureSpecification", "name": "King bed", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Spa bathtub", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Air conditioning", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Smart TV", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Kettle and tea setup", "value": true }
+      ],
+      "offers": {
+        "@type": "Offer",
+        "url": "https://nivaastays.com/booking",
+        "priceCurrency": "INR",
+        "price": "2000",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "priceCurrency": "INR",
+          "price": "2000",
+          "unitCode": "DAY",
+          "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
+        },
+        "availability": "https://schema.org/InStock"
+      }
+    },
+    {
+      "@type": "HotelRoom",
+      "name": "Premium Studio 2 · Family Suite",
+      "description": "King-bed studio with separate reclining seating + dressing area, second bathtub bathroom, AC, premium linen — designed for longer stays and patient-family caregivers.",
+      "image": [
+        "https://nivaastays.com/images/bedroom-suite-with-seating.avif",
+        "https://nivaastays.com/images/bedroom-suite-seating.avif",
+        "https://nivaastays.com/images/bathroom-bathtub-two.avif"
+      ],
+      "bed": { "@type": "BedDetails", "numberOfBeds": 1, "typeOfBed": "King" },
+      "occupancy": { "@type": "QuantitativeValue", "minValue": 1, "maxValue": 4 },
+      "amenityFeature": [
+        { "@type": "LocationFeatureSpecification", "name": "King bed", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Spa bathtub", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Reclining seating area", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Air conditioning", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Free WiFi", "value": true },
+        { "@type": "LocationFeatureSpecification", "name": "Smart TV", "value": true }
+      ],
+      "offers": {
+        "@type": "Offer",
+        "url": "https://nivaastays.com/booking",
+        "priceCurrency": "INR",
+        "price": "2000",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "priceCurrency": "INR",
+          "price": "2000",
+          "unitCode": "DAY",
+          "name": "Per night, weekday rate (weekend ₹2,500, long weekend ₹3,000)"
+        },
+        "availability": "https://schema.org/InStock"
+      }
+    }
+  ]
 }
 </script>
 
@@ -789,12 +859,18 @@
           referrerpolicy="no-referrer-when-downgrade" title="Nivaa Stays location map"></iframe>
       </div>
       <div class="bg-cream rounded-2xl p-7 flex flex-col">
-        <h3 class="serif text-xl text-teal mb-4">Quick Access</h3>
-        <ul class="space-y-3 text-sm text-[color:var(--brand-muted)] mb-6">
-          <li><strong class="text-teal block">JIPMER Hospital</strong>~5 min by car / auto / bike · ~10 min on foot</li>
-          <li><strong class="text-teal block">Gorimedu & Dhanvantri Nagar</strong>Nearby residential / academic zone</li>
-          <li><strong class="text-teal block">Pondicherry Beach / Promenade</strong>Popular for family outings</li>
-          <li><strong class="text-teal block">Puducherry Airport</strong>Accessible by cab</li>
+        <h3 class="serif text-xl text-teal mb-4">Distance from Nivaa Stays</h3>
+        <ul class="space-y-2.5 text-sm text-[color:var(--brand-muted)] mb-6">
+          <li class="flex justify-between gap-3"><strong class="text-teal">JIPMER Hospital</strong><span>~1.5 km · 5 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Gorimedu / Dhanvantri Nagar</strong><span>&lt; 1 km · walkable</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Promenade (Rock Beach)</strong><span>~7 km · 15 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Paradise Beach</strong><span>~12 km · 25 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">French Quarter / White Town</strong><span>~7 km · 15 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Auroville / Matrimandir</strong><span>~14 km · 25 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Pondicherry bus stand</strong><span>~7 km · 15 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Villupuram railway station</strong><span>~38 km · 50 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Puducherry airport (PNY)</strong><span>~6 km · 12 min</span></li>
+          <li class="flex justify-between gap-3"><strong class="text-teal">Chennai airport (MAA)</strong><span>~160 km · 3 hr</span></li>
         </ul>
         <a href="https://maps.app.goo.gl/uXmbjQ9tpviANJpm6" target="_blank" rel="noopener" class="btn-outline-teal mt-auto justify-center">Open in Google Maps →</a>
       </div>
@@ -813,13 +889,13 @@
       </div>
       <a href="gallery.html" class="btn-outline-teal self-start">View Full Gallery →</a>
     </div>
-    <div class="gallery-grid">
-      <div class="g-wide"><img src="images/exterior-entrance-arch.avif" alt="Nivaa Stays entrance arch near JIPMER Pondicherry" loading="lazy"></div>
-      <div class="g-tall"><img src="images/bedroom-premium-king.avif" alt="Premium king bedroom near JIPMER" loading="lazy"></div>
-      <div class="g-std"><img src="images/bathroom-bathtub-one.avif" alt="Bathtub bathroom Nivaa Stays" loading="lazy"></div>
-      <div class="g-std"><img src="images/living-room-main.avif" alt="Living room Nivaa Stays" loading="lazy"></div>
-      <div class="g-half"><img src="images/entrance-wooden-swing.avif" alt="Wooden swing at entrance" loading="lazy"></div>
-      <div class="g-half"><img src="images/balcony-greenery.avif" alt="Balcony with greenery" loading="lazy"></div>
+    <div class="polaroid-wall">
+      <a href="gallery.html" class="polaroid"><img src="images/bedroom-premium-king.avif" alt="Premium king bedroom — the Blue Suite at Nivaa Stays" loading="lazy" decoding="async"><span class="polaroid-caption">the blue suite</span></a>
+      <a href="gallery.html" class="polaroid"><img src="images/bathroom-bathtub-one.avif" alt="Spa-style bathtub bathroom at Nivaa Stays" loading="lazy" decoding="async"><span class="polaroid-caption">long soak</span></a>
+      <a href="gallery.html" class="polaroid"><img src="images/exterior-entrance-arch.avif" alt="French-style entrance archway at Nivaa Stays" loading="lazy" decoding="async"><span class="polaroid-caption">french archway</span></a>
+      <a href="gallery.html" class="polaroid"><img src="images/living-room-evening.avif" alt="Living room with warm evening lighting at Nivaa Stays" loading="lazy" decoding="async"><span class="polaroid-caption">evening light</span></a>
+      <a href="gallery.html" class="polaroid"><img src="images/balcony-greenery.avif" alt="Balcony with hanging vines at Nivaa Stays" loading="lazy" decoding="async"><span class="polaroid-caption">vine-draped balcony</span></a>
+      <a href="gallery.html" class="polaroid"><img src="images/entrance-vespa-ninja.avif" alt="Yellow Vespa and Kawasaki Ninja at Nivaa Stays entrance" loading="lazy" decoding="async"><span class="polaroid-caption">borrow the vespa</span></a>
     </div>
   </div>
 </section>
