@@ -50,11 +50,16 @@ avifenc -q 60 -s 6 /tmp/tmp.jpg images/<descriptive-name>.avif
 
 Room booking cards on `index.html` use a small vanilla JS carousel: `[data-carousel] > .rc-track > img` with prev/next/dots and 5-second autoplay. CSS in `styles.css` under `.room-carousel`. Pause on hover, touch, and via `IntersectionObserver` when off-screen. To add slides: just append `<img>` tags inside `.rc-track`.
 
-## Backend (separate)
+## Backend (Google Apps Script)
 
-Bookings, daily digest, self check-in lookup, and now **iCal availability feed for Airbnb sync** all live in a Google Apps Script project bound to a Bookings Google Sheet — not in this repo. The deployed web-app URL is hard-coded into `checkin.html`. Don't touch the URL unless redeploying the script (which keeps the URL stable across versions).
+The script lives in a Google Apps Script project bound to the Bookings Sheet. **Source is mirrored** at `apps-script/app-script.js` for version history — see `apps-script/README.md` for deploy + trigger steps.
 
-The site does NOT need to know about Airbnb sync — that's purely sheet ↔ Apps Script ↔ Airbnb iCal.
+Functions exposed:
+- `doGet` — JSON lookup for `checkin.html`, plus iCal availability feed for Airbnb (planned)
+- `doPost` — self check-in form submission + ID file upload
+- `dailyDigest` — host email summary, scheduled at **9 AM IST** via `installDailyTrigger()`
+
+The deployed web-app URL is hard-coded into `checkin.html`. Don't touch the URL unless redeploying the script (which keeps the URL stable across versions). The site does NOT need to know about Airbnb sync — that's purely sheet ↔ Apps Script ↔ Airbnb iCal.
 
 ## Brand
 
