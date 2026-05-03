@@ -106,11 +106,45 @@
         <a href="order.html" data-pass-id class="btn-gold text-sm">Order Food →</a>
       </div>
 
-      <!-- Bike -->
-      <div class="info-card">
-        <h3>🛵 Vespa Rental</h3>
-        <p class="mb-3">Cruise White Town and Auroville on our yellow Vespa. On-demand, just message us.</p>
-        <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20rent%20the%20Vespa." class="btn-outline-teal text-sm" target="_blank" rel="noopener">Reserve the Vespa →</a>
+      <!-- Bike rental -->
+      <div class="info-card" id="rental-card">
+        <h3>🛵 Bike Rental</h3>
+
+        <!-- Static mode: simple WhatsApp link (default) -->
+        <div data-rental-static>
+          <p class="mb-3">Cruise White Town and Auroville on our yellow Vespa or Kawasaki Ninja. On-demand, just message us.</p>
+          <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20rent%20the%20Vespa." class="btn-outline-teal text-sm" target="_blank" rel="noopener">Reserve on WhatsApp →</a>
+        </div>
+
+        <!-- Hub mode: structured request form (shown by hub.js when ?id=…) -->
+        <div data-rental-form class="hidden">
+          <p class="mb-3 text-sm">Vespa ₹600/day · Ninja ₹1,500/day. We'll confirm availability on WhatsApp.</p>
+          <form id="rental-form" class="rental-form">
+            <label class="rental-label">
+              <span>Bike</span>
+              <select name="type" required>
+                <option value="vespa">Yellow Vespa · ₹600/day</option>
+                <option value="ninja">Kawasaki Ninja · ₹1,500/day</option>
+              </select>
+            </label>
+            <div class="rental-row">
+              <label class="rental-label">
+                <span>Start</span>
+                <input type="date" name="startDate" required>
+              </label>
+              <label class="rental-label">
+                <span>End</span>
+                <input type="date" name="endDate" required>
+              </label>
+            </div>
+            <label class="rental-label">
+              <span>Notes <span class="rental-optional">(optional)</span></span>
+              <input type="text" name="notes" placeholder="e.g. 2 helmets, evening pickup" maxlength="120">
+            </label>
+            <button type="submit" class="btn-gold rental-submit">Request Rental →</button>
+            <div class="rental-status" data-rental-status></div>
+          </form>
+        </div>
       </div>
 
       <!-- Local guide -->
