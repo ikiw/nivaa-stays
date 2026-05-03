@@ -241,27 +241,67 @@ document.addEventListener('click', (e) => {
   changeQty(btn.dataset.id, btn.dataset.act === 'inc' ? 1 : -1);
 });
 
-document.getElementById('send-order').addEventListener('click', () => {
-  const items = Object.entries(cart).filter(([, q]) => q > 0);
-  if (items.length === 0) return;
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxkdwbDe8eSoYuapo2xp6XRYmiosBWfACvHVp9D6hOGHnN0c39YHGA-ecZFLhFDrFb/exec';
+const BOOKING_ID = (() => {
+  const id = new URLSearchParams(location.search).get('id');
+  return /^\d+-\d{4}-\d{2}-\d{2}$/.test(id || '') ? id : '';
+})();
+
+// Show a small badge if we have a booking ID — guest knows the order is being logged to their stay
+(function showStayBadge() {
+  if (!BOOKING_ID) return;
+  const badge = document.createElement('div');
+  badge.id = 'order-stay-badge';
+  badge.style.cssText = 'background:rgba(14,59,53,0.06);border-left:3px solid var(--brand-gold);padding:.5rem .8rem;border-radius:0 8px 8px 0;font-size:.82rem;color:var(--brand-teal-dark);margin-bottom:1rem';
+  badge.innerHTML = 'Logging this order to your stay · <strong>' + BOOKING_ID + '</strong>';
+  const cartPanel = document.querySelector('.cart-panel');
+  if (cartPanel) cartPanel.insertBefore(badge, cartPanel.firstChild);
+})();
+
+async function postOrder(itemsPayload) {
+  const body = new URLSearchParams();
+  body.set('action', 'order');
+  body.set('bookingId', BOOKING_ID);
+  body.set('items', JSON.stringify(itemsPayload));
+  const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+  return res.json();
+}
+
+document.getElementById('send-order').addEventListener('click', async () => {
+  const entries = Object.entries(cart).filter(([, q]) => q > 0);
+  if (entries.length === 0) return;
+  const btn = document.getElementById('send-order');
+  const originalText = btn.textContent;
   let total = 0;
-  const lines = items.map(([id, qty]) => {
+  const itemsPayload = entries.map(([id, qty]) => {
     const item = findItem(id);
     const sub = item.price * qty;
     total += sub;
-    return `• ${qty} × ${item.name} — ₹${sub}`;
+    return { id: id, name: item.name, qty: qty, price: item.price };
   });
+  const lines = itemsPayload.map(it => `• ${it.qty} × ${it.name} — ₹${it.qty * it.price}`);
   const msg = [
     'Hi Nivaa Stays, I would like to order:',
     '',
     ...lines,
     '',
     `Total: ₹${total}`,
+    BOOKING_ID ? `Booking: ${BOOKING_ID}` : '',
     '',
     '(Please confirm preparation time. Ordered via website.)'
-  ].join('\n');
-  const url = 'https://wa.me/919620364554?text=' + encodeURIComponent(msg);
-  window.open(url, '_blank', 'noopener');
+  ].filter(Boolean).join('\n');
+  const waUrl = 'https://wa.me/919620364554?text=' + encodeURIComponent(msg);
+
+  // If we have a booking ID, log to the sheet first; otherwise just open WhatsApp.
+  if (BOOKING_ID) {
+    btn.disabled = true;
+    btn.textContent = 'Saving order…';
+    try { await postOrder(itemsPayload); }
+    catch (e) { /* logging failure shouldn't block WhatsApp send */ }
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+  window.open(waUrl, '_blank', 'noopener');
 });
 
 renderMenu();

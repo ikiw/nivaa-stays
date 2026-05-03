@@ -24,11 +24,17 @@ Auto-created on first write — don't manually create unless you want a header t
 |---|---|---|
 | `Bookings` (or any monthly tab) | Manual | Name, Mobile, Check-In, Check-Out, Room Number, Platform, Online/Offline, Number of guests, Amount, Paid To Manju (existing) |
 | `Check-ins` | First self check-in | Submitted At, Mode, Booking ID, Name, Phone, Email, Check-In, Check-Out, Room, Source, Num Guests, ID Type, ID File URL, Arrival Time, Special Requests |
-| `Orders` | First food-order POST | Submitted At, Booking ID, Items (JSON), Item Count, Subtotal, Status, Notes |
-| `Bike Rentals` | First rental POST | Submitted At, Booking ID, Type, Start Date, End Date, Days, Rate (₹/day), Subtotal, Status, Notes |
-| `Add-ons` | **Manual host entry only** — create with these headers when you have a manual add-on to log | Submitted At, Booking ID, Type, Description, Amount, Notes |
+| `Orders` | First food-order POST | Submitted At, Booking ID, Name, Items (JSON), Item Count, Subtotal, Status, Notes |
+| `Bike Rentals` | First rental POST | Submitted At, Booking ID, Name, Type, Start Date, End Date, Days, Rate (₹/day), Subtotal, Status, Notes |
+| `Add-ons` | **Manual host entry only** — create with these headers when you have a manual add-on to log | Submitted At, Booking ID, Name, Type, Description, Amount, Notes |
 
-`Booking ID` is the join key everywhere — format `{phoneDigits}-{checkin-ymd}` (e.g., `9620364554-2026-05-15`).
+`Booking ID` is the join key everywhere — format `{phoneDigits}-{checkin-ymd}` (e.g., `9620364554-2026-05-15` or `8892811032-2026-05-15`).
+
+`Name` is auto-populated server-side by looking up the booking row when the order/rental is recorded, so the guest never has to retype it.
+
+### Phone normalization
+
+`normalizePhone_()` collapses Indian numbers to **last 10 digits** — so `+91 8892811032`, `91 8892811032`, `+918892811032`, and `8892811032` all match the same booking. The booking-ID portion of URLs is the 10-digit form. Sheet entries can use any format; the lookup tolerates them.
 
 ## Bike rental rates (duplicated config)
 

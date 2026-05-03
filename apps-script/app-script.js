@@ -26,6 +26,14 @@
                                                                                                                                                              
   function digits_(s) { return String(s || '').replace(/\D/g, ''); }
 
+  // Normalize an Indian mobile to last 10 digits — strips +, spaces, dashes,
+  // AND a leading "91" country code if present. So "+91 8892811032",
+  // "918892811032", and "8892811032" all collapse to "8892811032".
+  function normalizePhone_(s) {
+    const d = digits_(s);
+    return (d.length === 12 && d.indexOf('91') === 0) ? d.slice(2) : d;
+  }
+
   function ymd_(d) {
     if (!d) return '';
     if (Object.prototype.toString.call(d) === '[object Date]') {
@@ -36,11 +44,11 @@
     return String(d);
   }                                                                                                                                                          
                                                                
-  function rowToBooking_(headers, row) {                                                                                                                     
-    const idx = h => headers.indexOf(h);                       
+  function rowToBooking_(headers, row) {
+    const idx = h => headers.indexOf(h);
     return {
       name: row[idx('Name')] || '',
-      phone: digits_(row[idx('Mobile')]),
+      phone: normalizePhone_(row[idx('Mobile')]),
       checkin: ymd_(row[idx('Check-In')]),                                                                                                                   
       checkout: ymd_(row[idx('Check-Out')]),
       room: row[idx('Room Number')] != null ? String(row[idx('Room Number')]) : '',                                                                          
@@ -52,19 +60,20 @@
     };                                                                                                                                                       
   }
                                                                                                                                                              
-  function findBooking_(phoneDigits, checkinYmd) {             
+  function findBooking_(phoneDigits, checkinYmd) {
+    const target = normalizePhone_(phoneDigits);
     for (const sh of getBookingTabs_()) {
       const data = sh.getDataRange().getValues();
-      const headers = data[0].map(c => String(c).trim());                                                                                                    
+      const headers = data[0].map(c => String(c).trim());
       const phIdx = headers.indexOf('Mobile');
-      const ciIdx = headers.indexOf('Check-In');                                                                                                             
-      for (let i = 1; i < data.length; i++) {                  
-        const row = data[i];                                                                                                                                 
-        if (digits_(row[phIdx]) === phoneDigits && ymd_(row[ciIdx]) === checkinYmd) {
-          return rowToBooking_(headers, row);                                                                                                                
-        }                                                      
-      }                                                                                                                                                      
-    }                                                          
+      const ciIdx = headers.indexOf('Check-In');
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (normalizePhone_(row[phIdx]) === target && ymd_(row[ciIdx]) === checkinYmd) {
+          return rowToBooking_(headers, row);
+        }
+      }
+    }
     return null;
   }
 
@@ -241,9 +250,9 @@
   const BIKE_RATES = { vespa: 600, ninja: 1500 };
   const BIKE_NAMES = { vespa: 'Yellow Vespa', ninja: 'Kawasaki Ninja' };
 
-  const ORDERS_HEADERS  = ['Submitted At', 'Booking ID', 'Items', 'Item Count', 'Subtotal', 'Status', 'Notes'];
-  const RENTALS_HEADERS = ['Submitted At', 'Booking ID', 'Type', 'Start Date', 'End Date', 'Days', 'Rate (₹/day)', 'Subtotal', 'Status', 'Notes'];
-  const ADDONS_HEADERS  = ['Submitted At', 'Booking ID', 'Type', 'Description', 'Amount', 'Notes'];
+  const ORDERS_HEADERS  = ['Submitted At', 'Booking ID', 'Name', 'Items', 'Item Count', 'Subtotal', 'Status', 'Notes'];
+  const RENTALS_HEADERS = ['Submitted At', 'Booking ID', 'Name', 'Type', 'Start Date', 'End Date', 'Days', 'Rate (₹/day)', 'Subtotal', 'Status', 'Notes'];
+  const ADDONS_HEADERS  = ['Submitted At', 'Booking ID', 'Name', 'Type', 'Description', 'Amount', 'Notes'];
 
   function parseBookingId_(s) {
     const m = String(s || '').match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);
@@ -363,10 +372,15 @@
     const itemCount = items.reduce((a, it) => a + (Number(it.qty) || 0), 0);
     const subtotal  = items.reduce((a, it) => a + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
 
+    // Look up the booking to enrich the row with the guest's name
+    const booking = findBooking_(parsed.phone, parsed.ci);
+    const guestName = booking ? booking.name : '';
+
     const sheet = getOrCreateSheet_('Orders', ORDERS_HEADERS);
     sheet.appendRow([
       new Date(),
       p.bookingId,
+      guestName,
       JSON.stringify(items),
       itemCount,
       subtotal,
@@ -401,10 +415,14 @@
     const rate = BIKE_RATES[type];
     const subtotal = days * rate;
 
+    const booking = findBooking_(parsed.phone, parsed.ci);
+    const guestName = booking ? booking.name : '';
+
     const sheet = getOrCreateSheet_('Bike Rentals', RENTALS_HEADERS);
     sheet.appendRow([
       new Date(),
       p.bookingId,
+      guestName,
       BIKE_NAMES[type],
       startDate,
       endDate,
