@@ -60,7 +60,10 @@
 <section class="section" style="padding-top: 6rem; padding-bottom: 2rem;">
   <div class="max-w-4xl mx-auto px-5">
 
-    <div class="text-center mb-10">
+    <!-- Personalized hub view (only when ?id=… present). hub.js renders here. -->
+    <div id="guest-hub" class="mb-8"></div>
+
+    <div id="welcome-static-header" class="text-center mb-10">
       <div class="eyebrow">Welcome</div>
       <div class="divider-gold divider-center"></div>
       <h1 class="serif text-4xl md:text-5xl text-teal mb-3">Make yourself at home.</h1>
@@ -100,7 +103,7 @@
       <div class="info-card">
         <h3>🍽️ Home-cooked Meals</h3>
         <p class="mb-3">Fresh, no artificial flavours. Order at least 2 hours before meal time.</p>
-        <a href="order.html" class="btn-gold text-sm">Order Food →</a>
+        <a href="order.html" data-pass-id class="btn-gold text-sm">Order Food →</a>
       </div>
 
       <!-- Bike -->
@@ -153,5 +156,6 @@
   <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays</div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script src="hub.js"></script>
 </body>
 </html>
