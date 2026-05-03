@@ -1302,6 +1302,142 @@ footer a:hover { color: var(--brand-gold-soft); }
   min-height: 1.2em;
 }
 
+/* Admin dashboard (admin.html) */
+.adm-loading, .adm-empty {
+  text-align: center;
+  padding: 2rem 1rem;
+  color: var(--brand-muted);
+  font-size: 0.92rem;
+}
+.adm-stat {
+  background: #fff;
+  border: 1px solid #e8ebe8;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  text-align: center;
+}
+.adm-stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  color: var(--brand-teal);
+  line-height: 1;
+}
+.adm-stat-lbl {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--brand-muted);
+  margin-top: 0.4rem;
+  font-weight: 600;
+}
+
+.adm-section { margin-bottom: 2rem; }
+.adm-section-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.4rem;
+  color: var(--brand-teal);
+  margin-bottom: 0.75rem;
+  padding-left: 0.85rem;
+  border-left: 3px solid var(--brand-gold);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.adm-section-title.adm-accent-warn { border-left-color: #c45a3a; }
+.adm-section-title.adm-accent-gold { border-left-color: var(--brand-gold); }
+.adm-section-title.adm-accent-teal { border-left-color: var(--brand-teal); }
+.adm-section-title.adm-accent-mute { border-left-color: #d8dedb; }
+.adm-count {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  color: var(--brand-muted);
+  background: var(--brand-cream);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+
+.adm-rows { display: flex; flex-direction: column; gap: 0.55rem; }
+.adm-row {
+  background: #fff;
+  border: 1px solid #e8ebe8;
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.adm-row:hover {
+  border-color: var(--brand-gold);
+  box-shadow: 0 6px 18px -10px rgba(14,59,53,0.15);
+}
+.adm-row-main { flex: 1; min-width: 0; }
+.adm-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.1rem;
+  color: var(--brand-teal-dark);
+  margin-bottom: 0.2rem;
+}
+.adm-room {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-muted);
+  background: var(--brand-cream);
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  margin-left: 0.4rem;
+  font-weight: 600;
+}
+.adm-meta {
+  font-size: 0.82rem;
+  color: var(--brand-muted);
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.adm-sep { color: #cdd2cf; }
+.adm-phone {
+  margin-top: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+.adm-wa-link {
+  color: var(--brand-teal);
+  text-decoration: none;
+  font-weight: 600;
+  margin-left: 0.4rem;
+}
+.adm-wa-link:hover { color: var(--brand-gold); }
+
+.adm-row-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.adm-action-btn {
+  padding: 0.45rem 0.8rem !important;
+  font-size: 0.82rem !important;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .adm-row { flex-direction: column; align-items: stretch; }
+  .adm-row-actions {
+    border-top: 1px dashed #eef0ed;
+    padding-top: 0.7rem;
+    margin-top: 0.5rem;
+    justify-content: stretch;
+  }
+  .adm-action-btn { flex: 1; text-align: center; justify-content: center; }
+  .adm-stat-num { font-size: 1.6rem; }
+  .adm-section-title { font-size: 1.2rem; }
+}
+
 /* Hub print invoice (browser → Save as PDF) */
 #hub-print-invoice { display: none; }
 @media print {

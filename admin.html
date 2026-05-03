@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Admin · Nivaa Stays</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-cream">
+
+<header class="sticky-nav">
+  <div class="max-w-7xl mx-auto px-4 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2">
+    <a href="index.html" class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <img src="assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
+      <div class="min-w-0">
+        <div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div>
+        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Admin · Daily Ops</div>
+      </div>
+    </a>
+    <nav class="flex items-center gap-1">
+      <a href="booking.html?mode=admin" class="nav-link hidden md:inline">Quote builder</a>
+      <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2">Refresh</button>
+    </nav>
+  </div>
+</header>
+
+<section class="section" style="padding-top: 6rem; padding-bottom: 2rem;">
+  <div class="max-w-5xl mx-auto px-4 sm:px-5">
+    <div class="text-center mb-6">
+      <div class="eyebrow">Today's Ops</div>
+      <div class="divider-gold divider-center"></div>
+      <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Bookings dashboard</h1>
+      <p class="text-[color:var(--brand-muted)] text-sm" id="date-line">Loading…</p>
+    </div>
+
+    <div id="admin-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
+
+    <div id="admin-content"></div>
+  </div>
+</section>
+
+<footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Site</a> · <a href="booking.html?mode=admin" class="underline">Quote builder</a></div>
+</footer>
+
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script src="admin.js"></script>
+</body>
+</html>

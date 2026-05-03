@@ -1,0 +1,122 @@
+// Nivaa Stays — admin dashboard (loaded by admin.html)
+// Lists today's arrivals / in-house / departures / upcoming bookings.
+// Deep-links each row to that guest's hub, order, and quote pages with
+// ?mode=admin so admin-only UI is enabled there.
+
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxkdwbDe8eSoYuapo2xp6XRYmiosBWfACvHVp9D6hOGHnN0c39YHGA-ecZFLhFDrFb/exec';
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+
+function fmtDate(s) {
+  if (!s) return '';
+  const [y, m, d] = String(s).split('-').map(Number);
+  if (!y) return String(s);
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', {
+    weekday: 'short', day: 'numeric', month: 'short'
+  });
+}
+
+function fmtFullDate(s) {
+  if (!s) return '';
+  const [y, m, d] = String(s).split('-').map(Number);
+  if (!y) return String(s);
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+
+async function fetchActive() {
+  const url = APPS_SCRIPT_URL + '?activeBookings=1';
+  const res = await fetch(url);
+  return res.json();
+}
+
+function bookingRow(b) {
+  const hubUrl   = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const orderUrl = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const waUrl    = `https://wa.me/91${b.phone}`;
+  return `
+    <div class="adm-row">
+      <div class="adm-row-main">
+        <div class="adm-name">${escapeHtml(b.name) || '(no name)'} <span class="adm-room">Room ${escapeHtml(b.room) || '—'}</span></div>
+        <div class="adm-meta">
+          <span>${fmtDate(b.checkin)} → ${fmtDate(b.checkout)}</span>
+          <span class="adm-sep">·</span>
+          <span>${escapeHtml(b.platform || b.onlineOffline || 'Direct')}</span>
+          ${b.num_guests ? `<span class="adm-sep">·</span><span>${escapeHtml(String(b.num_guests))} guests</span>` : ''}
+        </div>
+        <div class="adm-meta adm-phone">
+          +91 ${b.phone}
+          <a href="${waUrl}" target="_blank" rel="noopener" class="adm-wa-link">WhatsApp →</a>
+        </div>
+      </div>
+      <div class="adm-row-actions">
+        <a href="${hubUrl}" class="btn-outline-teal adm-action-btn">Open hub</a>
+        <a href="${orderUrl}" class="btn-outline-teal adm-action-btn">Add food</a>
+      </div>
+    </div>
+  `;
+}
+
+function renderSection(title, count, rows, accent) {
+  if (!rows.length) {
+    return `
+      <section class="adm-section">
+        <h2 class="adm-section-title ${accent}">${title} <span class="adm-count">0</span></h2>
+        <div class="adm-empty">No bookings.</div>
+      </section>
+    `;
+  }
+  return `
+    <section class="adm-section">
+      <h2 class="adm-section-title ${accent}">${title} <span class="adm-count">${count}</span></h2>
+      <div class="adm-rows">${rows.map(bookingRow).join('')}</div>
+    </section>
+  `;
+}
+
+function renderSummary(data) {
+  const summary = document.getElementById('admin-summary');
+  summary.innerHTML = `
+    <div class="adm-stat"><div class="adm-stat-num">${data.arriving.length}</div><div class="adm-stat-lbl">Arriving</div></div>
+    <div class="adm-stat"><div class="adm-stat-num">${data.inhouse.length}</div><div class="adm-stat-lbl">In-house</div></div>
+    <div class="adm-stat"><div class="adm-stat-num">${data.leaving.length}</div><div class="adm-stat-lbl">Leaving</div></div>
+    <div class="adm-stat"><div class="adm-stat-num">${data.upcoming.length}</div><div class="adm-stat-lbl">Next 7 days</div></div>
+  `;
+}
+
+function render(data) {
+  document.getElementById('date-line').textContent = fmtFullDate(data.date);
+  renderSummary(data);
+
+  const root = document.getElementById('admin-content');
+  root.innerHTML = [
+    renderSection('Leaving today',  data.leaving.length,  data.leaving,  'adm-accent-warn'),
+    renderSection('Arriving today', data.arriving.length, data.arriving, 'adm-accent-gold'),
+    renderSection('In-house now',   data.inhouse.length,  data.inhouse,  'adm-accent-teal'),
+    renderSection('Upcoming (next 7 days)', data.upcoming.length, data.upcoming, 'adm-accent-mute')
+  ].join('');
+}
+
+async function init() {
+  const root = document.getElementById('admin-content');
+  root.innerHTML = '<div class="adm-loading">Loading bookings…</div>';
+  try {
+    const data = await fetchActive();
+    render(data);
+  } catch (err) {
+    root.innerHTML = '<div class="adm-empty">Could not load bookings. Refresh the page or check Apps Script deployment.</div>';
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', init);
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}

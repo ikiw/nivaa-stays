@@ -7,6 +7,7 @@ The `app-script.js` here is a **mirror** of the Apps Script project bound to the
 - `doGet(e)` — serves multiple read endpoints:
   - `?lookup={phone}-{ymd}` → JSON booking lookup (used by `checkin.html`)
   - `?hub={phone}-{ymd}` → aggregated guest hub data (booking + orders + rentals + add-ons + totals)
+  - `?activeBookings=YYYY-MM-DD` → admin dashboard data: bookings grouped into `arriving / inhouse / leaving / upcoming` (next 7 days). Pass `?activeBookings=1` to default to today.
   - `?feed=availability&room=1|2` → iCal feed for Airbnb sync (planned)
 - `doPost(e)` — accepts:
   - Self check-in form submission (default behavior — writes Check-ins tab, files ID upload)

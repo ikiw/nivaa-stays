@@ -88,6 +88,7 @@
   function doGet(e) {                                                                                                                                        
     const params = (e && e.parameter) || {};
     if (params.hub) return hubData_(params.hub);
+    if (params.activeBookings != null) return activeBookings_(params.activeBookings);
     const lookup = params.lookup || '';
     if (!lookup) return jsonOut_({ found: false, error: 'no lookup id' });
     const m = lookup.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);                                                                                                   
@@ -397,6 +398,53 @@
     } catch (e) { /* email failures shouldn't break the capture */ }
 
     return jsonOut_({ success: true, subtotal: subtotal, itemCount: itemCount });
+  }
+
+  // Returns bookings grouped by relation to the given date (defaults to today):
+  //   arriving — check-in == date
+  //   inhouse  — check-in <  date  AND  check-out >  date
+  //   leaving  — check-out == date
+  //   upcoming — check-in in (date, date+7]
+  function activeBookings_(dateStr) {
+    const today = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr))
+      ? dateStr
+      : Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
+    const upcomingHorizon = (function () {
+      const [y, m, d] = today.split('-').map(Number);
+      const dt = new Date(y, m - 1, d);
+      dt.setDate(dt.getDate() + 7);
+      return Utilities.formatDate(dt, TZ, 'yyyy-MM-dd');
+    })();
+
+    const buckets = { arriving: [], inhouse: [], leaving: [], upcoming: [] };
+
+    for (const sh of getBookingTabs_()) {
+      const data = sh.getDataRange().getValues();
+      const headers = data[0].map(c => String(c).trim());
+      const nameIdx = headers.indexOf('Name');
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row[nameIdx]) continue;
+        const b = rowToBooking_(headers, row);
+        if (!b.phone || !b.checkin) continue;
+
+        const enriched = Object.assign({}, b, {
+          bookingId: `${b.phone}-${b.checkin}`
+        });
+
+        if (b.checkin === today) buckets.arriving.push(enriched);
+        else if (b.checkout === today) buckets.leaving.push(enriched);
+        else if (b.checkin < today && b.checkout > today) buckets.inhouse.push(enriched);
+        else if (b.checkin > today && b.checkin <= upcomingHorizon) buckets.upcoming.push(enriched);
+      }
+    }
+
+    // Sort each bucket by check-in date for stable display
+    for (const key of Object.keys(buckets)) {
+      buckets[key].sort((a, b) => (a.checkin < b.checkin ? -1 : a.checkin > b.checkin ? 1 : 0));
+    }
+
+    return jsonOut_(Object.assign({ date: today, horizon: upcomingHorizon }, buckets));
   }
 
   function recordRental_(p) {
