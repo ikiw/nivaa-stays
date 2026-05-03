@@ -1,6 +1,9 @@
 // Nivaa Stays — pricing logic (pure, no DOM).
-// Rules: weekday Mon–Thu = ₹2k; weekend Fri/Sat/Sun = ₹2.5k; long-weekend Fri+Sat+Sun = ₹3k
-// when a holiday falls on Mon or Fri (auto), or any range listed in manualLongWeekends.
+// Rules: weekday Mon–Fri = ₹2k; weekend Sat/Sun = ₹2.5k.
+// Long-weekend bump (₹3k) — only the first two nights of the 3-day block:
+//   • Fri-holiday  → bump Fri + Sat (Sun stays at normal weekend rate)
+//   • Mon-holiday  → bump Sat + Sun (Mon stays at normal weekday rate)
+// Plus any range listed in manualLongWeekends.
 
 const MS_DAY = 86400000;
 
@@ -33,11 +36,11 @@ function buildBumpedSet(config) {
 
     let span;
     if (dow === 5) {
-      // Friday holiday → Fri, Sat, Sun
-      span = [hd, addDays(hd, 1), addDays(hd, 2)];
+      // Friday holiday → bump Fri + Sat only (Sun reverts to weekend rate)
+      span = [hd, addDays(hd, 1)];
     } else if (dow === 1) {
-      // Monday holiday → prior Fri, Sat, Sun
-      span = [addDays(hd, -3), addDays(hd, -2), addDays(hd, -1)];
+      // Monday holiday → bump Sat + Sun only (Mon reverts to weekday rate)
+      span = [addDays(hd, -2), addDays(hd, -1)];
     } else {
       continue;
     }

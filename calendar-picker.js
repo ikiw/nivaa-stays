@@ -199,7 +199,7 @@ function renderBreakdown() {
       <a class="btn-whatsapp rp-book" href="${waUrl}" target="_blank" rel="noopener">Book on WhatsApp →</a>
       <button type="button" class="rp-clear" data-action="clear">Clear dates</button>
     </div>
-    <div class="rp-fineprint">Rates per room per night.${disc.amount > 0 ? '' : ' 10% off on direct bookings — code <strong>NIVAA10</strong>.'} Long-weekend rates apply on Fri+Sat+Sun blocks adjoining a public holiday. Early check-in / late checkout subject to room availability — please confirm on WhatsApp.</div>
+    <div class="rp-fineprint">Rates per room per night.${disc.amount > 0 ? '' : ' 10% off on direct bookings — code <strong>NIVAA10</strong>.'} Long-weekend nights apply when a public holiday falls on Friday (Fri+Sat) or Monday (Sat+Sun). Early check-in / late checkout subject to room availability — please confirm on WhatsApp.</div>
   </div>`;
 }
 

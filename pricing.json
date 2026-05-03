@@ -1,7 +1,7 @@
 {
   "currency": "INR",
   "tiers": { "weekday": 2000, "weekend": 2500, "longWeekend": 3000 },
-  "weekendDays": [5, 6, 0],
+  "weekendDays": [6, 0],
   "longWeekendTriggerDays": [1, 5],
   "horizon": { "from": "2026-05-01", "to": "2027-04-30" },
   "holidays": [
