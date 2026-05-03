@@ -77,7 +77,9 @@
   // ---------- doGet — lookup ----------                                                                                                                    
   
   function doGet(e) {                                                                                                                                        
-    const lookup = (e && e.parameter && e.parameter.lookup) || '';
+    const params = (e && e.parameter) || {};
+    if (params.hub) return hubData_(params.hub);
+    const lookup = params.lookup || '';
     if (!lookup) return jsonOut_({ found: false, error: 'no lookup id' });
     const m = lookup.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);                                                                                                   
     if (!m) return jsonOut_({ found: false, error: 'invalid format' });                                                                                      
@@ -90,10 +92,14 @@
   // ---------- doPost — check-in submission ----------        
 
  function doPost(e) {                                         
-    try {                                                                                                                                                                                                            
-      const p = e.parameter;                                   
+    try {
+      const p = e.parameter;
 
-      // Save ID file to Drive                                                                                                                                                                                       
+      // Guest hub captures (food orders, bike rentals)
+      if (p.action === 'order')  return recordOrder_(p);
+      if (p.action === 'rental') return recordRental_(p);
+
+      // Save ID file to Drive                                                                                                                                                                                      
       let idFileUrl = '';
       if (p.id_file && p.id_filename && p.id_mimetype) {                                                                                                                                                             
         try {                                                  
@@ -227,6 +233,197 @@
       'View in HTML',
       { htmlBody: body }
     );
+  }
+
+  // ---------- guest hub: orders / rentals / addons ----------
+  // NOTE: BIKE_RATES here mirrors site/pricing.json → bikeRental.
+  // Update both when rates change.
+  const BIKE_RATES = { vespa: 600, ninja: 1500 };
+  const BIKE_NAMES = { vespa: 'Yellow Vespa', ninja: 'Kawasaki Ninja' };
+
+  const ORDERS_HEADERS  = ['Submitted At', 'Booking ID', 'Items', 'Item Count', 'Subtotal', 'Status', 'Notes'];
+  const RENTALS_HEADERS = ['Submitted At', 'Booking ID', 'Type', 'Start Date', 'End Date', 'Days', 'Rate (₹/day)', 'Subtotal', 'Status', 'Notes'];
+  const ADDONS_HEADERS  = ['Submitted At', 'Booking ID', 'Type', 'Description', 'Amount', 'Notes'];
+
+  function parseBookingId_(s) {
+    const m = String(s || '').match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);
+    return m ? { phone: m[1], ci: m[2] } : null;
+  }
+
+  function getOrCreateSheet_(name, headers) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sh = ss.getSheetByName(name);
+    if (!sh) {
+      sh = ss.insertSheet(name);
+      sh.appendRow(headers);
+      sh.setFrozenRows(1);
+    }
+    return sh;
+  }
+
+  function rowsForBooking_(sheetName, bookingId) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sh = ss.getSheetByName(sheetName);
+    if (!sh) return [];
+    const data = sh.getDataRange().getValues();
+    if (data.length < 2) return [];
+    const headers = data[0].map(c => String(c).trim());
+    const idIdx = headers.indexOf('Booking ID');
+    if (idIdx === -1) return [];
+    const out = [];
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][idIdx]).trim() === bookingId) {
+        const obj = {};
+        headers.forEach((h, j) => { obj[h] = data[i][j]; });
+        out.push(obj);
+      }
+    }
+    return out;
+  }
+
+  function tryParseJson_(s) {
+    if (!s) return null;
+    try { return JSON.parse(String(s)); } catch (e) { return null; }
+  }
+
+  function isoOrStr_(d) {
+    if (d instanceof Date) return d.toISOString();
+    return String(d || '');
+  }
+
+  function hubData_(bookingId) {
+    const parsed = parseBookingId_(bookingId);
+    if (!parsed) return jsonOut_({ found: false, error: 'invalid booking id' });
+
+    const booking = findBooking_(parsed.phone, parsed.ci);
+    if (!booking) return jsonOut_({ found: false });
+
+    const orders = rowsForBooking_('Orders', bookingId).map(r => ({
+      submittedAt: isoOrStr_(r['Submitted At']),
+      items: tryParseJson_(r['Items']) || [],
+      itemCount: Number(r['Item Count']) || 0,
+      subtotal: Number(r['Subtotal']) || 0,
+      status: r['Status'] || 'Pending',
+      notes: r['Notes'] || ''
+    }));
+
+    const rentals = rowsForBooking_('Bike Rentals', bookingId).map(r => ({
+      submittedAt: isoOrStr_(r['Submitted At']),
+      type: r['Type'] || '',
+      startDate: ymd_(r['Start Date']),
+      endDate: ymd_(r['End Date']),
+      days: Number(r['Days']) || 0,
+      rate: Number(r['Rate (₹/day)']) || 0,
+      subtotal: Number(r['Subtotal']) || 0,
+      status: r['Status'] || 'Requested',
+      notes: r['Notes'] || ''
+    }));
+
+    const addons = rowsForBooking_('Add-ons', bookingId).map(r => ({
+      submittedAt: isoOrStr_(r['Submitted At']),
+      type: r['Type'] || '',
+      description: r['Description'] || '',
+      amount: Number(r['Amount']) || 0,
+      notes: r['Notes'] || ''
+    }));
+
+    const stayBase    = Number(booking.amount) || 0;
+    const advancePaid = Number(booking.paid)   || 0;
+    const foodTotal   = orders.reduce((a, o) => a + o.subtotal, 0);
+    const rentalTotal = rentals.reduce((a, r) => a + r.subtotal, 0);
+    const addonTotal  = addons.reduce((a, x) => a + x.amount, 0);
+    const subtotal    = stayBase + foodTotal + rentalTotal + addonTotal;
+    const grandTotal  = subtotal;
+    const balance     = Math.max(0, grandTotal - advancePaid);
+
+    return jsonOut_({
+      found: true,
+      booking,
+      orders,
+      rentals,
+      addons,
+      totals: {
+        stayBase, foodTotal, rentalTotal, addonTotal,
+        subtotal, grandTotal, advancePaid, balance
+      }
+    });
+  }
+
+  function recordOrder_(p) {
+    const parsed = parseBookingId_(p.bookingId);
+    if (!parsed) return jsonOut_({ success: false, error: 'invalid bookingId' });
+
+    let items;
+    try { items = JSON.parse(p.items || '[]'); }
+    catch (e) { return jsonOut_({ success: false, error: 'invalid items JSON' }); }
+    if (!Array.isArray(items) || !items.length) {
+      return jsonOut_({ success: false, error: 'items empty' });
+    }
+
+    const itemCount = items.reduce((a, it) => a + (Number(it.qty) || 0), 0);
+    const subtotal  = items.reduce((a, it) => a + (Number(it.qty) || 0) * (Number(it.price) || 0), 0);
+
+    const sheet = getOrCreateSheet_('Orders', ORDERS_HEADERS);
+    sheet.appendRow([
+      new Date(),
+      p.bookingId,
+      JSON.stringify(items),
+      itemCount,
+      subtotal,
+      'Pending',
+      p.notes || ''
+    ]);
+
+    try {
+      GmailApp.sendEmail(
+        HOST_EMAIL,
+        `Nivaa Stays — Food order from ${p.bookingId}`,
+        `New food order:\n${items.map(it => `${it.qty}× ${it.name} (₹${it.price})`).join('\n')}\nTotal: ₹${subtotal}`
+      );
+    } catch (e) { /* email failures shouldn't break the capture */ }
+
+    return jsonOut_({ success: true, subtotal: subtotal, itemCount: itemCount });
+  }
+
+  function recordRental_(p) {
+    const parsed = parseBookingId_(p.bookingId);
+    if (!parsed) return jsonOut_({ success: false, error: 'invalid bookingId' });
+
+    const type = String(p.type || '').toLowerCase();
+    if (!BIKE_RATES[type]) return jsonOut_({ success: false, error: 'unknown rental type' });
+
+    const startDate = ymd_(p.startDate);
+    const endDate   = ymd_(p.endDate);
+    if (!startDate || !endDate) return jsonOut_({ success: false, error: 'invalid dates' });
+
+    const ms = new Date(endDate).getTime() - new Date(startDate).getTime();
+    const days = Math.max(1, Math.round(ms / 86400000) + 1);  // inclusive
+    const rate = BIKE_RATES[type];
+    const subtotal = days * rate;
+
+    const sheet = getOrCreateSheet_('Bike Rentals', RENTALS_HEADERS);
+    sheet.appendRow([
+      new Date(),
+      p.bookingId,
+      BIKE_NAMES[type],
+      startDate,
+      endDate,
+      days,
+      rate,
+      subtotal,
+      'Requested',
+      p.notes || ''
+    ]);
+
+    try {
+      GmailApp.sendEmail(
+        HOST_EMAIL,
+        `Nivaa Stays — Bike rental request from ${p.bookingId}`,
+        `${BIKE_NAMES[type]}\n${startDate} → ${endDate} (${days} days × ₹${rate} = ₹${subtotal})\nNotes: ${p.notes || '—'}`
+      );
+    } catch (e) { /* same as above */ }
+
+    return jsonOut_({ success: true, days: days, rate: rate, subtotal: subtotal });
   }
 
   // ---------- triggers ----------

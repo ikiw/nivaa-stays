@@ -4,13 +4,39 @@ The `app-script.js` here is a **mirror** of the Apps Script project bound to the
 
 ## What it does
 
-- `doGet(e)` — serves three things based on query params:
+- `doGet(e)` — serves multiple read endpoints:
   - `?lookup={phone}-{ymd}` → JSON booking lookup (used by `checkin.html`)
+  - `?hub={phone}-{ymd}` → aggregated guest hub data (booking + orders + rentals + add-ons + totals)
   - `?feed=availability&room=1|2` → iCal feed for Airbnb sync (planned)
-- `doPost(e)` — accepts the self check-in form submission, writes to the sheet, files the ID upload to Drive
+- `doPost(e)` — accepts:
+  - Self check-in form submission (default behavior — writes Check-ins tab, files ID upload)
+  - `?action=order` → guest hub food-order capture, writes to **Orders** tab
+  - `?action=rental` → guest hub bike-rental capture, writes to **Bike Rentals** tab
 - `dailyDigest()` — emails the host a daily check-in / check-out / review reminder summary
 - `installDailyTrigger()` — one-off helper that schedules `dailyDigest()` at 9 AM IST
 - `listTriggers()` — lists all installed triggers (debug helper)
+
+## Sheet tabs
+
+Auto-created on first write — don't manually create unless you want a header tweak first:
+
+| Tab | Created by | Columns |
+|---|---|---|
+| `Bookings` (or any monthly tab) | Manual | Name, Mobile, Check-In, Check-Out, Room Number, Platform, Online/Offline, Number of guests, Amount, Paid To Manju (existing) |
+| `Check-ins` | First self check-in | Submitted At, Mode, Booking ID, Name, Phone, Email, Check-In, Check-Out, Room, Source, Num Guests, ID Type, ID File URL, Arrival Time, Special Requests |
+| `Orders` | First food-order POST | Submitted At, Booking ID, Items (JSON), Item Count, Subtotal, Status, Notes |
+| `Bike Rentals` | First rental POST | Submitted At, Booking ID, Type, Start Date, End Date, Days, Rate (₹/day), Subtotal, Status, Notes |
+| `Add-ons` | **Manual host entry only** — create with these headers when you have a manual add-on to log | Submitted At, Booking ID, Type, Description, Amount, Notes |
+
+`Booking ID` is the join key everywhere — format `{phoneDigits}-{checkin-ymd}` (e.g., `9620364554-2026-05-15`).
+
+## Bike rental rates (duplicated config)
+
+Rates live in **two places** — keep them in sync:
+1. `BIKE_RATES` constant at the top of the guest-hub section in `app-script.js`
+2. `bikeRental` block in `site/pricing.json`
+
+Currently: Vespa ₹600/day, Ninja ₹1,500/day.
 
 ## Deploying source changes
 
