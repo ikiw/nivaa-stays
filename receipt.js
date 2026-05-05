@@ -24,6 +24,7 @@ const state = {
   bookingId: '',
   platform: 'Direct',
   notes: '',
+  sheetAmount: 0,   // final price from the bookings sheet (used to auto-calc discount)
   isAdmin: false,
   root: null
 };
@@ -111,6 +112,7 @@ function parseUrlState() {
   state.bookingId = p.get('bid') || '';
   state.platform = p.get('platform') || 'Direct';
   state.notes = p.get('notes') || '';
+  state.sheetAmount = parseInt(p.get('amt') || '0', 10);
   state.isAdmin = p.get('mode') === 'admin';
 }
 
@@ -637,6 +639,22 @@ async function init() {
   }
 
   parseUrlState();
+
+  // Auto-calculate discount from sheet amount: if the bookings sheet total is
+  // lower than the computed subtotal, the difference is applied as a ₹ discount
+  // so the receipt total matches the sheet exactly.
+  if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
+    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
+    const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+    const studios = state.studios || 1;
+    const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
+    const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
+    if (subtotal > state.sheetAmount) {
+      state.discountType = 'amt';
+      state.discountValue = subtotal - state.sheetAmount;
+    }
+  }
+
   render();
   root.addEventListener('click', onClick);
   root.addEventListener('change', onInput);

@@ -50,6 +50,9 @@ function receiptUrl(b) {
   const advRaw = String(b.advance || b.paid || '').replace(/[^0-9.]/g, '');
   const adv = parseInt(advRaw) || 0;
   if (adv > 0) p.set('adv', String(adv));
+  const amtRaw = String(b.amount || '').replace(/[^0-9.]/g, '');
+  const amt = parseInt(amtRaw) || 0;
+  if (amt > 0) p.set('amt', String(amt));
   return 'receipt.html?' + p.toString();
 }
 
