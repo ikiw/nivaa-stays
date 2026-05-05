@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="styles.css">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="bg-cream">
 
@@ -22,9 +23,11 @@
       </div>
     </a>
     <nav class="flex items-center gap-1">
-      <a href="booking.html?mode=admin" class="nav-link hidden md:inline">Quote builder</a>
-      <a href="receipt.html?mode=admin" class="nav-link hidden md:inline">Receipt</a>
-      <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2">Refresh</button>
+      <a href="booking.html" class="nav-link hidden md:inline">Quote builder</a>
+      <a href="receipt.html" class="nav-link hidden md:inline">Receipt</a>
+      <span id="admin-user-chip" class="hidden md:inline text-white/80 text-xs px-2"></span>
+      <button id="logout-btn" class="nav-link hidden">Logout</button>
+      <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2 hidden">Refresh</button>
     </nav>
   </div>
 </header>
@@ -35,12 +38,22 @@
       <div class="eyebrow">Today's Ops</div>
       <div class="divider-gold divider-center"></div>
       <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Bookings dashboard</h1>
-      <p class="text-[color:var(--brand-muted)] text-sm" id="date-line">Loading…</p>
+      <p class="text-[color:var(--brand-muted)] text-sm" id="date-line"></p>
     </div>
 
-    <div id="admin-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
+    <!-- Login gate (shown when not signed in as admin) -->
+    <div id="admin-login" class="hidden bg-cream rounded-2xl p-8 text-center max-w-md mx-auto" style="border:1px dashed var(--brand-gold);">
+      <div class="serif text-2xl text-teal mb-2">Admin sign-in</div>
+      <p class="text-[color:var(--brand-muted)] text-sm mb-6">Sign in with the Nivaa Stays Google account to view today's bookings and add charges to a guest's hub.</p>
+      <div id="g-signin-btn" class="flex justify-center"></div>
+      <p id="login-error" class="text-xs mt-4" style="color:#c45a3a; min-height:1em;"></p>
+    </div>
 
-    <div id="admin-content"></div>
+    <!-- Dashboard (shown when signed in as admin) -->
+    <div id="admin-dashboard" class="hidden">
+      <div id="admin-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
+      <div id="admin-content"></div>
+    </div>
   </div>
 </section>
 
@@ -49,6 +62,7 @@
 </footer>
 
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script src="auth.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

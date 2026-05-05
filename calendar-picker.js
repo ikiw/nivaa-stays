@@ -671,7 +671,12 @@ function parseUrlState() {
     const dv = parseFloat(p.get('disc') || '0'); if (dv > 0) state.discountValue = dv;
   }
 
-  state.isAdmin = p.get('mode') === 'admin';
+  // Admin mode is unlocked either by the URL fallback (?mode=admin) or by
+  // a signed-in admin via Google Sign-In. The latter is the preferred path;
+  // the URL flag stays as a manual override during transition.
+  const urlAdmin = p.get('mode') === 'admin';
+  const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
+  state.isAdmin = urlAdmin || authAdmin;
 }
 
 function buildShareUrl(includeAdmin = false) {
@@ -747,6 +752,15 @@ async function init() {
   root.addEventListener('click', onClick);
   root.addEventListener('change', onChange);
   root.addEventListener('input', onChange);
+
+  // Re-render when admin signs in/out so the discount panel appears/disappears
+  window.addEventListener('nivaa-auth-change', () => {
+    const p = new URLSearchParams(location.search);
+    const urlAdmin = p.get('mode') === 'admin';
+    const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
+    state.isAdmin = urlAdmin || authAdmin;
+    render();
+  });
 }
 
 if (document.readyState === 'loading') {

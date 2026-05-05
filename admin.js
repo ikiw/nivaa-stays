@@ -125,7 +125,33 @@ function render(data) {
   ].join('');
 }
 
-async function init() {
+function showLoginView(errorMsg) {
+  document.getElementById('admin-dashboard').classList.add('hidden');
+  document.getElementById('admin-login').classList.remove('hidden');
+  document.getElementById('refresh-btn').classList.add('hidden');
+  document.getElementById('logout-btn').classList.add('hidden');
+  document.getElementById('admin-user-chip').textContent = '';
+  document.getElementById('admin-user-chip').classList.add('hidden');
+  document.getElementById('date-line').textContent = '';
+  const err = document.getElementById('login-error');
+  if (err) err.textContent = errorMsg || '';
+  if (window.NivaaAuth) window.NivaaAuth.renderSignInButton('g-signin-btn');
+}
+
+function showDashboardView() {
+  document.getElementById('admin-login').classList.add('hidden');
+  document.getElementById('admin-dashboard').classList.remove('hidden');
+  document.getElementById('refresh-btn').classList.remove('hidden');
+  document.getElementById('logout-btn').classList.remove('hidden');
+  const chip = document.getElementById('admin-user-chip');
+  if (chip && window.NivaaAuth) {
+    const name = window.NivaaAuth.getName() || window.NivaaAuth.getEmail();
+    chip.textContent = '· ' + name;
+    chip.classList.remove('hidden');
+  }
+}
+
+async function loadDashboard() {
   const root = document.getElementById('admin-content');
   root.innerHTML = '<div class="adm-loading">Loading bookings…</div>';
   try {
@@ -136,7 +162,23 @@ async function init() {
   }
 }
 
-document.getElementById('refresh-btn').addEventListener('click', init);
+function init() {
+  if (window.NivaaAuth && window.NivaaAuth.isAdmin()) {
+    showDashboardView();
+    loadDashboard();
+  } else if (window.NivaaAuth && window.NivaaAuth.getEmail()) {
+    showLoginView('That account isn’t the Nivaa Stays admin. Sign in with ' + window.NivaaAuth.ADMIN_EMAIL + '.');
+  } else {
+    showLoginView('');
+  }
+}
+
+window.addEventListener('nivaa-auth-change', init);
+
+document.getElementById('refresh-btn').addEventListener('click', loadDashboard);
+document.getElementById('logout-btn').addEventListener('click', () => {
+  if (window.NivaaAuth) window.NivaaAuth.logout();
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
