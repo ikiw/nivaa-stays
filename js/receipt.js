@@ -634,7 +634,7 @@ async function init() {
   state.root = root;
 
   try {
-    const res = await fetch('pricing.json', { cache: 'no-cache' });
+    const res = await fetch('data/pricing.json', { cache: 'no-cache' });
     state.config = await res.json();
   } catch (err) {
     root.innerHTML = '<div style="padding:1rem;color:#900;">Could not load pricing config.</div>';

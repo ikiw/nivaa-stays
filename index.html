@@ -47,7 +47,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <!-- Styles -->
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="css/styles.css">
 
 <!-- JSON-LD Schema -->
 <script type="application/ld+json">
@@ -1153,10 +1153,10 @@
   });
 </script>
 <script type="module">
-  import { rateForDate, formatINR } from './pricing.js';
+  import { rateForDate, formatINR } from './js/pricing.js';
   (async () => {
     try {
-      const cfg = await fetch('pricing.json', { cache: 'no-cache' }).then(r => r.json());
+      const cfg = await fetch('data/pricing.json', { cache: 'no-cache' }).then(r => r.json());
       const t = new Date();
       const ymd = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
       const r = rateForDate(ymd, cfg);

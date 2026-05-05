@@ -97,7 +97,7 @@ h1, h2, h3, h4, .serif {
 .hero::before {
   content: '';
   position: absolute; inset: 0;
-  background-image: url('images/exterior-entrance-arch.avif');
+  background-image: url('../images/exterior-entrance-arch.avif');
   background-size: cover;
   background-position: center;
   filter: brightness(0.55);
