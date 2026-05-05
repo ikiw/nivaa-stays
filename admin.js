@@ -35,10 +35,29 @@ async function fetchActive() {
   return res.json();
 }
 
+function receiptUrl(b) {
+  const p = new URLSearchParams();
+  p.set('mode', 'admin');
+  if (b.checkin) p.set('ci', b.checkin);
+  if (b.checkout) p.set('co', b.checkout);
+  if (b.name) p.set('name', b.name);
+  if (b.phone) p.set('mobile', b.phone);
+  if (b.bookingId) p.set('bid', b.bookingId);
+  const platform = b.platform || b.onlineOffline || '';
+  if (platform && platform !== 'Direct') p.set('platform', platform);
+  const guests = parseInt(b.num_guests) || 0;
+  if (guests > 0) p.set('guests', String(guests));
+  const advRaw = String(b.advance || b.paid || '').replace(/[^0-9.]/g, '');
+  const adv = parseInt(advRaw) || 0;
+  if (adv > 0) p.set('adv', String(adv));
+  return 'receipt.html?' + p.toString();
+}
+
 function bookingRow(b) {
-  const hubUrl   = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
-  const orderUrl = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
-  const waUrl    = `https://wa.me/91${b.phone}`;
+  const hubUrl     = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const orderUrl   = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const rcptUrl    = receiptUrl(b);
+  const waUrl      = `https://wa.me/91${b.phone}`;
   return `
     <div class="adm-row">
       <div class="adm-row-main">
@@ -57,6 +76,7 @@ function bookingRow(b) {
       <div class="adm-row-actions">
         <a href="${hubUrl}" class="btn-outline-teal adm-action-btn">Open hub</a>
         <a href="${orderUrl}" class="btn-outline-teal adm-action-btn">Add food</a>
+        <a href="${rcptUrl}" class="btn-outline-teal adm-action-btn">Receipt</a>
       </div>
     </div>
   `;

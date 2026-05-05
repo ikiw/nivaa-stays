@@ -55,7 +55,8 @@
       platform: row[idx('Platform')] || '',                                                                                                                  
       onlineOffline: row[idx('Online/Offline')] || '',
       num_guests: row[idx('Number of guests')] || '',                                                                                                        
-      amount: row[idx('Amount')] || '',                        
+      amount: row[idx('Amount')] || '',
+      advance: row[idx('Advance')] || '',
       paid: row[idx('Paid To Manju')] || ''                                                                                                                  
     };                                                                                                                                                       
   }
@@ -338,7 +339,8 @@
     }));
 
     const stayBase    = Number(booking.amount) || 0;
-    const advancePaid = Number(booking.paid)   || 0;
+    const advRaw      = String(booking.advance || booking.paid || '').replace(/[^0-9.]/g, '');
+    const advancePaid = Number(advRaw) || 0;
     const foodTotal   = orders.reduce((a, o) => a + o.subtotal, 0);
     const rentalTotal = rentals.reduce((a, r) => a + r.subtotal, 0);
     const addonTotal  = addons.reduce((a, x) => a + x.amount, 0);
