@@ -113,7 +113,10 @@ function parseUrlState() {
   state.platform = p.get('platform') || 'Direct';
   state.notes = p.get('notes') || '';
   state.sheetAmount = parseInt(p.get('amt') || '0', 10);
-  state.isAdmin = p.get('mode') === 'admin';
+  // Admin mode: URL flag (?mode=admin) OR a signed-in admin via Google Sign-In.
+  const urlAdmin = p.get('mode') === 'admin';
+  const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
+  state.isAdmin = urlAdmin || authAdmin;
 }
 
 function buildShareUrl(includeAdmin = false) {
@@ -659,6 +662,15 @@ async function init() {
   root.addEventListener('click', onClick);
   root.addEventListener('change', onInput);
   root.addEventListener('input', onInput);
+
+  // Re-render on Google Sign-In/out so admin form appears/disappears
+  window.addEventListener('nivaa-auth-change', () => {
+    const p = new URLSearchParams(location.search);
+    const urlAdmin = p.get('mode') === 'admin';
+    const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
+    state.isAdmin = urlAdmin || authAdmin;
+    render();
+  });
 }
 
 if (document.readyState === 'loading') {
