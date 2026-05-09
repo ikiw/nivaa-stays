@@ -77,6 +77,174 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  /* Lookup skeleton — mirrors the .booking-card layout so the swap is seamless */
+  .checkin-skeleton {
+    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-teal-soft) 100%);
+    border: 1px dashed var(--brand-gold);
+    border-radius: 16px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1rem;
+  }
+  .ck-sk {
+    display: block;
+    background: linear-gradient(90deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.22) 50%, rgba(255,255,255,0.10) 100%);
+    background-size: 200% 100%;
+    border-radius: 6px;
+    animation: ck-shimmer 1.4s ease-in-out infinite;
+  }
+  .ck-sk-eyebrow { width: 90px; height: 12px; margin-bottom: 0.7rem; }
+  .ck-sk-greet { width: 70%; max-width: 280px; height: 26px; margin-bottom: 1.25rem; }
+  .ck-sk-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.85rem;
+  }
+  .ck-sk-grid > div {
+    background: rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 0.7rem 0.85rem;
+  }
+  .ck-sk-lbl { width: 55%; height: 9px; margin-bottom: 0.5rem; opacity: 0.7; }
+  .ck-sk-val { width: 80%; height: 14px; }
+  @keyframes ck-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ck-sk { animation: none; }
+  }
+  .loading-status {
+    text-align: center;
+    margin: 0 0 1.25rem;
+    transition: opacity 0.4s ease;
+    line-height: 1.35;
+    min-height: 2.4em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .loading-status.fade-out { opacity: 0; }
+
+  /* Warm Playfair (welcome / closing) */
+  .loading-status.ls-warm {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    color: var(--brand-teal);
+  }
+  /* Italic gold sublabel */
+  .loading-status.ls-italic {
+    font-family: 'Inter', sans-serif;
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--brand-gold);
+    letter-spacing: 0.02em;
+  }
+  /* Cream pill — gentle muted update */
+  .loading-status.ls-pill-cream > span,
+  .loading-status.ls-pill-cream {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--brand-teal-dark);
+  }
+  .loading-status.ls-pill-cream::before {
+    content: '';
+    background: var(--brand-cream);
+    padding: 0.55rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid #e8e3d2;
+    color: var(--brand-teal-dark);
+  }
+  /* Use a wrapper-style trick: apply pill via box on the element */
+  .loading-status.ls-pill-cream {
+    background: var(--brand-cream);
+    border: 1px solid #e8e3d2;
+    border-radius: 999px;
+    padding: 0.6rem 1.3rem;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .loading-status.ls-pill-cream::before { content: none; }
+  /* Light italic — subtle status */
+  .loading-status.ls-light {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--brand-muted);
+  }
+  /* Gold-gradient text */
+  .loading-status.ls-gold-grad {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(90deg, var(--brand-gold) 0%, #8b6f12 50%, var(--brand-gold) 100%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: ls-gold-shift 2.4s ease-in-out infinite;
+  }
+  @keyframes ls-gold-shift {
+    0%,100% { background-position: 0% 0; }
+    50%     { background-position: 100% 0; }
+  }
+  /* Serif italic gold — local flavor */
+  .loading-status.ls-serif-gold {
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.35rem;
+    color: var(--brand-gold);
+  }
+  /* Uppercase tracking — invitation tone */
+  .loading-status.ls-uppercase {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--brand-teal);
+  }
+  /* Solid teal pill — punchier message */
+  .loading-status.ls-pill-teal {
+    background: var(--brand-teal);
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.98rem;
+    padding: 0.55rem 1.3rem;
+    border-radius: 999px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* Dashed-gold pill — warm hospitality */
+  .loading-status.ls-pill-dashed {
+    background: #fff;
+    color: var(--brand-teal-dark);
+    border: 1px dashed var(--brand-gold);
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 1.1rem;
+    padding: 0.55rem 1.3rem;
+    border-radius: 999px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  @media (max-width: 600px) {
+    .loading-status.ls-warm,
+    .loading-status.ls-gold-grad { font-size: 1.15rem; }
+    .loading-status.ls-serif-gold,
+    .loading-status.ls-pill-dashed { font-size: 1rem; }
+    .loading-status.ls-italic,
+    .loading-status.ls-pill-cream,
+    .loading-status.ls-pill-teal,
+    .loading-status.ls-light { font-size: 0.92rem; }
+    .loading-status.ls-uppercase { font-size: 0.82rem; letter-spacing: 0.15em; }
+  }
+
   .overlay {
     position: fixed; inset: 0; z-index: 200;
     background: rgba(8, 38, 35, 0.86);
@@ -147,10 +315,19 @@
       <p class="text-[color:var(--brand-muted)] leading-relaxed">A quick check-in (under 2 minutes) saves time when you arrive. ID upload is required as per Indian hotel regulations and is kept confidential.</p>
     </div>
 
-    <!-- Loading state -->
-    <div id="state-loading" class="hidden text-center py-8">
-      <div class="loader"></div>
-      <p class="text-[color:var(--brand-muted)] text-sm">Looking up your booking…</p>
+    <!-- Loading state — friendly onboarding text above a skeleton booking card -->
+    <div id="state-loading" class="hidden">
+      <p id="loading-status" class="loading-status">Welcome to Nivaa Stays — let's get you checked in 👋</p>
+      <div class="checkin-skeleton" aria-busy="true" aria-label="Fetching your booking">
+        <span class="ck-sk ck-sk-eyebrow"></span>
+        <span class="ck-sk ck-sk-greet"></span>
+        <div class="ck-sk-grid">
+          <div><span class="ck-sk ck-sk-lbl"></span><span class="ck-sk ck-sk-val"></span></div>
+          <div><span class="ck-sk ck-sk-lbl"></span><span class="ck-sk ck-sk-val"></span></div>
+          <div><span class="ck-sk ck-sk-lbl"></span><span class="ck-sk ck-sk-val"></span></div>
+          <div><span class="ck-sk ck-sk-lbl"></span><span class="ck-sk ck-sk-val"></span></div>
+        </div>
+      </div>
     </div>
 
     <!-- Pre-filled booking summary (lookup mode) -->
@@ -382,17 +559,53 @@
     }
     $('state-loading').classList.remove('hidden');
     $('checkin-form').classList.add('hidden');
+
+    // Cycle friendly onboarding messages while we wait so guests perceive forward motion
+    const messages = [
+      { text: 'Welcome to Nivaa Stays — let\'s get you checked in 👋', style: 'ls-warm' },
+      { text: 'Looking up your booking…',                              style: 'ls-italic' },
+      { text: 'Your room is being prepared with fresh linen 🛏️',     style: 'ls-pill-cream' },
+      { text: 'Wi-Fi is up, AC is set, the kettle\'s ready ☕',        style: 'ls-light' },
+      { text: 'Your bathtub bathroom is waiting for that long soak 🛁', style: 'ls-gold-grad' },
+      { text: 'Pondicherry\'s calling — beaches, French Quarter, Auroville 🌊', style: 'ls-serif-gold' },
+      { text: 'Hungry? Home-cooked meals are just a tap away 🍽️',    style: 'ls-uppercase' },
+      { text: 'The yellow Vespa is parked and waiting to be ridden 🛵', style: 'ls-pill-teal' },
+      { text: 'Manjula and family are looking forward to hosting you 🙏', style: 'ls-pill-dashed' },
+      { text: 'Almost there — putting the final touches ✨',           style: 'ls-warm' }
+    ];
+    const STYLE_CLASSES = ['ls-warm','ls-italic','ls-pill-cream','ls-light','ls-gold-grad','ls-serif-gold','ls-uppercase','ls-pill-teal','ls-pill-dashed'];
+    const statusEl = $('loading-status');
+    function applyMessage(m) {
+      STYLE_CLASSES.forEach(c => statusEl.classList.remove(c));
+      statusEl.classList.add(m.style);
+      statusEl.textContent = m.text;
+    }
+    applyMessage(messages[0]);
+    let mi = 0;
+    const cycleId = setInterval(() => {
+      mi = (mi + 1) % messages.length;
+      statusEl.classList.add('fade-out');
+      setTimeout(() => {
+        applyMessage(messages[mi]);
+        statusEl.classList.remove('fade-out');
+      }, 400);
+    }, 1800);
+
+    const finish = () => {
+      clearInterval(cycleId);
+      $('state-loading').classList.add('hidden');
+      $('checkin-form').classList.remove('hidden');
+    };
+
     fetch(`${APPS_SCRIPT_URL}?lookup=${encodeURIComponent(bookingId)}`)
       .then(r => r.json())
       .then(data => {
-        $('state-loading').classList.add('hidden');
-        $('checkin-form').classList.remove('hidden');
+        finish();
         if (data && data.found) renderLookup(data);
         else renderWalkin();
       })
       .catch(() => {
-        $('state-loading').classList.add('hidden');
-        $('checkin-form').classList.remove('hidden');
+        finish();
         renderWalkin();
       });
   }
