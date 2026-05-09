@@ -1333,6 +1333,77 @@ footer a:hover { color: var(--brand-gold-soft); }
   color: var(--brand-muted);
   font-size: 0.92rem;
 }
+
+/* Admin dashboard loading card with cycling tip messages */
+.adm-loading-card {
+  background: #fff;
+  border: 1px dashed var(--brand-gold);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+.adm-loading-spinner {
+  width: 28px; height: 28px;
+  border: 3px solid #e8ebe8;
+  border-top-color: var(--brand-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.adm-loading-msg {
+  min-height: 2.4em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.35s ease;
+  line-height: 1.35;
+}
+.adm-loading-msg.fade-out { opacity: 0; }
+.adm-loading-msg.als-warm {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+  color: var(--brand-teal);
+}
+.adm-loading-msg.als-tip {
+  background: var(--brand-cream);
+  border: 1px solid #e8e3d2;
+  border-radius: 999px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.95rem;
+  color: var(--brand-teal-dark);
+  font-family: 'Inter', sans-serif;
+}
+.adm-loading-msg.als-reminder {
+  font-family: 'Playfair Display', serif;
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--brand-gold);
+}
+.adm-loading-msg.als-soft {
+  font-family: 'Inter', sans-serif;
+  font-style: italic;
+  font-size: 1rem;
+  color: var(--brand-muted);
+}
+.adm-loading-msg.als-uppercase {
+  font-family: 'Inter', sans-serif;
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--brand-teal);
+}
+@media (max-width: 600px) {
+  .adm-loading-msg.als-warm { font-size: 1.1rem; }
+  .adm-loading-msg.als-reminder { font-size: 1rem; }
+  .adm-loading-msg.als-tip,
+  .adm-loading-msg.als-soft { font-size: 0.9rem; }
+  .adm-loading-msg.als-uppercase { font-size: 0.78rem; letter-spacing: 0.12em; }
+}
 .adm-stat {
   background: #fff;
   border: 1px solid #e8ebe8;

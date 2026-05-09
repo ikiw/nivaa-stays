@@ -60,6 +60,7 @@ function bookingRow(b) {
   const hubUrl     = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
   const orderUrl   = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
   const rcptUrl    = receiptUrl(b);
+  const invoiceUrl = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin&print=invoice`;
   const waUrl      = `https://wa.me/91${b.phone}`;
   return `
     <div class="adm-row">
@@ -80,6 +81,7 @@ function bookingRow(b) {
         <a href="${hubUrl}" class="btn-outline-teal adm-action-btn">Open hub</a>
         <a href="${orderUrl}" class="btn-outline-teal adm-action-btn">Add food</a>
         <a href="${rcptUrl}" class="btn-outline-teal adm-action-btn">Receipt</a>
+        <a href="${invoiceUrl}" class="btn-outline-teal adm-action-btn">Invoice</a>
       </div>
     </div>
   `;
@@ -151,13 +153,47 @@ function showDashboardView() {
   }
 }
 
+function startAdminLoadingCycle(rootEl) {
+  const messages = [
+    { text: 'Loading today\'s bookings…',                                      style: 'als-warm' },
+    { text: 'Tip: tap "Open hub" to log food or bike rentals for any guest 🛵', style: 'als-tip' },
+    { text: 'Reminder: send the check-in link to today\'s arrivals 📲',         style: 'als-reminder' },
+    { text: 'Yesterday\'s checkouts deserve a quick review nudge 🙏',           style: 'als-soft' },
+    { text: 'Verify ID and snap the welcome photo at arrival 📸',              style: 'als-uppercase' },
+    { text: 'Almost there — putting today together ☕',                         style: 'als-warm' }
+  ];
+  const STYLES = ['als-warm','als-tip','als-reminder','als-soft','als-uppercase'];
+  rootEl.innerHTML = `
+    <div class="adm-loading-card">
+      <div class="adm-loading-spinner"></div>
+      <div class="adm-loading-msg" id="adm-loading-msg"></div>
+    </div>`;
+  const el = rootEl.querySelector('#adm-loading-msg');
+  function apply(m) {
+    STYLES.forEach(c => el.classList.remove(c));
+    el.classList.add(m.style);
+    el.textContent = m.text;
+  }
+  apply(messages[0]);
+  let i = 0;
+  const id = setInterval(() => {
+    i++;
+    if (i >= messages.length) { clearInterval(id); return; }
+    el.classList.add('fade-out');
+    setTimeout(() => { apply(messages[i]); el.classList.remove('fade-out'); }, 350);
+  }, 1800);
+  return id;
+}
+
 async function loadDashboard() {
   const root = document.getElementById('admin-content');
-  root.innerHTML = '<div class="adm-loading">Loading bookings…</div>';
+  const cycleId = startAdminLoadingCycle(root);
   try {
     const data = await fetchActive();
+    clearInterval(cycleId);
     render(data);
   } catch (err) {
+    clearInterval(cycleId);
     root.innerHTML = '<div class="adm-empty">Could not load bookings. Refresh the page or check Apps Script deployment.</div>';
   }
 }

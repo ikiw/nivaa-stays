@@ -105,8 +105,8 @@ function renderSignInButton(containerId, options) {
     google.accounts.id.initialize({
       client_id: CLIENT_ID,
       callback: handleCredentialResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true
+      auto_select: true,             // silently re-issue a token if Google session is alive
+      cancel_on_tap_outside: false   // keep One Tap visible until the user acts
     });
     const container = document.getElementById(containerId);
     if (container) {
@@ -118,6 +118,10 @@ function renderSignInButton(containerId, options) {
         shape: 'rectangular'
       }, options || {}));
     }
+    // Auto-prompt One Tap on load. When the user previously signed in and
+    // Google's session is still alive, this resolves silently with a fresh
+    // ID token (no popup). Otherwise the One Tap card appears top-right.
+    try { google.accounts.id.prompt(); } catch (_) {}
   });
 }
 

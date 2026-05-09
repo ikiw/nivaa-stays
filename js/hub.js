@@ -444,6 +444,13 @@ async function init() {
   try {
     const data = await loadHub(id);
     renderHub(data);
+    // Deep-link auto-action: ?print=invoice → trigger invoice download
+    // immediately after data lands. Used by the Admin dashboard's Invoice
+    // button so admin doesn't have to scroll + click.
+    const printAction = new URLSearchParams(location.search).get('print');
+    if (printAction === 'invoice' && data && data.found) {
+      setTimeout(printInvoice, 250);
+    }
   } catch (err) {
     if (container) {
       container.innerHTML = `
