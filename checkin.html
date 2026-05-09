@@ -33,6 +33,34 @@
   .form-textarea { min-height: 90px; resize: vertical; }
   .form-help { font-size: 0.75rem; color: var(--brand-muted); margin-top: 0.3rem; }
   .form-required::after { content: ' *'; color: #c0392b; }
+  .arrival-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+  .arrival-pill {
+    background: #fff;
+    border: 1px solid #d8dedb;
+    color: var(--brand-muted);
+    border-radius: 999px;
+    padding: 0.42rem 0.95rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .arrival-pill:hover {
+    border-color: var(--brand-teal);
+    color: var(--brand-teal);
+  }
+  .arrival-pill.active {
+    background: var(--brand-teal);
+    border-color: var(--brand-teal);
+    color: #fff;
+  }
+  .arrival-input { max-width: 200px; }
   .booking-card {
     background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-teal-soft) 100%);
     color: #fff; border-radius: 16px; padding: 1.5rem 1.75rem; margin-bottom: 1.5rem;
@@ -168,27 +196,16 @@
           </div>
         </div>
 
-        <div class="grid sm:grid-cols-2 gap-5">
-          <div>
-            <label class="form-label form-required" for="room">Room</label>
-            <select class="form-select" id="room" name="room" required>
-              <option value="">Select…</option>
-              <option value="Room 1">Room 1 (Ground)</option>
-              <option value="Room 2">Room 2 (1st Floor)</option>
-              <option value="Full House">Full House</option>
-            </select>
-          </div>
-          <div>
-            <label class="form-label" for="source">Booking Source</label>
-            <select class="form-select" id="source" name="source">
-              <option value="">Select…</option>
-              <option value="Direct">Direct (Walk-in / WhatsApp / Call)</option>
-              <option value="Airbnb">Airbnb</option>
-              <option value="Booking.com">Booking.com</option>
-              <option value="MakeMyTrip">MakeMyTrip</option>
-              <option value="Agoda">Agoda</option>
-            </select>
-          </div>
+        <div>
+          <label class="form-label" for="source">Booking Source</label>
+          <select class="form-select" id="source" name="source">
+            <option value="">Select…</option>
+            <option value="Direct">Direct (Walk-in / WhatsApp / Call)</option>
+            <option value="Airbnb">Airbnb</option>
+            <option value="Booking.com">Booking.com</option>
+            <option value="MakeMyTrip">MakeMyTrip</option>
+            <option value="Agoda">Agoda</option>
+          </select>
         </div>
 
       </div>
@@ -241,8 +258,14 @@
 
       <div>
         <label class="form-label" for="arrival_time">Expected Arrival Time</label>
-        <input class="form-input" type="time" id="arrival_time" name="arrival_time">
-        <div class="form-help">Check-in is from 12 PM</div>
+        <div class="arrival-presets" role="group" aria-label="Quick time presets">
+          <button type="button" class="arrival-pill" data-time="12:00">Around noon</button>
+          <button type="button" class="arrival-pill" data-time="15:00">Afternoon</button>
+          <button type="button" class="arrival-pill" data-time="18:00">Evening</button>
+          <button type="button" class="arrival-pill" data-time="22:00">Late night</button>
+        </div>
+        <input class="form-input arrival-input" type="time" id="arrival_time" name="arrival_time" value="12:00" step="900">
+        <div class="form-help">Check-in is from 12 PM. Tap a preset above or pick a custom time.</div>
       </div>
 
       <div>
@@ -336,7 +359,7 @@
     if (b.num_guests) $('num_guests').value = String(b.num_guests);
 
     // Walk-in fields are hidden but their `required` attrs would block submit — strip them
-    ['guest_name', 'phone', 'checkin_date', 'checkout_date', 'room'].forEach(id => {
+    ['guest_name', 'phone', 'checkin_date', 'checkout_date'].forEach(id => {
       const el = $(id);
       if (el) el.removeAttribute('required');
     });
@@ -439,6 +462,23 @@
   retryBtn.addEventListener('click', () => {
     hideOverlay(errorOverlay);
   });
+
+  // Arrival time preset pills — tap to set the time input + highlight active pill
+  const arrivalInput = document.getElementById('arrival_time');
+  const arrivalPills = document.querySelectorAll('.arrival-pill');
+  function syncArrivalActive() {
+    arrivalPills.forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-time') === arrivalInput.value);
+    });
+  }
+  arrivalPills.forEach(p => {
+    p.addEventListener('click', () => {
+      arrivalInput.value = p.getAttribute('data-time');
+      syncArrivalActive();
+    });
+  });
+  arrivalInput.addEventListener('input', syncArrivalActive);
+  syncArrivalActive();
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
