@@ -18,9 +18,308 @@
 <meta property="og:title" content="Birthday & Anniversary Stay in Pondicherry – Nivaa Stays">
 <meta property="og:image" content="https://nivaastays.com/images/celebration-birthday-2.jpg">
 <link rel="icon" type="image/png" href="assets/logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700;800&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="css/styles.css">
+<style>
+  :root { --rose-blush: #F4D6CB; --rose-deep: #C97A6A; --rose-soft: #FBE9E2; }
+
+  /* Decorative hero override — adds rose-tinted gradient + sparkles + confetti */
+  .celeb-hero {
+    position: relative;
+    min-height: 70vh;
+    display: flex;
+    align-items: center;
+    color: #fff;
+    overflow: hidden;
+  }
+  .celeb-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image: url('images/celebration-birthday-2.jpg');
+    background-size: cover;
+    background-position: center;
+    filter: brightness(0.55);
+    z-index: 0;
+  }
+  .celeb-hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse at top right, rgba(201,122,106,0.35) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom left, rgba(8,38,35,0.7) 0%, rgba(8,38,35,0.95) 100%);
+    z-index: 1;
+  }
+  .celeb-hero > * { position: relative; z-index: 2; }
+
+  /* Floating confetti sparkles */
+  .confetti {
+    position: absolute; inset: 0; pointer-events: none; z-index: 2;
+    overflow: hidden;
+  }
+  .confetti span {
+    position: absolute;
+    display: block;
+    color: var(--brand-gold);
+    font-size: 14px;
+    opacity: 0;
+    animation: confetti-drift 7s ease-in-out infinite;
+  }
+  .confetti span:nth-child(1)  { left: 8%;  top: 90%; animation-delay: 0s;   color: var(--brand-gold); }
+  .confetti span:nth-child(2)  { left: 22%; top: 95%; animation-delay: 1.2s; color: var(--rose-blush); font-size: 16px; }
+  .confetti span:nth-child(3)  { left: 38%; top: 88%; animation-delay: 2.4s; color: #fff; font-size: 11px; }
+  .confetti span:nth-child(4)  { left: 52%; top: 96%; animation-delay: 0.6s; color: var(--brand-gold-soft); }
+  .confetti span:nth-child(5)  { left: 68%; top: 90%; animation-delay: 3.5s; color: var(--rose-blush); font-size: 13px; }
+  .confetti span:nth-child(6)  { left: 82%; top: 92%; animation-delay: 1.8s; color: #fff; }
+  .confetti span:nth-child(7)  { left: 92%; top: 95%; animation-delay: 4.2s; color: var(--brand-gold); font-size: 12px; }
+  .confetti span:nth-child(8)  { left: 15%; top: 85%; animation-delay: 5s;   color: var(--rose-blush); }
+  @keyframes confetti-drift {
+    0%   { transform: translateY(0) rotate(0deg);    opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: translateY(-120vh) rotate(420deg); opacity: 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { .confetti { display: none; } }
+
+  /* Ornamental divider — gold flourish */
+  .flourish {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.7rem;
+    margin: 1.25rem 0 1.75rem;
+  }
+  .flourish::before, .flourish::after {
+    content: ''; flex: 0 0 70px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--brand-gold), transparent);
+  }
+  .flourish-icon {
+    color: var(--brand-gold);
+    font-size: 1.1rem;
+    letter-spacing: 0.4em;
+  }
+
+  /* Hero occasion pills */
+  .celeb-pills {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-top: 2rem;
+  }
+  .celeb-pill {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(6px);
+    color: #fff;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* Occasion cards */
+  .occasion-card {
+    background: #fff;
+    border: 1px solid #f0eae0;
+    border-radius: 16px;
+    padding: 1.5rem 1.4rem;
+    text-align: center;
+    transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .occasion-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--brand-gold), var(--rose-deep), var(--brand-gold));
+    opacity: 0.7;
+  }
+  .occasion-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 32px -14px rgba(201, 122, 106, 0.35);
+    border-color: var(--brand-gold);
+  }
+  .occasion-icon {
+    font-size: 2rem;
+    margin: 0.4rem 0 0.6rem;
+  }
+  .occasion-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    color: var(--brand-teal);
+    margin-bottom: 0.5rem;
+  }
+  .occasion-desc {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    color: var(--brand-muted);
+    font-size: 1rem;
+    line-height: 1.5;
+  }
+
+  /* Photo strip with rotated polaroid frames */
+  .celeb-photo-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 0.5rem 0;
+  }
+  .celeb-photo {
+    background: #fff;
+    padding: 10px 10px 14px;
+    box-shadow: 0 12px 28px -10px rgba(14,32,30,0.22);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    will-change: transform;
+  }
+  .celeb-photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+  }
+  .celeb-photo-cap {
+    display: block;
+    text-align: center;
+    margin-top: 8px;
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--brand-teal);
+  }
+  .celeb-photo:nth-child(1) { transform: rotate(-3deg); }
+  .celeb-photo:nth-child(2) { transform: rotate(1.5deg); margin-top: 1.5rem; }
+  .celeb-photo:nth-child(3) { transform: rotate(-1.5deg); }
+  .celeb-photo:hover {
+    transform: rotate(0) translateY(-4px) scale(1.04);
+    box-shadow: 0 18px 38px -10px rgba(14,32,30,0.28);
+    z-index: 2;
+  }
+  @media (max-width: 720px) {
+    .celeb-photo-strip { grid-template-columns: 1fr; gap: 1.5rem; }
+    .celeb-photo:nth-child(n) { margin-top: 0; }
+    .celeb-photo:nth-child(odd)  { transform: rotate(-1.5deg); }
+    .celeb-photo:nth-child(even) { transform: rotate(1.5deg); }
+  }
+
+  /* Decorative arrangement list */
+  .arrange-list {
+    list-style: none; padding: 0; margin: 0;
+    display: grid; gap: 0.75rem;
+  }
+  .arrange-item {
+    background: linear-gradient(135deg, var(--rose-soft) 0%, #fff 60%);
+    border: 1px solid var(--rose-blush);
+    border-left: 3px solid var(--rose-deep);
+    border-radius: 10px;
+    padding: 0.85rem 1.1rem;
+    color: var(--brand-teal-dark);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 0.8rem;
+  }
+  .arrange-icon {
+    font-size: 1.15rem;
+    flex-shrink: 0;
+    margin-top: -2px;
+  }
+
+  /* How-it-works steps */
+  .step-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .step {
+    text-align: center;
+    padding: 1.2rem 1rem;
+    position: relative;
+  }
+  .step-num {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--brand-teal);
+    color: var(--brand-gold);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.85rem;
+    box-shadow: 0 8px 20px -8px rgba(14,59,53,0.4);
+  }
+  .step-title {
+    font-family: 'Playfair Display', serif;
+    color: var(--brand-teal);
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+  }
+  .step-body {
+    color: var(--brand-muted);
+    font-size: 0.88rem;
+    line-height: 1.55;
+  }
+  @media (max-width: 720px) {
+    .step-row { grid-template-columns: 1fr; gap: 1rem; }
+  }
+
+  /* Testimonial card */
+  .celeb-testimonial {
+    background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-teal-soft) 100%);
+    border: 1px dashed var(--brand-gold);
+    color: #fff;
+    border-radius: 18px;
+    padding: 2rem 1.75rem;
+    text-align: center;
+    position: relative;
+  }
+  .celeb-testimonial::before {
+    content: '“';
+    position: absolute; top: -18px; left: 22px;
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    color: var(--brand-gold);
+    line-height: 1;
+  }
+  .celeb-quote {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1.2rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  .celeb-attr {
+    color: var(--brand-gold);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Sticky bottom CTA on mobile */
+  .celeb-sticky-cta {
+    display: none;
+  }
+  @media (max-width: 720px) {
+    .celeb-sticky-cta {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-top: 1px solid #e8ebe8;
+      box-shadow: 0 -8px 24px -10px rgba(14,59,53,0.25);
+      padding: 0.7rem 0.9rem;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 40;
+    }
+    .celeb-sticky-cta a { flex: 1; justify-content: center; }
+    body.has-sticky-cta { padding-bottom: 70px; }
+  }
+</style>
 </head>
 <body>
 <header class="sticky-nav">
@@ -37,28 +336,154 @@
   </div>
 </header>
 
-<section class="hero" style="min-height: 60vh;">
-  <div class="max-w-5xl mx-auto px-5 pt-24 pb-10 w-full">
-    <div class="eyebrow mb-4">Celebrations · Puducherry</div>
-    <h1 class="serif text-4xl md:text-5xl leading-tight mb-5 max-w-3xl">Make Birthdays, Anniversaries & Surprises Unforgettable</h1>
-    <p class="text-white/85 text-lg max-w-2xl mb-7">Balloon setups, rose-petal beds, bathtub rose baths, cake, and candle-lit dinners — we handle the decorations so you can focus on the moment.</p>
+<!-- HERO -->
+<section class="celeb-hero">
+  <div class="confetti" aria-hidden="true">
+    <span>✦</span><span>❀</span><span>✦</span><span>★</span>
+    <span>❀</span><span>✦</span><span>★</span><span>✦</span>
+  </div>
+  <div class="max-w-5xl mx-auto px-5 pt-24 pb-12 w-full">
+    <div class="eyebrow mb-3" style="color: var(--brand-gold);">Celebrations · Puducherry</div>
+    <h1 class="serif text-4xl md:text-6xl leading-tight mb-2 max-w-3xl" style="font-weight: 700;">Make Birthdays, Anniversaries &amp; Surprises<br><em style="font-family:'Cormorant Garamond', serif; color:var(--brand-gold); font-weight:500;">Unforgettable.</em></h1>
+    <div class="flourish" style="margin-left:0; justify-content:flex-start;">
+      <span class="flourish-icon">✦ ❀ ✦</span>
+    </div>
+    <p class="text-white/85 text-lg max-w-2xl mb-7" style="font-family:'Cormorant Garamond', serif; font-style:italic; font-size:1.25rem;">Balloon setups, rose-petal beds, bathtub rose baths, cake, and candle-lit dinners — we handle the décor so you can focus on the moment.</p>
     <div class="flex flex-wrap gap-3">
       <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20arrange%20a%20celebration%20setup%20at%20Nivaa%20Stays." class="btn-whatsapp" target="_blank" rel="noopener">Plan on WhatsApp</a>
       <a href="tel:+919620364554" class="btn-ghost">Call +91 96203 64554</a>
     </div>
+    <div class="celeb-pills">
+      <span class="celeb-pill">🎂 Birthdays</span>
+      <span class="celeb-pill">💐 Anniversaries</span>
+      <span class="celeb-pill">💍 Proposals</span>
+      <span class="celeb-pill">🎉 Custom themes</span>
+    </div>
   </div>
 </section>
 
+<!-- OCCASIONS -->
+<section class="section" style="padding-top: 4rem;">
+  <div class="max-w-5xl mx-auto px-5">
+    <div class="text-center mb-10">
+      <div class="eyebrow">Occasions we set up</div>
+      <div class="flourish"><span class="flourish-icon">✦ ❀ ✦</span></div>
+      <h2 class="serif text-3xl md:text-4xl text-teal">A space for every kind of joy.</h2>
+    </div>
+    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="occasion-card">
+        <div class="occasion-icon">🎂</div>
+        <div class="occasion-title">Birthday</div>
+        <p class="occasion-desc">Foil names, balloon arches, candles in the room, and a custom cake we'll order for you.</p>
+      </div>
+      <div class="occasion-card">
+        <div class="occasion-icon">💐</div>
+        <div class="occasion-title">Anniversary</div>
+        <p class="occasion-desc">Rose-petal heart on the bed, candles in the room, fresh flowers, and a quiet evening in.</p>
+      </div>
+      <div class="occasion-card">
+        <div class="occasion-icon">💍</div>
+        <div class="occasion-title">Proposal</div>
+        <p class="occasion-desc">Surprise reveal coordinated while your partner is away. Soft music, candles, the moment.</p>
+      </div>
+      <div class="occasion-card">
+        <div class="occasion-icon">🎉</div>
+        <div class="occasion-title">Custom theme</div>
+        <p class="occasion-desc">Tell us your idea — colours, names, props, music. We'll work with our local florist.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<section class="section">
+<!-- PHOTO STRIP -->
+<section class="section" style="padding-top: 0; padding-bottom: 3rem;">
+  <div class="max-w-5xl mx-auto px-5">
+    <div class="text-center mb-10">
+      <div class="eyebrow">Real setups, real guests</div>
+      <div class="flourish"><span class="flourish-icon">✦ ❀ ✦</span></div>
+      <h2 class="serif text-3xl md:text-4xl text-teal">A glimpse of moments past.</h2>
+    </div>
+    <div class="celeb-photo-strip">
+      <a href="gallery.html" class="celeb-photo">
+        <img src="images/celebration-birthday-2.jpg" alt="Birthday balloon setup with rose-petal heart at Nivaa Stays" loading="lazy" decoding="async">
+        <span class="celeb-photo-cap">a birthday surprise</span>
+      </a>
+      <a href="gallery.html" class="celeb-photo">
+        <img src="images/celebration-birthday-1.jpg" alt="Happy Birthday balloons and foil letters in a Nivaa Stays room" loading="lazy" decoding="async">
+        <span class="celeb-photo-cap">happy birthday</span>
+      </a>
+      <a href="gallery.html" class="celeb-photo">
+        <img src="images/celebration-setup.jpg" alt="Rose-petal bathtub setup for an anniversary at Nivaa Stays" loading="lazy" decoding="async">
+        <span class="celeb-photo-cap">an anniversary soak</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT WE ARRANGE -->
+<section class="section bg-cream" style="padding-top: 4rem;">
+  <div class="max-w-5xl mx-auto px-5">
+    <div class="grid lg:grid-cols-5 gap-10 items-start">
+      <div class="lg:col-span-3">
+        <div class="eyebrow">Included setups</div>
+        <div class="flourish" style="margin-left: 0; justify-content: flex-start;"><span class="flourish-icon">✦ ❀ ✦</span></div>
+        <h2 class="serif text-3xl md:text-4xl text-teal mb-6">What we can arrange for you.</h2>
+        <ul class="arrange-list">
+          <li class="arrange-item"><span class="arrange-icon">🎈</span><span>Balloon arches and foil-letter setups (HAPPY BIRTHDAY, name foils)</span></li>
+          <li class="arrange-item"><span class="arrange-icon">🌹</span><span>Rose-petal heart on the bed for anniversaries and proposals</span></li>
+          <li class="arrange-item"><span class="arrange-icon">🛁</span><span>Rose-petal bathtub for a spa-style romantic evening</span></li>
+          <li class="arrange-item"><span class="arrange-icon">🎂</span><span>Custom cake — we'll order from a trusted local bakery (eggless options available)</span></li>
+          <li class="arrange-item"><span class="arrange-icon">🕯️</span><span>Candle-lit setup in your room for a quiet, intimate evening</span></li>
+          <li class="arrange-item"><span class="arrange-icon">🤫</span><span>Surprise entry coordination while your guest is away</span></li>
+        </ul>
+      </div>
+
+      <div class="lg:col-span-2">
+        <div class="bg-white rounded-2xl p-6" style="border: 1px dashed var(--brand-gold);">
+          <div class="eyebrow mb-2">How to plan</div>
+          <h3 class="serif text-xl text-teal mb-4">Three simple steps.</h3>
+          <div class="space-y-4 text-sm text-[color:var(--brand-muted)]">
+            <div class="flex gap-3">
+              <div class="step-num" style="width:32px; height:32px; font-size:1rem;">1</div>
+              <div><strong class="text-teal block mb-0.5">Tell us the moment</strong>WhatsApp the occasion, date, and any name or theme.</div>
+            </div>
+            <div class="flex gap-3">
+              <div class="step-num" style="width:32px; height:32px; font-size:1rem;">2</div>
+              <div><strong class="text-teal block mb-0.5">We confirm + quote</strong>Availability check and a transparent quote for the décor.</div>
+            </div>
+            <div class="flex gap-3">
+              <div class="step-num" style="width:32px; height:32px; font-size:1rem;">3</div>
+              <div><strong class="text-teal block mb-0.5">Pay and arrive</strong>Room + décor in one bill. We handle the surprise.</div>
+            </div>
+          </div>
+          <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20plan%20a%20celebration%20at%20Nivaa%20Stays." target="_blank" rel="noopener" class="btn-gold w-full justify-center mt-5">Plan on WhatsApp</a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIAL -->
+<section class="section" style="padding: 3.5rem 0;">
+  <div class="max-w-3xl mx-auto px-5">
+    <div class="celeb-testimonial">
+      <p class="celeb-quote">Hospitality at its best! Manjula and her family made us feel so comfortable and at home. They even got us a cake for our anniversary as a surprise.</p>
+      <div class="celeb-attr">— Gopika &amp; family · Anniversary stay</div>
+    </div>
+  </div>
+</section>
+
+<!-- LOCATION (kept simple — same as other landing pages) -->
+<section class="section bg-cream" style="padding: 3rem 0;">
   <div class="max-w-4xl mx-auto px-5">
     <div class="text-center mb-8">
       <div class="eyebrow">Location</div>
-      <div class="divider-gold divider-center"></div>
-      <h2 class="serif text-3xl text-teal mt-3">Distance from Nivaa Stays</h2>
+      <div class="flourish"><span class="flourish-icon">✦ ❀ ✦</span></div>
+      <h2 class="serif text-3xl text-teal">Distance from Nivaa Stays</h2>
       <p class="text-[color:var(--brand-muted)] text-sm mt-2">13, Saibaba Koil Street, Vanur, Puducherry 605009 · near JIPMER, Gorimedu</p>
     </div>
-    <div class="bg-cream rounded-2xl p-6 md:p-8">
+    <div class="bg-white rounded-2xl p-6 md:p-8" style="border:1px solid #e8e3d2;">
       <ul class="grid sm:grid-cols-2 gap-x-8 gap-y-3 text-sm text-[color:var(--brand-muted)]">
         <li class="flex justify-between gap-3 border-b border-[#e8ebe8] pb-2"><strong class="text-teal">JIPMER Hospital</strong><span>~1.5 km · 5 min</span></li>
         <li class="flex justify-between gap-3 border-b border-[#e8ebe8] pb-2"><strong class="text-teal">Gorimedu / Dhanvantri Nagar</strong><span>&lt; 1 km · walkable</span></li>
@@ -78,47 +503,34 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="max-w-6xl mx-auto px-5">
-    <div class="text-center max-w-2xl mx-auto mb-12">
-      <div class="eyebrow">Celebration Setups</div>
-      <div class="divider-gold divider-center"></div>
-      <h2 class="serif text-3xl md:text-4xl text-teal">Real setups, real guests.</h2>
-    </div>
-    <div class="grid md:grid-cols-3 gap-4 mb-12">
-      <img src="images/celebration-birthday-2.jpg" alt="Birthday decoration with balloons and rose-petal heart" class="rounded-xl card-shadow aspect-square object-cover w-full" loading="lazy" decoding="async">
-      <img src="images/celebration-birthday-1.jpg" alt="Happy Birthday balloon setup at Nivaa Stays" class="rounded-xl card-shadow aspect-square object-cover w-full" loading="lazy" decoding="async">
-      <img src="images/celebration-setup.jpg" alt="Rose-petal bathtub setup for anniversary" class="rounded-xl card-shadow aspect-square object-cover w-full" loading="lazy" decoding="async">
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-10 items-center">
-      <div>
-        <h3 class="serif text-2xl text-teal mb-4">What we can arrange</h3>
-        <ul class="text-[color:var(--brand-muted)] space-y-2">
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Balloon and foil-letter setups (HAPPY BIRTHDAY, name foil)</li>
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Rose-petal heart beds for anniversaries</li>
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Rose-petal bathtub for a spa-style romantic evening</li>
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Custom cake and candle arrangements</li>
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Candle-lit dinner in room or courtyard (home-cooked)</li>
-          <li class="flex gap-3"><span class="text-gold text-lg">✓</span>Surprise entry coordination while guest is away</li>
-        </ul>
-      </div>
-      <div class="bg-cream rounded-2xl p-6">
-        <h3 class="serif text-xl text-teal mb-3">How to book</h3>
-        <ol class="text-[color:var(--brand-muted)] text-sm space-y-2 list-decimal list-inside mb-5">
-          <li>WhatsApp us the occasion, date & any name/theme</li>
-          <li>We confirm availability and share a quote for décor</li>
-          <li>Pay the room + décor and we handle the rest</li>
-        </ol>
-        <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20plan%20a%20celebration%20at%20Nivaa%20Stays." target="_blank" rel="noopener" class="btn-gold w-full justify-center">Plan on WhatsApp</a>
-      </div>
+<!-- FINAL CTA -->
+<section class="section" style="padding: 4rem 0;">
+  <div class="max-w-3xl mx-auto px-5 text-center">
+    <div class="flourish"><span class="flourish-icon">✦ ❀ ✦</span></div>
+    <h2 class="serif text-3xl md:text-4xl text-teal mb-3">Ready to plan your moment?</h2>
+    <p class="text-[color:var(--brand-muted)] mb-7" style="font-family:'Cormorant Garamond', serif; font-style:italic; font-size:1.2rem;">Tell us the date, the name, the surprise — we'll do the rest.</p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20arrange%20a%20celebration%20at%20Nivaa%20Stays." class="btn-whatsapp" target="_blank" rel="noopener">Plan on WhatsApp</a>
+      <a href="tel:+919620364554" class="btn-outline-teal">Call +91 96203 64554</a>
+      <a href="booking.html" class="btn-gold">Check Room Availability →</a>
     </div>
   </div>
 </section>
 
+<!-- Sticky bottom CTA on mobile -->
+<div class="celeb-sticky-cta">
+  <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20arrange%20a%20celebration%20at%20Nivaa%20Stays." class="btn-whatsapp" target="_blank" rel="noopener">Plan on WhatsApp</a>
+  <a href="tel:+919620364554" class="btn-outline-teal" style="background: #fff;">Call</a>
+</div>
+
 <footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
   <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="gallery.html" class="underline">Gallery</a></div>
 </footer>
-<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+<script>
+  document.getElementById('y').textContent = new Date().getFullYear();
+  if (window.matchMedia('(max-width: 720px)').matches) {
+    document.body.classList.add('has-sticky-cta');
+  }
+</script>
 </body>
 </html>
