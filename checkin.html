@@ -262,6 +262,7 @@
   .overlay-card h3 {
     font-family: 'Playfair Display', serif;
     font-size: 1.6rem; color: var(--brand-teal); margin-bottom: 0.6rem;
+    transition: opacity 0.35s ease;
   }
   .overlay-card p { color: var(--brand-muted); font-size: 0.95rem; line-height: 1.55; }
   .loader-big {
@@ -470,7 +471,7 @@
 <div id="loading-overlay" class="overlay" role="status" aria-live="polite">
   <div class="overlay-card">
     <div class="loader-big"></div>
-    <h3>Saving your check-in…</h3>
+    <h3 id="submit-status">Saving your check-in…</h3>
     <p>Please don't close or refresh this page. This usually takes 5–15 seconds while we securely upload your ID.</p>
   </div>
 </div>
@@ -693,6 +694,34 @@
   arrivalInput.addEventListener('input', syncArrivalActive);
   syncArrivalActive();
 
+  // Friendly cycling status during check-in submission (5-15s upload window)
+  // Personalizes a couple of messages with the guest's first name and party size.
+  function startSubmitStatusCycle() {
+    const fullName = ($('guest_name').value || '').trim();
+    const firstName = fullName.split(/\s+/)[0] || '';
+    const guests = parseInt($('num_guests').value, 10) || 0;
+    const guestsLabel = guests > 1 ? `${guests} guests` : (guests === 1 ? 'you' : 'you');
+
+    const messages = [
+      firstName ? `Saving your check-in, ${firstName}…` : 'Saving your check-in…',
+      firstName ? `Letting Manjula know ${firstName} is on the way 📲` : 'Letting Manjula know you\'re on your way 📲',
+      'Securely uploading your ID 🔒',
+      `Setting up your welcome kit for ${guestsLabel} ☕`,
+      'Almost done — one moment ✨'
+    ];
+    const el = $('submit-status');
+    let i = 0;
+    el.textContent = messages[0];
+    return setInterval(() => {
+      i = (i + 1) % messages.length;
+      el.style.opacity = '0';
+      setTimeout(() => {
+        el.textContent = messages[i];
+        el.style.opacity = '1';
+      }, 350);
+    }, 2200);
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -700,6 +729,7 @@
     if (!form.reportValidity()) return;
 
     showOverlay(loadingOverlay);
+    const cycleId = startSubmitStatusCycle();
 
     // Build URLSearchParams from form fields (avoids multipart, keeps CORS simple)
     const formData = new FormData(form);
@@ -719,10 +749,12 @@
       if (!data || !data.success) {
         throw new Error((data && data.error) || 'Unknown error from server');
       }
+      clearInterval(cycleId);
       hideOverlay(loadingOverlay);
       showOverlay(successOverlay);
       setTimeout(() => { window.location.replace('welcome.html'); }, 1200);
     } catch (err) {
+      clearInterval(cycleId);
       showError(err && err.message ? err.message : String(err));
     }
   });
