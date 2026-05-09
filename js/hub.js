@@ -416,7 +416,17 @@ async function init() {
   HUB_BOOKING_ID = id;
   const container = document.getElementById('guest-hub');
   if (container) {
-    container.innerHTML = '<div class="hub-card hub-loading">Loading your stay…</div>';
+    container.innerHTML = `
+      <div class="hub-card hub-summary hub-skeleton" aria-busy="true" aria-label="Loading your stay">
+        <span class="sk sk-eyebrow"></span>
+        <span class="sk sk-greeting"></span>
+        <div class="hub-stay-grid">
+          <div><span class="sk sk-label"></span><span class="sk sk-value"></span></div>
+          <div><span class="sk sk-label"></span><span class="sk sk-value"></span></div>
+          <div><span class="sk sk-label"></span><span class="sk sk-value"></span></div>
+          <div><span class="sk sk-label"></span><span class="sk sk-value"></span></div>
+        </div>
+      </div>`;
   }
   passBookingIdToLinks(id);
   activateRentalForm();
