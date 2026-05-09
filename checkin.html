@@ -712,14 +712,16 @@
     const el = $('submit-status');
     let i = 0;
     el.textContent = messages[0];
-    return setInterval(() => {
-      i = (i + 1) % messages.length;
+    const id = setInterval(() => {
+      i++;
+      if (i >= messages.length) { clearInterval(id); return; }
       el.style.opacity = '0';
       setTimeout(() => {
         el.textContent = messages[i];
         el.style.opacity = '1';
       }, 350);
     }, 2200);
+    return id;
   }
 
   form.addEventListener('submit', async (e) => {
