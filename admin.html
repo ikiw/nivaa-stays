@@ -3,6 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0E3B35">
+<link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Nivaa Admin">
 <meta name="robots" content="noindex,nofollow">
 <title>Admin · Nivaa Stays</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
@@ -26,6 +32,7 @@
       <a href="booking.html" class="nav-link hidden md:inline">Quote builder</a>
       <a href="receipt.html" class="nav-link hidden md:inline">Receipt</a>
       <span id="admin-user-chip" class="hidden md:inline text-white/80 text-xs px-2"></span>
+      <button id="install-btn" class="nav-link hidden" title="Install Nivaa Admin app">📲 Install</button>
       <button id="logout-btn" class="nav-link hidden">Logout</button>
       <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2 hidden">Refresh</button>
     </nav>
@@ -64,5 +71,12 @@
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/auth.js"></script>
 <script src="js/admin.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    });
+  }
+</script>
 </body>
 </html>

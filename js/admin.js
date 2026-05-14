@@ -216,8 +216,65 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   if (window.NivaaAuth) window.NivaaAuth.logout();
 });
 
+// ---- PWA install prompt (admin only) ----
+let installEvt = null;
+const installBtn = document.getElementById('install-btn');
+
+function isStandalone() {
+  return window.matchMedia('(display-mode: standalone)').matches ||
+         window.navigator.standalone === true;  // iOS Safari
+}
+
+function isIOS() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent) && !window.MSStream;
+}
+
+function maybeShowInstallButton() {
+  if (!installBtn) return;
+  if (isStandalone()) { installBtn.classList.add('hidden'); return; }
+  // Show only if Android/Chrome captured the prompt OR if iOS (custom hint flow)
+  const eligible = !!installEvt || isIOS();
+  const adminSignedIn = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
+  if (eligible && adminSignedIn) {
+    installBtn.classList.remove('hidden');
+    if (isIOS()) installBtn.textContent = '📲 Install (iOS)';
+  } else {
+    installBtn.classList.add('hidden');
+  }
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  installEvt = e;
+  maybeShowInstallButton();
+});
+
+window.addEventListener('appinstalled', () => {
+  installEvt = null;
+  if (installBtn) installBtn.classList.add('hidden');
+});
+
+window.addEventListener('nivaa-auth-change', maybeShowInstallButton);
+
+if (installBtn) {
+  installBtn.addEventListener('click', async () => {
+    if (isIOS()) {
+      alert('To install on iPhone:\n\n1. Tap the Share button at the bottom of Safari.\n2. Scroll down and tap "Add to Home Screen".\n3. Tap "Add" — Nivaa Admin appears on your home screen.');
+      return;
+    }
+    if (!installEvt) return;
+    installEvt.prompt();
+    const choice = await installEvt.userChoice;
+    if (choice.outcome === 'accepted') {
+      installEvt = null;
+      installBtn.classList.add('hidden');
+    }
+  });
+}
+
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+  document.addEventListener('DOMContentLoaded', () => { init(); maybeShowInstallButton(); });
 } else {
   init();
+  maybeShowInstallButton();
 }
