@@ -24,7 +24,9 @@ const state = {
   bookingId: '',
   platform: 'Direct',
   notes: '',
-  sheetAmount: 0,   // final price from the bookings sheet (used to auto-calc discount)
+  celebrationCharge: 0,  // manual add-on for decorations, cake, etc.
+  sheetAmount: 0,        // final price from the bookings sheet (used to auto-calc discount)
+  totalOverride: 0,      // OTA bookings: bypass rate breakdown and show this as the total
   isAdmin: false,
   root: null
 };
@@ -81,15 +83,18 @@ function computeAll() {
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
   const studios = state.studios || 1;
   const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
-  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
+  const celebration = Number(state.celebrationCharge) || 0;
+  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee + celebration;
   const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
-  const grandTotal = Math.max(0, subtotal - disc.amount);
+  const computedTotal = Math.max(0, subtotal - disc.amount);
+  const override = Number(state.totalOverride) || 0;
+  const grandTotal = override > 0 ? override : computedTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
   const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
   const adv = Number(state.advancePaid) || 0;
   const balance = Math.max(0, grandTotal - adv);
-  return { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance, tx };
+  return { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance, tx, celebration, override };
 }
 
 /* ---------- URL state ---------- */
@@ -112,7 +117,9 @@ function parseUrlState() {
   state.bookingId = p.get('bid') || '';
   state.platform = p.get('platform') || 'Direct';
   state.notes = p.get('notes') || '';
+  state.celebrationCharge = parseInt(p.get('celeb') || '0', 10);
   state.sheetAmount = parseInt(p.get('amt') || '0', 10);
+  state.totalOverride = parseInt(p.get('total') || '0', 10);
   // Admin mode: URL flag (?mode=admin) OR a signed-in admin via Google Sign-In.
   const urlAdmin = p.get('mode') === 'admin';
   const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
@@ -138,6 +145,8 @@ function buildShareUrl(includeAdmin = false) {
   if (state.bookingId) p.set('bid', state.bookingId);
   if (state.platform && state.platform !== 'Direct') p.set('platform', state.platform);
   if (state.notes) p.set('notes', state.notes);
+  if (state.celebrationCharge > 0) p.set('celeb', String(state.celebrationCharge));
+  if (state.totalOverride > 0) p.set('total', String(state.totalOverride));
   if (includeAdmin && state.isAdmin) p.set('mode', 'admin');
   return location.origin + location.pathname + (p.toString() ? '?' + p.toString() : '');
 }
@@ -232,6 +241,10 @@ function renderAdminForm() {
       <div class="bc-admin-group">
         <div class="bc-admin-group-label">Payment</div>
         <div class="bc-admin-row">
+          <label class="bc-field-label" title="For online bookings — when set, hides the rate breakdown and uses this as the total">Total (online)</label>
+          <input type="number" class="bc-input" data-input="totalOverride" min="0" step="100" value="${state.totalOverride || ''}" placeholder="Auto from breakdown">
+        </div>
+        <div class="bc-admin-row">
           <label class="bc-field-label">Discount</label>
           <select class="bc-input bc-input-sm" data-input="discType">
             <option value="pct" ${state.discountType === 'pct' ? 'selected' : ''}>% off</option>
@@ -239,6 +252,10 @@ function renderAdminForm() {
           </select>
           <input type="number" class="bc-input bc-input-sm" data-input="discValue" min="0" step="${state.discountType === 'pct' ? '1' : '50'}" value="${state.discountValue || ''}" placeholder="0">
           <button type="button" class="bc-step-btn" data-action="disc-clear" title="Clear discount" style="font-size:0.7rem">✕</button>
+        </div>
+        <div class="bc-admin-row">
+          <label class="bc-field-label">Celebration</label>
+          <input type="number" class="bc-input" data-input="celebrationCharge" min="0" step="100" value="${state.celebrationCharge || ''}" placeholder="0">
         </div>
         <div class="bc-admin-row">
           <label class="bc-field-label">Advance paid</label>
@@ -274,7 +291,7 @@ function renderReceipt() {
     </div>`;
   }
 
-  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance, celebration, override } = c;
 
   const nightRows = q.nights.map(n => {
     const tierLabel = n.tier === 'longWeekend' ? 'Long wknd' : n.tier === 'weekend' ? 'Weekend' : 'Weekday';
@@ -301,6 +318,12 @@ function renderReceipt() {
     <span class="bc-rate-date">Extra guests</span>
     <span class="bc-rate-tier">${guestInfo.extras} × ${formatINR(guestInfo.perGuestPerNight)} × ${q.totalNights}n</span>
     <span class="bc-rate-amt">${formatINR(guestInfo.fee)}</span>
+  </div>` : '';
+
+  const celebrationRow = celebration > 0 ? `<div class="bc-rate-row bc-rate-guest">
+    <span class="bc-rate-date">Celebration charges</span>
+    <span class="bc-rate-tier">Decorations / setup</span>
+    <span class="bc-rate-amt">${formatINR(celebration)}</span>
   </div>` : '';
 
   const discountRows = disc.amount > 0 ? `
@@ -352,8 +375,14 @@ function renderReceipt() {
       </div>
 
       <div class="bc-rates">
-        <div class="bc-rates-title">Rate Breakdown</div>
-        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${discountRows}</div>
+        <div class="bc-rates-title">${override > 0 ? 'Booking Summary' : 'Rate Breakdown'}</div>
+        <div class="bc-rate-rows">${override > 0
+          ? `<div class="bc-rate-row">
+              <span class="bc-rate-date">Stay charges${state.platform && state.platform !== 'Direct' ? ` (via ${escapeHtml(state.platform)})` : ''}</span>
+              <span class="bc-rate-tier">${q.totalNights} night${q.totalNights === 1 ? '' : 's'} · ${studios === 2 ? 'Full House' : '1 Studio'}</span>
+              <span class="bc-rate-amt">${formatINR(override)}</span>
+            </div>`
+          : `${nightRows}${transitRow}${studiosRow}${guestRow}${celebrationRow}${discountRows}`}</div>
         <div class="bc-payment">${paymentRows}</div>
       </div>
 
@@ -394,7 +423,7 @@ function renderPrintReceipt() {
   const c = computeAll();
   if (!c) { host.innerHTML = ''; return; }
 
-  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance, celebration, override } = c;
 
   const today = new Date();
   const todayStr = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -413,6 +442,9 @@ function renderPrintReceipt() {
     : '';
   const guestPdfRow = guestInfo.fee > 0
     ? `<tr class="guest-row"><td>Extra guests</td><td>${guestInfo.extras} × ${formatINR(guestInfo.perGuestPerNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.fee)}</td></tr>`
+    : '';
+  const celebrationPdfRow = celebration > 0
+    ? `<tr class="guest-row"><td>Celebration charges</td><td>Decorations / setup</td><td class="num">${formatINR(celebration)}</td></tr>`
     : '';
   const subtotalRow = disc.amount > 0
     ? `<tr class="subtotal-row"><td colspan="2">Subtotal</td><td class="num">${formatINR(subtotal)}</td></tr>
@@ -456,15 +488,18 @@ function renderPrintReceipt() {
       </section>
 
       <section class="br-rates">
-        <h3>Rate Breakdown</h3>
+        <h3>${override > 0 ? 'Booking Summary' : 'Rate Breakdown'}</h3>
         <table class="br-rate-tbl">
-          <thead><tr><th>Date</th><th>Tier</th><th class="num">Rate</th></tr></thead>
+          <thead><tr><th>${override > 0 ? 'Item' : 'Date'}</th><th>${override > 0 ? 'Details' : 'Tier'}</th><th class="num">${override > 0 ? 'Amount' : 'Rate'}</th></tr></thead>
           <tbody>
-            ${nightRows}
+            ${override > 0
+              ? `<tr><td>Stay charges${state.platform && state.platform !== 'Direct' ? ` (via ${escapeHtml(state.platform)})` : ''}</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'} · ${studios === 2 ? 'Full House' : '1 Studio'}</td><td class="num">${formatINR(override)}</td></tr>`
+              : `${nightRows}
             ${transitRow}
             ${studiosRow}
             ${guestPdfRow}
-            ${subtotalRow}
+            ${celebrationPdfRow}
+            ${subtotalRow}`}
           </tbody>
           <tfoot>
             <tr class="total-row"><td colspan="2">TOTAL</td><td class="num">${formatINR(grandTotal)}</td></tr>
@@ -613,6 +648,8 @@ function onInput(e) {
   if (key === 'platform')    { state.platform = input.value; updatePreview(); return; }
   if (key === 'notes')       { state.notes = input.value; updatePreview(); return; }
   if (key === 'discValue')   { state.discountValue = Math.max(0, parseFloat(input.value) || 0); updatePreview(); return; }
+  if (key === 'celebrationCharge') { state.celebrationCharge = Math.max(0, parseInt(input.value) || 0); updatePreview(); return; }
+  if (key === 'totalOverride') { state.totalOverride = Math.max(0, parseInt(input.value) || 0); updatePreview(); return; }
   if (key === 'advancePaid') { state.advancePaid = Math.max(0, parseInt(input.value) || 0); updatePreview(); return; }
 
   // Discount type select — update state, adjust the sibling step attribute
@@ -646,7 +683,7 @@ async function init() {
   // Auto-calculate discount from sheet amount: if the bookings sheet total is
   // lower than the computed subtotal, the difference is applied as a ₹ discount
   // so the receipt total matches the sheet exactly.
-  if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
+  if (state.sheetAmount > 0 && state.discountValue === 0 && state.totalOverride === 0 && state.checkIn && state.checkOut) {
     const q = quoteForRange(state.checkIn, state.checkOut, state.config);
     const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
     const studios = state.studios || 1;
