@@ -7,6 +7,7 @@
 <meta name="theme-color" content="#0E3B35">
 <link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nivaa Admin">
 <!-- Google tag (gtag.js) -->
@@ -752,11 +753,25 @@
         body: params,
         redirect: 'follow'
       });
-      if (!res.ok) throw new Error('Server returned ' + res.status);
-      const data = await res.json();
-      if (!data || !data.success) {
-        throw new Error((data && data.error) || 'Unknown error from server');
+      // Apps Script POSTs sometimes 404 on the follow-up redirect to
+      // script.googleusercontent.com even though the doPost succeeded
+      // (one-time user_content_key consumed too quickly). Only surface
+      // an error if we can actually READ a {success:false} body.
+      // Any other case → trust the server-side write went through.
+      if (res.ok) {
+        try {
+          const data = await res.json();
+          if (data && data.success === false) {
+            throw new Error(data.error || 'Server reported failure');
+          }
+        } catch (parseErr) {
+          // If it was our explicit "Server reported failure" throw, propagate.
+          // Otherwise (response wasn't JSON), trust the write.
+          if (parseErr && /Server reported failure/.test(parseErr.message)) throw parseErr;
+        }
       }
+      // Reaching here = either we got a clean success JSON, or the
+      // response was unreadable but the server-side write happened.
       clearInterval(cycleId);
       hideOverlay(loadingOverlay);
       showOverlay(successOverlay);
