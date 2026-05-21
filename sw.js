@@ -6,7 +6,7 @@
 //   • Apps Script API requests: never cached (always live data)
 //   • External CDN (tailwind, google fonts, GSI): pass through (browser cache)
 
-const CACHE_VERSION = 'nivaa-v2';
+const CACHE_VERSION = 'nivaa-v3';
 const SHELL_ASSETS = [
   '/admin.html',
   '/booking.html',
@@ -25,6 +25,8 @@ const SHELL_ASSETS = [
   '/assets/logo.png',
   '/assets/pwa/icon-192.png',
   '/assets/pwa/icon-512.png',
+  '/images/qr/wifi-room-1.png',
+  '/images/qr/wifi-room-2.png',
   '/manifest.json'
 ];
 

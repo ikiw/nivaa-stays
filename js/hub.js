@@ -79,6 +79,19 @@ function renderHub(data) {
   const staticHead = document.getElementById('welcome-static-header');
   if (staticHead) staticHead.style.display = 'none';
 
+  // Swap Wi-Fi QR to match the assigned room (default in markup is Room 1)
+  const qrImg = document.getElementById('wifi-qr-img');
+  if (qrImg) {
+    const roomStr = String(b.room || '').toLowerCase();
+    const isRoom2 = /(^|[^0-9])2([^0-9]|$)/.test(roomStr);  // "2", "Room 2", "Room 2 (1st Floor)"
+    if (isRoom2) {
+      qrImg.src = 'images/qr/wifi-room-2.png';
+      qrImg.alt = 'Wi-Fi QR code for Nivaa Stays — Room 2';
+      qrImg.setAttribute('data-room', '2');
+    }
+    // Otherwise leave the Room 1 default (also covers "Full House" which can use either)
+  }
+
   let html = `
     <div class="hub-card hub-summary">
       <div class="hub-eyebrow">Your Stay</div>

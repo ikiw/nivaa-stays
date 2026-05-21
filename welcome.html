@@ -43,6 +43,29 @@
   .wifi-card h3 { color: #fff; }
   .wifi-card .label { font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--brand-gold-soft); }
   .wifi-card .value { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--brand-gold); letter-spacing: 0.05em; }
+  .wifi-flex {
+    display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap;
+  }
+  .wifi-text { flex: 1; min-width: 220px; }
+  .wifi-qr {
+    flex: 0 0 auto;
+    background: #fff;
+    padding: 8px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px -8px rgba(0,0,0,0.25);
+  }
+  .wifi-qr img { display: block; width: 140px; height: 140px; border-radius: 6px; }
+  .wifi-qr-caption {
+    margin-top: 0.9rem;
+    font-size: 0.78rem;
+    color: var(--brand-gold-soft);
+    letter-spacing: 0.04em;
+  }
+  @media (max-width: 540px) {
+    .wifi-flex { flex-direction: column-reverse; gap: 1rem; align-items: stretch; }
+    .wifi-qr { align-self: center; }
+    .wifi-qr img { width: 160px; height: 160px; }
+  }
   .quick-call {
     display: flex; align-items: center; justify-content: space-between;
     background: var(--brand-gold); color: var(--brand-teal-dark);
@@ -79,15 +102,23 @@
 
     <!-- Wi-Fi -->
     <div class="info-card wifi-card mb-5">
-      <h3>📶 Wi-Fi</h3>
-      <div class="grid grid-cols-2 gap-4 mt-3">
-        <div>
-          <div class="label">Network</div>
-          <div class="value">NivaaStays</div>
+      <div class="wifi-flex">
+        <div class="wifi-text">
+          <h3>📶 Wi-Fi</h3>
+          <div class="grid grid-cols-2 gap-4 mt-3">
+            <div>
+              <div class="label">Network</div>
+              <div class="value">NivaaStays</div>
+            </div>
+            <div>
+              <div class="label">Password</div>
+              <div class="value">Nivastay@2025</div>
+            </div>
+          </div>
+          <div class="wifi-qr-caption">📱 Scan the QR with your phone to join instantly.</div>
         </div>
-        <div>
-          <div class="label">Password</div>
-          <div class="value">Nivastay@2025</div>
+        <div class="wifi-qr">
+          <img id="wifi-qr-img" src="images/qr/wifi-room-1.png" alt="Wi-Fi QR code for Nivaa Stays — Room 1" data-room="1">
         </div>
       </div>
     </div>
