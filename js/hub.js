@@ -225,6 +225,43 @@ async function postRental(payload) {
   return res.json();
 }
 
+async function postAddon(payload) {
+  const body = new URLSearchParams();
+  body.set('action', 'addon');
+  body.set('bookingId', HUB_BOOKING_ID);
+  Object.entries(payload).forEach(([k, v]) => body.set(k, v));
+  const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body });
+  return res.json();
+}
+
+// Mirror pricing.js → transitFee for 'late' side. Loaded from pricing.json
+// at init; falls back to defaults if the fetch fails.
+const LATE_CFG = { freeHours: 1, hourlyRate: 250, halfDayFee: 1000, extendedFee: 1500, maxLateHours: 9 };
+fetch('data/pricing.json', { cache: 'no-cache' }).then(r => r.json()).then(cfg => {
+  if (cfg && cfg.transit) {
+    if (cfg.transit.freeHours    != null) LATE_CFG.freeHours    = cfg.transit.freeHours;
+    if (cfg.transit.hourlyRate   != null) LATE_CFG.hourlyRate   = cfg.transit.hourlyRate;
+    if (cfg.transit.halfDayFee   != null) LATE_CFG.halfDayFee   = cfg.transit.halfDayFee;
+    if (cfg.transit.extendedFee  != null) LATE_CFG.extendedFee  = cfg.transit.extendedFee;
+    if (cfg.transit.maxLateHours != null) LATE_CFG.maxLateHours = cfg.transit.maxLateHours;
+  }
+}).catch(() => {});
+
+function lateCheckoutFee(hours) {
+  if (hours <= LATE_CFG.freeHours) return 0;
+  if (hours <= 4) return (hours - LATE_CFG.freeHours) * LATE_CFG.hourlyRate;
+  if (hours <= 6) return LATE_CFG.halfDayFee;
+  return LATE_CFG.extendedFee;
+}
+
+function fmtLateCheckoutTime(hours) {
+  // Default check-out is 11 AM
+  const total = 11 + hours;
+  const wrapped = total > 12 ? total - 12 : total;
+  const ampm = total >= 12 ? 'PM' : 'AM';
+  return `${wrapped}:00 ${ampm}`;
+}
+
 function activateRentalForm() {
   const card = document.getElementById('rental-card');
   if (!card) return;
@@ -274,6 +311,79 @@ function activateRentalForm() {
         const bikeName = payload.type === 'ninja' ? 'Kawasaki Ninja' : 'Yellow Vespa';
         const msg = `Hi Nivaa Stays, I'd like to rent the ${bikeName} from ${payload.startDate} to ${payload.endDate}.${payload.notes ? ' Notes: ' + payload.notes + '.' : ''}\nBooking: ${HUB_BOOKING_ID}`;
         const waUrl = `https://wa.me/919620364554?text=${encodeURIComponent(msg)}`;
+        setTimeout(() => window.open(waUrl, '_blank', 'noopener'), 400);
+      }
+    } catch (err) {
+      status.textContent = 'Network error. Please WhatsApp us directly.';
+    }
+    submit.disabled = false;
+    submit.textContent = originalText;
+  });
+}
+
+function activateLateForm() {
+  const card = document.getElementById('late-card');
+  if (!card) return;
+  const staticEl = card.querySelector('[data-late-static]');
+  const formEl   = card.querySelector('[data-late-form]');
+  if (!staticEl || !formEl) return;
+  staticEl.classList.add('hidden');
+  formEl.classList.remove('hidden');
+
+  const form   = card.querySelector('#late-form');
+  const valEl  = card.querySelector('#late-hours-val');
+  const timeEl = card.querySelector('#late-checkout-time');
+  const feeEl  = card.querySelector('#late-fee-display');
+  const status = card.querySelector('[data-late-status]');
+  let hours = 2;
+
+  function rerender() {
+    valEl.textContent = String(hours);
+    timeEl.textContent = '→ check-out ' + fmtLateCheckoutTime(hours);
+    const fee = lateCheckoutFee(hours);
+    feeEl.textContent = fee === 0 ? 'Free (grace period)' : '₹' + fee.toLocaleString('en-IN');
+  }
+  rerender();
+
+  card.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-late-act]');
+    if (!btn) return;
+    const max = LATE_CFG.maxLateHours;
+    if (btn.getAttribute('data-late-act') === 'inc') hours = Math.min(max, hours + 1);
+    if (btn.getAttribute('data-late-act') === 'dec') hours = Math.max(1, hours - 1);
+    rerender();
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!HUB_BOOKING_ID) return;
+    const fee = lateCheckoutFee(hours);
+    const notes = String(new FormData(form).get('notes') || '').trim();
+
+    const submit = form.querySelector('button[type="submit"]');
+    const originalText = submit.textContent;
+    submit.disabled = true;
+    submit.textContent = 'Sending request…';
+    status.textContent = '';
+
+    try {
+      const checkoutTimeStr = fmtLateCheckoutTime(hours);
+      const result = await postAddon({
+        type: 'Late checkout',
+        description: '+' + hours + ' hr — out by ' + checkoutTimeStr,
+        amount: fee,
+        notes: notes
+      });
+      if (!result || !result.success) {
+        status.textContent = (result && result.error) || 'Could not record the request. Please WhatsApp us instead.';
+      } else {
+        status.textContent = '✓ Request received — opening WhatsApp to confirm with the host.';
+        try {
+          const refreshed = await loadHub(HUB_BOOKING_ID);
+          renderHub(refreshed);
+        } catch (_) {}
+        const msg = "Hi Nivaa Stays, I'd like to request a late checkout: +" + hours + " hr (out by " + checkoutTimeStr + "). Fee: ₹" + fee.toLocaleString('en-IN') + "." + (notes ? ' Notes: ' + notes + '.' : '') + "\nBooking: " + HUB_BOOKING_ID;
+        const waUrl = 'https://wa.me/919620364554?text=' + encodeURIComponent(msg);
         setTimeout(() => window.open(waUrl, '_blank', 'noopener'), 400);
       }
     } catch (err) {
@@ -443,6 +553,7 @@ async function init() {
   }
   passBookingIdToLinks(id);
   activateRentalForm();
+  activateLateForm();
 
   // Delegate clicks for hub-internal actions (invoice button is inside the
   // dynamically rendered charges card, so we attach to the container).

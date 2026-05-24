@@ -109,6 +109,7 @@
       // Guest hub captures (food orders, bike rentals)
       if (p.action === 'order')  return recordOrder_(p);
       if (p.action === 'rental') return recordRental_(p);
+      if (p.action === 'addon')  return recordAddon_(p);
 
       // Save ID file to Drive                                                                                                                                                                                      
       let idFileUrl = '';
@@ -492,6 +493,41 @@
     } catch (e) { /* same as above */ }
 
     return jsonOut_({ success: true, days: days, rate: rate, subtotal: subtotal });
+  }
+
+  function recordAddon_(p) {
+    const parsed = parseBookingId_(p.bookingId);
+    if (!parsed) return jsonOut_({ success: false, error: 'invalid bookingId' });
+
+    const type = String(p.type || '').trim();
+    if (!type) return jsonOut_({ success: false, error: 'type required' });
+    const amount = Number(p.amount) || 0;
+    if (amount < 0) return jsonOut_({ success: false, error: 'invalid amount' });
+    const description = String(p.description || '').trim();
+
+    const booking = findBooking_(parsed.phone, parsed.ci);
+    const guestName = booking ? booking.name : '';
+
+    const sheet = getOrCreateSheet_('Add-ons', ADDONS_HEADERS);
+    sheet.appendRow([
+      new Date(),
+      p.bookingId,
+      guestName,
+      type,
+      description,
+      amount,
+      p.notes || ''
+    ]);
+
+    try {
+      GmailApp.sendEmail(
+        HOST_EMAIL,
+        `Nivaa Stays — ${type} add-on for ${p.bookingId}`,
+        `Guest: ${guestName}\nType: ${type}\nDescription: ${description || '—'}\nAmount: ₹${amount}\nNotes: ${p.notes || '—'}`
+      );
+    } catch (e) { /* email failures shouldn't break capture */ }
+
+    return jsonOut_({ success: true, amount: amount });
   }
 
   // ---------- triggers ----------

@@ -66,6 +66,17 @@
     .wifi-qr { align-self: center; }
     .wifi-qr img { width: 160px; height: 160px; }
   }
+  .late-stepper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .late-checkout-time-text {
+    font-size: 0.85rem;
+    color: var(--brand-muted);
+    margin-left: 0.3rem;
+  }
   .quick-call {
     display: flex; align-items: center; justify-content: space-between;
     background: var(--brand-gold); color: var(--brand-teal-dark);
@@ -205,10 +216,41 @@
       </div>
 
       <!-- Late checkout -->
-      <div class="info-card md:col-span-2">
+      <div class="info-card md:col-span-2" id="late-card">
         <h3>⏰ Need Late Checkout?</h3>
-        <p class="mb-3">Check-out is 11 AM. Need a couple of extra hours? Just message — we'll do our best to accommodate based on the next booking.</p>
-        <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20request%20a%20late%20checkout." class="btn-outline-teal text-sm" target="_blank" rel="noopener">Request Late Checkout →</a>
+
+        <!-- Static mode: simple WhatsApp link (default) -->
+        <div data-late-static>
+          <p class="mb-3">Check-out is 11 AM. Need a couple of extra hours? Just message — we'll do our best to accommodate based on the next booking.</p>
+          <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20request%20a%20late%20checkout." class="btn-outline-teal text-sm" target="_blank" rel="noopener">Request Late Checkout →</a>
+        </div>
+
+        <!-- Hub mode: structured request form (shown by hub.js when ?id=…) -->
+        <div data-late-form class="hidden">
+          <p class="mb-3 text-sm">Check-out is 11 AM. Pick how many extra hours you need — we'll calculate the fee and confirm availability on WhatsApp.</p>
+          <form id="late-form" class="rental-form">
+            <label class="rental-label">
+              <span>How many hours past 11 AM?</span>
+              <div class="late-stepper">
+                <button type="button" class="rp-step-btn" data-late-act="dec" aria-label="Decrease hours">−</button>
+                <span class="rp-step-val" id="late-hours-val">2</span>
+                <button type="button" class="rp-step-btn" data-late-act="inc" aria-label="Increase hours">+</button>
+                <span class="late-checkout-time-text" id="late-checkout-time">→ check-out 1:00 PM</span>
+              </div>
+            </label>
+            <div class="bg-cream rounded-xl p-3" style="border-left: 3px solid var(--brand-gold);">
+              <div class="text-xs uppercase tracking-widest text-[color:var(--brand-muted)]">Late-checkout fee</div>
+              <div class="serif text-xl text-teal mt-1" id="late-fee-display">₹250</div>
+              <div class="text-[11px] text-[color:var(--brand-muted)] mt-1" id="late-fee-note">1 hour free · ₹250/hr to 4h · ₹1,000 for 5–6h · ₹1,500 for 7–9h</div>
+            </div>
+            <label class="rental-label">
+              <span>Notes <span class="rental-optional">(optional)</span></span>
+              <input type="text" name="notes" placeholder="e.g. flight at 4 PM, please confirm" maxlength="160">
+            </label>
+            <button type="submit" class="btn-gold rental-submit">Request Late Checkout →</button>
+            <div class="rental-status" data-late-status></div>
+          </form>
+        </div>
       </div>
 
     </div>
