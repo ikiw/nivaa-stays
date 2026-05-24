@@ -358,7 +358,7 @@ function activateLateForm() {
       const checkoutTimeStr = fmtLateCheckoutTime(hours);
       const result = await postAddon({
         type: 'Late checkout',
-        description: '+' + hours + ' hr — out by ' + checkoutTimeStr,
+        description: hours + ' extra hr — out by ' + checkoutTimeStr,
         amount: fee,
         notes: notes
       });

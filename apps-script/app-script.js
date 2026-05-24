@@ -303,6 +303,14 @@
     return String(d || '');
   }
 
+  // Google Sheets treats strings starting with =, +, -, or @ as formulas
+  // and errors out (#NAME, #REF, etc). Prefix with an apostrophe to force
+  // text mode — the apostrophe itself doesn't display in the cell.
+  function safeForSheet_(s) {
+    const str = String(s == null ? '' : s);
+    return /^[=+\-@]/.test(str) ? "'" + str : str;
+  }
+
   function hubData_(bookingId) {
     const parsed = parseBookingId_(bookingId);
     if (!parsed) return jsonOut_({ found: false, error: 'invalid booking id' });
@@ -384,12 +392,12 @@
     sheet.appendRow([
       new Date(),
       p.bookingId,
-      guestName,
+      safeForSheet_(guestName),
       JSON.stringify(items),
       itemCount,
       subtotal,
       'Pending',
-      p.notes || ''
+      safeForSheet_(p.notes || '')
     ]);
 
     try {
@@ -473,7 +481,7 @@
     sheet.appendRow([
       new Date(),
       p.bookingId,
-      guestName,
+      safeForSheet_(guestName),
       BIKE_NAMES[type],
       startDate,
       endDate,
@@ -481,7 +489,7 @@
       rate,
       subtotal,
       'Requested',
-      p.notes || ''
+      safeForSheet_(p.notes || '')
     ]);
 
     try {
@@ -512,11 +520,11 @@
     sheet.appendRow([
       new Date(),
       p.bookingId,
-      guestName,
-      type,
-      description,
+      safeForSheet_(guestName),
+      safeForSheet_(type),
+      safeForSheet_(description),
       amount,
-      p.notes || ''
+      safeForSheet_(p.notes || '')
     ]);
 
     try {
