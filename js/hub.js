@@ -141,10 +141,6 @@ function renderHub(data) {
         <div class="hub-charge-block">
           <div class="hub-charge-block-title">Food orders (${data.orders.length})</div>
           ${orderRows}
-          <div class="hub-row hub-row-sub">
-            <span>Food subtotal</span>
-            <span class="hub-amt">${inr(t.foodTotal)}</span>
-          </div>
         </div>`;
     }
 
@@ -161,10 +157,6 @@ function renderHub(data) {
         <div class="hub-charge-block">
           <div class="hub-charge-block-title">Bike rentals (${data.rentals.length})</div>
           ${rentRows}
-          <div class="hub-row hub-row-sub">
-            <span>Rental subtotal</span>
-            <span class="hub-amt">${inr(t.rentalTotal)}</span>
-          </div>
         </div>`;
     }
 
@@ -181,10 +173,6 @@ function renderHub(data) {
         <div class="hub-charge-block">
           <div class="hub-charge-block-title">Add-ons (${data.addons.length})</div>
           ${addonRows}
-          <div class="hub-row hub-row-sub">
-            <span>Add-on subtotal</span>
-            <span class="hub-amt">${inr(t.addonTotal)}</span>
-          </div>
         </div>`;
     }
 
@@ -426,7 +414,6 @@ function renderInvoiceDom() {
   const orderSection = orderRows ? `
     <tr class="hi-section"><td colspan="3">Food orders</td></tr>
     ${orderRows}
-    <tr class="hi-sub"><td colspan="2">Food subtotal</td><td class="num">${inr(t.foodTotal)}</td></tr>
   ` : '';
 
   const rentalRows = (HUB_DATA.rentals || []).map(r => `
@@ -435,7 +422,6 @@ function renderInvoiceDom() {
   const rentalSection = rentalRows ? `
     <tr class="hi-section"><td colspan="3">Bike rentals</td></tr>
     ${rentalRows}
-    <tr class="hi-sub"><td colspan="2">Rental subtotal</td><td class="num">${inr(t.rentalTotal)}</td></tr>
   ` : '';
 
   const addonRows = (HUB_DATA.addons || []).map(a => `
@@ -444,7 +430,6 @@ function renderInvoiceDom() {
   const addonSection = addonRows ? `
     <tr class="hi-section"><td colspan="3">Add-ons</td></tr>
     ${addonRows}
-    <tr class="hi-sub"><td colspan="2">Add-on subtotal</td><td class="num">${inr(t.addonTotal)}</td></tr>
   ` : '';
 
   const advanceRow = (t.advancePaid || 0) > 0 ? `
