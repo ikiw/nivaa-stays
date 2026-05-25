@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--
+  GUIDE TEMPLATE — duplicate this file and replace every {{PLACEHOLDER}}.
+  Required replacements per article:
+    {{SLUG}}             e.g. jipmer-opd-appointment-guide
+    {{TITLE}}            page <title> + h1 — keep under 60 chars
+    {{DESCRIPTION}}      meta description + og:description — 140-160 chars
+    {{HERO_IMAGE_URL}}   absolute https://nivaastays.com/images/...
+    {{HERO_IMAGE_ALT}}   descriptive alt
+    {{PUBLISH_DATE}}     ISO date e.g. 2026-05-26
+    {{UPDATE_DATE}}      ISO date — same as publish on first publish
+    {{EYEBROW}}          short category label e.g. "JIPMER Travel"
+    {{H1}}               main page headline (can match TITLE or differ for SEO)
+    {{LEDE}}             1-2 sentence intro under the h1
+    {{ARTICLE_BODY}}     the actual article HTML (h2/h3/p/ul/img)
+    {{RELATED_CARDS}}    3 cards linking to landing pages or other guides
+
+  After publishing:
+    1. Add the URL to sitemap.xml (extensionless: /guides/{{SLUG}})
+    2. Add a card to guides.html in the #guide-list grid
+    3. Cross-link the article from at least 2 other pages
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow"><!-- REMOVE this line when publishing a real article -->
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0E3B35">
+<link rel="apple-touch-icon" href="/assets/pwa/apple-touch-icon.png">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=AW-18059444069"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'AW-18059444069');
+</script>
+<title>{{TITLE}} | Nivaa Stays</title>
+<meta name="description" content="{{DESCRIPTION}}">
+<link rel="canonical" href="https://nivaastays.com/guides/{{SLUG}}">
+<meta property="og:title" content="{{TITLE}}">
+<meta property="og:description" content="{{DESCRIPTION}}">
+<meta property="og:image" content="{{HERO_IMAGE_URL}}">
+<meta property="og:type" content="article">
+<link rel="icon" type="image/png" href="/assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="/js/tailwind.js"></script>
+<link rel="stylesheet" href="/css/styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LodgingBusiness",
+      "@id": "https://nivaastays.com/#lodging",
+      "name": "Nivaa Stays",
+      "url": "https://nivaastays.com/",
+      "image": "https://nivaastays.com/images/exterior-main-gate.avif",
+      "logo": "https://nivaastays.com/assets/logo.png",
+      "telephone": "+919620364554",
+      "priceRange": "₹₹",
+      "address": { "@type": "PostalAddress", "streetAddress": "13, Saibaba Koil Street, Service Road, near KFC", "addressLocality": "Vanur, Puducherry", "addressRegion": "Puducherry", "postalCode": "605009", "addressCountry": "IN" },
+      "geo": { "@type": "GeoCoordinates", "latitude": 11.96232, "longitude": 79.79309 },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "42", "bestRating": "5", "worstRating": "1" }
+    },
+    {
+      "@type": "Article",
+      "@id": "https://nivaastays.com/guides/{{SLUG}}#article",
+      "headline": "{{TITLE}}",
+      "description": "{{DESCRIPTION}}",
+      "image": "{{HERO_IMAGE_URL}}",
+      "datePublished": "{{PUBLISH_DATE}}",
+      "dateModified": "{{UPDATE_DATE}}",
+      "author": { "@type": "Organization", "name": "Nivaa Stays", "url": "https://nivaastays.com/" },
+      "publisher": { "@id": "https://nivaastays.com/#lodging" },
+      "mainEntityOfPage": { "@id": "https://nivaastays.com/guides/{{SLUG}}#webpage" },
+      "about": { "@id": "https://nivaastays.com/#lodging" }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://nivaastays.com/guides/{{SLUG}}#webpage",
+      "url": "https://nivaastays.com/guides/{{SLUG}}",
+      "name": "{{TITLE}}",
+      "isPartOf": { "@type": "WebSite", "name": "Nivaa Stays", "url": "https://nivaastays.com/" },
+      "primaryImageOfPage": "{{HERO_IMAGE_URL}}",
+      "breadcrumb": { "@id": "https://nivaastays.com/guides/{{SLUG}}#crumbs" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://nivaastays.com/guides/{{SLUG}}#crumbs",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://nivaastays.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://nivaastays.com/guides" },
+        { "@type": "ListItem", "position": 3, "name": "{{TITLE}}", "item": "https://nivaastays.com/guides/{{SLUG}}" }
+      ]
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<header class="sticky-nav">
+  <div class="max-w-7xl mx-auto px-4 sm:px-5 py-2 sm:py-3 flex items-center justify-between gap-2">
+    <a href="/index.html" class="flex items-center gap-2 sm:gap-3 min-w-0">
+      <img src="/assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
+      <div class="min-w-0"><div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div><div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div></div>
+    </a>
+    <nav class="flex items-center gap-1">
+      <a href="/guides.html" class="nav-link hidden md:inline">Guides</a>
+      <a href="/gallery.html" class="nav-link hidden md:inline">Gallery</a>
+      <a href="/booking.html" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2">Book Now</a>
+    </nav>
+  </div>
+</header>
+
+<section class="hero" style="min-height: 50vh;">
+  <div class="max-w-4xl mx-auto px-5 pt-24 pb-10 w-full">
+    <div class="text-white/70 text-xs uppercase tracking-widest mb-4"><a href="/guides.html" class="hover:text-gold">Guides</a> · {{EYEBROW}}</div>
+    <h1 class="serif text-4xl md:text-5xl leading-tight mb-5">{{H1}}</h1>
+    <p class="text-lg md:text-xl text-white/85 leading-relaxed">{{LEDE}}</p>
+    <div class="text-white/50 text-xs mt-6">Published {{PUBLISH_DATE}} · Updated {{UPDATE_DATE}} · By Nivaa Stays hosts</div>
+  </div>
+</section>
+
+<article class="section bg-cream">
+  <div class="max-w-3xl mx-auto px-5 prose-guide">
+    {{ARTICLE_BODY}}
+  </div>
+</article>
+
+<section class="section bg-cream">
+  <div class="max-w-5xl mx-auto px-5">
+    <div class="text-center mb-8">
+      <div class="eyebrow">Keep reading</div>
+      <div class="divider-gold divider-center"></div>
+      <h2 class="serif text-2xl md:text-3xl text-teal">Related</h2>
+    </div>
+    <div class="grid sm:grid-cols-3 gap-4">
+      {{RELATED_CARDS}}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="max-w-3xl mx-auto px-5 text-center">
+    <h2 class="serif text-3xl text-teal mb-4">Planning your stay?</h2>
+    <p class="text-[color:var(--brand-muted)] mb-8">Nivaa Stays — premium guest house minutes from JIPMER. Spacious rooms with bathtubs, home-cooked meals, bike rentals, pet friendly.</p>
+    <div class="flex flex-wrap justify-center gap-3">
+      <a href="/booking.html" class="btn-gold">Check Availability</a>
+      <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20check%20availability%20at%20Nivaa%20Stays." class="btn-whatsapp" target="_blank" rel="noopener">WhatsApp Us</a>
+    </div>
+  </div>
+</section>
+
+<footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="/index.html" class="underline">Home</a> · <a href="/guides.html" class="underline">Guides</a> · <a href="/gallery.html" class="underline">Gallery</a></div>
+</footer>
+<script>document.getElementById('y').textContent=new Date().getFullYear();</script>
+</body>
+</html>

@@ -13,9 +13,17 @@ Static HTML, vanilla CSS/JS, Tailwind via CDN. No build step. Edits go straight 
 ## Pages
 
 **SEO landing pages** (in `sitemap.xml`, want indexing):
-- `index.html`, `gallery.html`
+- `index.html`, `gallery.html`, `guides.html`
 - `guest-house-near-jipmer.html`, `patient-family-stay-jipmer.html`, `student-family-stay-jipmer.html`, `conference-stay-jipmer.html`
 - `celebration-stay-pondicherry.html`, `pet-friendly-stay-pondicherry.html`, `full-house-stay-pondicherry.html`
+
+**Content guides** (informational, in `guides/` directory, want indexing):
+- Live at `/guides/<slug>` (extensionless). Each file is built from `guides/_template.html` — duplicate, replace `{{PLACEHOLDER}}` markers, remove the `<meta robots="noindex">` line.
+- After publishing a new guide:
+  1. Add `<url>` entry to `sitemap.xml` (`/guides/<slug>`)
+  2. Add a card to the `#guide-list` grid in `guides.html`
+  3. Cross-link from ≥2 other pages
+- Guides funnel info-intent traffic into the commercial landing pages above.
 
 **Guest-only utility pages** (`<meta robots="noindex,follow">`, NOT in sitemap):
 - `order.html` — food ordering via WhatsApp cart

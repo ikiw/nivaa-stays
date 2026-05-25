@@ -132,6 +132,73 @@ h1, h2, h3, h4, .serif {
 .card-shadow { box-shadow: 0 10px 30px -12px rgba(14,59,53,0.18); }
 .card-shadow:hover { box-shadow: 0 18px 40px -14px rgba(14,59,53,0.28); }
 
+/* Article body styling for /guides/*.html */
+.prose-guide { color: var(--brand-ink); font-size: 1.0625rem; line-height: 1.75; }
+.prose-guide h2 {
+  font-family: 'Playfair Display', serif;
+  color: var(--brand-teal);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin: 2.5rem 0 1rem;
+}
+.prose-guide h3 {
+  font-family: 'Playfair Display', serif;
+  color: var(--brand-teal);
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 2rem 0 0.75rem;
+}
+.prose-guide p { margin-bottom: 1.25rem; }
+.prose-guide a { color: var(--brand-teal); text-decoration: underline; text-decoration-style: dotted; text-underline-offset: 4px; }
+.prose-guide a:hover { color: var(--brand-gold); }
+.prose-guide ul, .prose-guide ol { margin: 0 0 1.5rem 1.25rem; padding-left: 1rem; }
+.prose-guide ul li { list-style: disc; margin-bottom: 0.4rem; }
+.prose-guide ol li { list-style: decimal; margin-bottom: 0.4rem; }
+.prose-guide blockquote {
+  border-left: 3px solid var(--brand-gold);
+  padding: 0.5rem 0 0.5rem 1.25rem;
+  margin: 1.5rem 0;
+  color: var(--brand-muted);
+  font-style: italic;
+}
+.prose-guide img { border-radius: 0.75rem; margin: 1.5rem 0; width: 100%; height: auto; }
+.prose-guide strong { color: var(--brand-teal); font-weight: 600; }
+.prose-guide .callout {
+  background: #fff;
+  border: 1px solid #e8ebe8;
+  border-left: 3px solid var(--brand-gold);
+  border-radius: 0.5rem;
+  padding: 1rem 1.25rem;
+  margin: 1.5rem 0;
+  font-size: 0.95rem;
+}
+.prose-guide .table-wrap {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border: 1px solid #e8ebe8;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+.prose-guide table { width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 640px; }
+.prose-guide thead th {
+  background: var(--brand-cream);
+  color: var(--brand-teal);
+  font-family: 'Playfair Display', serif;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #e8ebe8;
+}
+.prose-guide tbody td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f0efe9;
+  vertical-align: top;
+  color: var(--brand-ink);
+}
+.prose-guide tbody tr:last-child td { border-bottom: none; }
+.prose-guide tbody tr.row-highlight td { background: #fdf8e8; }
+.prose-guide tbody tr.row-highlight td:first-child { font-weight: 600; color: var(--brand-teal); }
+
 .faq-item { border-bottom: 1px solid #e5e7e4; }
 .faq-item summary {
   cursor: pointer;
