@@ -199,6 +199,130 @@ h1, h2, h3, h4, .serif {
 .prose-guide tbody tr.row-highlight td { background: #fdf8e8; }
 .prose-guide tbody tr.row-highlight td:first-child { font-weight: 600; color: var(--brand-teal); }
 
+/* Personalized greeting toast (js/greeting.js) */
+.greeting-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  max-width: 24rem;
+  background: linear-gradient(180deg, #ffffff 0%, #fdfbf3 100%);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 22px 50px -18px rgba(14, 59, 53, 0.35),
+    0 4px 12px -4px rgba(14, 59, 53, 0.12);
+  padding: 1.15rem 1.25rem 1.25rem;
+  z-index: 9999;
+  font-family: 'Inter', system-ui, sans-serif;
+  opacity: 0;
+  transform: translateY(24px) scale(0.98);
+  transition:
+    opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.greeting-toast::before {
+  /* Gold accent strip across the top */
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--brand-gold, #C9A227) 0%, #E6C35A 50%, var(--brand-gold, #C9A227) 100%);
+}
+.greeting-toast.is-open { opacity: 1; transform: translateY(0) scale(1); }
+.greeting-row { display: flex; gap: 0.85rem; align-items: flex-start; }
+.greeting-logo {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--brand-teal-dark, #082623);
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--brand-gold, #C9A227);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.greeting-body { flex: 1; min-width: 0; }
+.greeting-eyebrow {
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--brand-gold, #C9A227);
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+.greeting-msg {
+  color: var(--brand-ink, #14201E);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  padding-right: 1.5rem;
+  margin-bottom: 0.85rem;
+  font-weight: 400;
+}
+.greeting-msg strong {
+  font-family: 'Playfair Display', serif;
+  color: var(--brand-teal, #0E3B35);
+  font-weight: 600;
+  font-size: 1.02rem;
+}
+.greeting-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.greeting-cta {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--brand-teal, #0E3B35);
+  color: #fff;
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  box-shadow: 0 4px 10px -4px rgba(14, 59, 53, 0.35);
+}
+.greeting-cta:hover {
+  background: var(--brand-teal-dark, #082623);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -4px rgba(14, 59, 53, 0.45);
+}
+.greeting-cta-wa {
+  background: transparent;
+  color: var(--brand-teal, #0E3B35);
+  border: 1px solid rgba(14, 59, 53, 0.2);
+  box-shadow: none;
+}
+.greeting-cta-wa:hover {
+  background: var(--brand-cream, #FAF6EC);
+  border-color: var(--brand-gold, #C9A227);
+  box-shadow: 0 4px 10px -4px rgba(201, 162, 39, 0.3);
+}
+.greeting-close {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.6rem;
+  background: transparent;
+  border: none;
+  color: var(--brand-muted, #5B6B68);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  border-radius: 8px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.greeting-close:hover {
+  color: var(--brand-teal, #0E3B35);
+  background: rgba(201, 162, 39, 0.12);
+}
+@media (max-width: 480px) {
+  .greeting-toast {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: 0.75rem;
+    max-width: none;
+    padding: 1rem 1.1rem 1.1rem;
+  }
+  .greeting-msg { font-size: 0.92rem; }
+}
+
 .faq-item { border-bottom: 1px solid #e5e7e4; }
 .faq-item summary {
   cursor: pointer;
