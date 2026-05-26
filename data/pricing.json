@@ -45,7 +45,7 @@
   "guestPolicy": {
     "defaultPerStudio": 2,
     "maxPerStudio": 4,
-    "extraGuestFeePerNight": 500
+    "extraGuestFeePerNight": 1000
   },
   "advancePayment": {
     "minAmount": 1000,
