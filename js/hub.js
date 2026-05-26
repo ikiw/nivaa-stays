@@ -194,9 +194,14 @@ function renderHub(data) {
         </div>`;
     }
 
+    const foodBtn = (data.orders && data.orders.length)
+      ? `<button type="button" class="btn-outline-teal hub-invoice-btn" data-action="foodbill">Download Food Bill (PDF)</button>`
+      : '';
+
     html += `
       <div class="hub-actions">
         <button type="button" class="btn-outline-teal hub-invoice-btn" data-action="invoice">Download Invoice (PDF)</button>
+        ${foodBtn}
       </div>
     </div>`;
   }
@@ -507,6 +512,93 @@ function printInvoice() {
   setTimeout(() => window.print(), 50);
 }
 
+// ---------- Food bill (browser-print PDF) ----------
+// Renders ONLY the food orders for this booking into the same print host as
+// the invoice — so the existing @media print rules apply unchanged.
+function renderFoodBillDom() {
+  let host = document.getElementById('hub-print-invoice');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'hub-print-invoice';
+    document.body.appendChild(host);
+  }
+  if (!HUB_DATA || !HUB_DATA.found) {
+    host.innerHTML = '';
+    return;
+  }
+  const b = HUB_DATA.booking;
+  const orders = HUB_DATA.orders || [];
+
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+  const billId = `NV-FB-${today.getFullYear()}${String(today.getMonth()+1).padStart(2,'0')}${String(today.getDate()).padStart(2,'0')}-${String(b.phone || '').slice(-4) || 'XXXX'}`;
+
+  const foodTotal = orders.reduce((sum, o) => sum + (Number(o.subtotal) || 0), 0);
+
+  const orderRows = orders.map(o => {
+    const desc = (o.items || []).map(it => `${it.qty}× ${escapeHtml(it.name)}`).join(', ');
+    return `<tr><td>${desc || 'Food order'}</td><td>${fmtTimeShort(o.submittedAt)}</td><td class="num">${inr(o.subtotal)}</td></tr>`;
+  }).join('');
+
+  const emptyRow = orders.length === 0
+    ? `<tr><td colspan="3" style="text-align:center; color:#5B6B68; padding:14pt 4pt;">No food orders recorded for this booking.</td></tr>`
+    : '';
+
+  host.innerHTML = `
+    <div class="hi">
+      <header class="hi-head">
+        <div>
+          <div class="hi-brand">NIVAA STAYS</div>
+          <div class="hi-tag">Le Affordable Luxury · Pondicherry</div>
+        </div>
+        <div class="hi-meta">
+          <div><strong>Food Bill</strong></div>
+          <div>Bill: ${billId}</div>
+          <div>Issued: ${todayStr}</div>
+        </div>
+      </header>
+
+      <section class="hi-billing">
+        <div><span class="hi-label">Guest</span> ${escapeHtml(b.name) || '—'}</div>
+        <div><span class="hi-label">Mobile</span> +91 ${escapeHtml(b.phone) || '—'}</div>
+      </section>
+
+      <section class="hi-charges">
+        <h3>Food Orders</h3>
+        <table class="hi-charges-tbl">
+          <thead><tr><th>Items</th><th>Ordered at</th><th class="num">Amount</th></tr></thead>
+          <tbody>
+            ${orderRows}
+            ${emptyRow}
+          </tbody>
+          <tfoot>
+            <tr class="hi-total"><td colspan="2">TOTAL PAYABLE</td><td class="num">${inr(foodTotal)}</td></tr>
+          </tfoot>
+        </table>
+      </section>
+
+      <footer class="hi-foot">
+        <div>Thank you for staying with us! 🙏</div>
+        <div>Nivaa Stays · +91 96203 64554 · nivaastays@gmail.com · nivaastays.com</div>
+      </footer>
+    </div>
+  `;
+}
+
+function printFoodBill() {
+  if (!HUB_DATA || !HUB_DATA.found) return;
+  renderFoodBillDom();
+  const original = location.href;
+  const clean = location.origin + location.pathname;
+  try { history.replaceState(null, '', clean); } catch (_) {}
+  const restore = () => {
+    window.removeEventListener('afterprint', restore);
+    try { history.replaceState(null, '', original); } catch (_) {}
+  };
+  window.addEventListener('afterprint', restore);
+  setTimeout(() => window.print(), 50);
+}
+
 function passBookingIdToLinks(bookingId) {
   document.querySelectorAll('[data-pass-id]').forEach(el => {
     try {
@@ -547,6 +639,7 @@ async function init() {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       if (btn.getAttribute('data-action') === 'invoice') printInvoice();
+      if (btn.getAttribute('data-action') === 'foodbill') printFoodBill();
     });
   }
 
@@ -559,6 +652,8 @@ async function init() {
     const printAction = new URLSearchParams(location.search).get('print');
     if (printAction === 'invoice' && data && data.found) {
       setTimeout(printInvoice, 250);
+    } else if (printAction === 'foodbill' && data && data.found) {
+      setTimeout(printFoodBill, 250);
     }
   } catch (err) {
     if (container) {

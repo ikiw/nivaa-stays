@@ -57,11 +57,12 @@ function receiptUrl(b) {
 }
 
 function bookingRow(b) {
-  const hubUrl     = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
-  const orderUrl   = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
-  const rcptUrl    = receiptUrl(b);
-  const invoiceUrl = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin&print=invoice`;
-  const waUrl      = `https://wa.me/91${b.phone}`;
+  const hubUrl      = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const orderUrl    = `order.html?id=${encodeURIComponent(b.bookingId)}&mode=admin`;
+  const rcptUrl     = receiptUrl(b);
+  const invoiceUrl  = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin&print=invoice`;
+  const foodBillUrl = `welcome.html?id=${encodeURIComponent(b.bookingId)}&mode=admin&print=foodbill`;
+  const waUrl       = `https://wa.me/91${b.phone}`;
   return `
     <div class="adm-row">
       <div class="adm-row-main">
@@ -82,6 +83,7 @@ function bookingRow(b) {
         <a href="${orderUrl}" class="btn-outline-teal adm-action-btn">Add food</a>
         <a href="${rcptUrl}" class="btn-outline-teal adm-action-btn">Receipt</a>
         <a href="${invoiceUrl}" class="btn-outline-teal adm-action-btn">Invoice</a>
+        <a href="${foodBillUrl}" class="btn-outline-teal adm-action-btn">Food bill</a>
       </div>
     </div>
   `;
