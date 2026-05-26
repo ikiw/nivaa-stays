@@ -1,0 +1,7 @@
+_worker.js
+.assetsignore
+wrangler.jsonc
+node_modules
+package.json
+package-lock.json
+apps-script/
