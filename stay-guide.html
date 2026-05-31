@@ -10,7 +10,6 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nivaa Admin">
-<meta name="robots" content="noindex,follow">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=AW-18059444069"></script>
 <script>
@@ -26,10 +25,62 @@
 <meta property="og:title" content="Pondicherry Local Guide – Nivaa Stays">
 <meta property="og:description" content="Where to eat, what to see, how to get around Pondicherry — curated by Nivaa Stays.">
 <meta property="og:image" content="https://nivaastays.com/images/bike-vespa-whitetown.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tailwind.css">
 <link rel="stylesheet" href="css/styles.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "LodgingBusiness",
+      "@id": "https://nivaastays.com/#lodging",
+      "name": "Nivaa Stays",
+      "url": "https://nivaastays.com/",
+      "image": "https://nivaastays.com/images/exterior-main-gate.avif",
+      "logo": "https://nivaastays.com/assets/logo.png",
+      "telephone": "+919620364554",
+      "priceRange": "₹₹",
+      "address": { "@type": "PostalAddress", "streetAddress": "13, Saibaba Koil Street, Service Road, near KFC", "addressLocality": "Vanur, Puducherry", "addressRegion": "Puducherry", "postalCode": "605009", "addressCountry": "IN" },
+      "geo": { "@type": "GeoCoordinates", "latitude": 11.96232, "longitude": 79.79309 },
+      "aggregateRating": { "@type": "AggregateRating", "ratingValue": "4.9", "reviewCount": "42", "bestRating": "5", "worstRating": "1" }
+    },
+    {
+      "@type": "Article",
+      "@id": "https://nivaastays.com/stay-guide#article",
+      "headline": "Pondicherry Local Guide — Where to Eat, See & Ride",
+      "description": "A curated Pondicherry guide from hosts who live here — best cafés and restaurants, beaches, Auroville, the French Quarter, transport tips and auto fares.",
+      "image": "https://nivaastays.com/images/entrance-vespa-ninja.avif",
+      "datePublished": "2025-05-01",
+      "dateModified": "2026-05-31",
+      "author": { "@type": "Organization", "name": "Nivaa Stays", "url": "https://nivaastays.com/" },
+      "publisher": { "@id": "https://nivaastays.com/#lodging" },
+      "mainEntityOfPage": { "@id": "https://nivaastays.com/stay-guide#webpage" },
+      "about": { "@id": "https://nivaastays.com/#lodging" }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://nivaastays.com/stay-guide#webpage",
+      "url": "https://nivaastays.com/stay-guide",
+      "name": "Pondicherry Local Guide — Nivaa Stays",
+      "isPartOf": { "@type": "WebSite", "name": "Nivaa Stays", "url": "https://nivaastays.com/" },
+      "primaryImageOfPage": "https://nivaastays.com/images/entrance-vespa-ninja.avif",
+      "breadcrumb": { "@id": "https://nivaastays.com/stay-guide#crumbs" }
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": "https://nivaastays.com/stay-guide#crumbs",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://nivaastays.com/" },
+        { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://nivaastays.com/guides" },
+        { "@type": "ListItem", "position": 3, "name": "Pondicherry Local Guide", "item": "https://nivaastays.com/stay-guide" }
+      ]
+    }
+  ]
+}
+</script>
 <style>
   .guide-card {
     background: #fff; border: 1px solid #e8ebe8; border-radius: 14px;
@@ -58,8 +109,8 @@
       <div class="min-w-0"><div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div><div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Le Affordable Luxury</div></div>
     </a>
     <nav class="flex items-center gap-1">
-      <a href="index.html" class="nav-link hidden md:inline">Home</a>
-      <a href="welcome.html" class="nav-link hidden md:inline">Welcome Kit</a>
+      <a href="guides.html" class="nav-link hidden md:inline">Guides</a>
+      <a href="gallery.html" class="nav-link hidden md:inline">Gallery</a>
       <a href="booking.html" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2">Book Now</a>
     </nav>
   </div>
@@ -71,7 +122,7 @@
     <div class="text-center mb-12">
       <div class="eyebrow">Local Guide</div>
       <div class="divider-gold divider-center"></div>
-      <h1 class="serif text-4xl md:text-5xl text-teal mb-4">Your Pondicherry Companion</h1>
+      <h1 class="serif text-4xl md:text-5xl text-teal mb-4">Your Pondicherry Local Guide</h1>
       <p class="text-[color:var(--brand-muted)] max-w-2xl mx-auto leading-relaxed">A handpicked guide to the best of Pondicherry — where to eat, what to see, how to get around. From the French Quarter to Auroville, the bits we'd recommend to a friend.</p>
     </div>
 
@@ -148,7 +199,7 @@
 </section>
 
 <footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
-  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="welcome.html" class="underline">Welcome Kit</a></div>
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="gallery.html" class="underline">Gallery</a> · <a href="guides.html" class="underline">Guides</a></div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script>
