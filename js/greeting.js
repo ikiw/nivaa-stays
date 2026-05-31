@@ -1,5 +1,6 @@
 // Nivaa Stays — bottom-right greeting toast personalized to the visitor's city.
-// Cities recognised: Chennai, Bangalore (Bengaluru), Pondicherry (Puducherry).
+// Cities recognised: Chennai, Bangalore (Bengaluru), Pondicherry (Puducherry), Madurai,
+// Salem, Coimbatore (Kovai), Hyderabad (Secunderabad), Mumbai (Bombay).
 // Other locations: no toast shown.
 
 (function () {
@@ -28,6 +29,41 @@
       lead: 'Hi localite!',
       body: 'Planning a quiet staycation in your own city? We would love to host you at Nivaa Stays.',
       whatsappText: "Hi, I'm a Pondicherry local and would like to check availability for a staycation at Nivaa Stays.",
+    },
+    {
+      match: ['madurai'],
+      label: 'Madurai',
+      lead: 'Vanakkam Madurai-kaara!',
+      body: 'Driving down from the temple city to Pondicherry? We would love to host you at Nivaa Stays.',
+      whatsappText: "Hi, I'm planning a trip from Madurai and would like to check availability at Nivaa Stays.",
+    },
+    {
+      match: ['salem'],
+      label: 'Salem',
+      lead: 'Hello, Mango City!',
+      body: 'Trading Salem mango country for the Pondicherry coast? We would love to host you at Nivaa Stays.',
+      whatsappText: "Hi, I'm planning a trip from Salem and would like to check availability at Nivaa Stays.",
+    },
+    {
+      match: ['coimbatore', 'kovai'],
+      label: 'Coimbatore',
+      lead: 'Namma Kovai!',
+      body: 'Heading from Kovai to the coast for a Pondicherry break? We would love to host you at Nivaa Stays.',
+      whatsappText: "Hi, I'm visiting from Coimbatore and would like to check availability at Nivaa Stays.",
+    },
+    {
+      match: ['hyderabad', 'secunderabad'],
+      label: 'Hyderabad',
+      lead: 'Adaab, Hyderabad!',
+      body: 'Swapping biryani for a calm beach-town break in Pondicherry? We would love to host you at Nivaa Stays.',
+      whatsappText: "Hi, I'm visiting from Hyderabad and would like to check availability at Nivaa Stays.",
+    },
+    {
+      match: ['mumbai', 'bombay'],
+      label: 'Mumbai',
+      lead: 'Aamchi Mumbai!',
+      body: 'Trading the city rush for a quiet Pondicherry getaway? We would love to host you at Nivaa Stays.',
+      whatsappText: "Hi, I'm visiting from Mumbai and would like to check availability at Nivaa Stays.",
     },
   ];
 

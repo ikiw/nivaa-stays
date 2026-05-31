@@ -76,12 +76,17 @@ If adding a new page, follow the same convention: extensionless in sitemap and c
 ## Geo personalization (greeting toast)
 
 - `_worker.js` exposes `/api/geo` returning `{ country, city, region, timezone }` from `request.cf` — free, edge-rendered, no third-party API.
-- `js/greeting.js` fetches `/api/geo`, matches the visitor's city against an allowlist (Chennai / Bangalore / Pondicherry), and shows a styled bottom-right toast 2.5s after load.
+- `js/greeting.js` fetches `/api/geo`, matches the visitor's city against an allowlist (Chennai / Bangalore / Pondicherry / Madurai / Salem / Coimbatore / Hyderabad / Mumbai), and shows a styled bottom-right toast 2.5s after load.
   - Chennai → *"Whistle Podu!"* lead
   - Bangalore → *"Hi RCBian!"* lead
   - Pondicherry → *"Hi localite!"* lead
+  - Madurai → *"Vanakkam Madurai-kaara!"* lead
+  - Salem → *"Hello, Mango City!"* lead
+  - Coimbatore (Kovai) → *"Namma Kovai!"* lead
+  - Hyderabad (Secunderabad) → *"Adaab, Hyderabad!"* lead
+  - Mumbai (Bombay) → *"Aamchi Mumbai!"* lead
 - Dismissal is permanent per browser (localStorage `nivaa.greeting.dismissed`).
-- Local-dev override: append `?greet=Chennai` (or Bangalore / Pondicherry) to any URL — bypasses both the geo fetch and the dismissed flag, so you can preview each variant.
+- Local-dev override: append `?greet=Chennai` (or Bangalore / Pondicherry / Madurai / Salem / Coimbatore / Hyderabad / Mumbai) to any URL — bypasses both the geo fetch and the dismissed flag, so you can preview each variant.
 - Loaded on the 11 public pages (index + gallery + booking + 8 SEO landing pages) via `<script defer src="/js/greeting.js">` right after the `css/tailwind.css` link.
 - Toast styling lives in `css/styles.css` under `.greeting-toast` — gold accent strip, cream gradient, Playfair lead phrase, pill CTAs.
 
