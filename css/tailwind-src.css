@@ -1,0 +1,15 @@
+/* Tailwind v4 build input — compiled to css/tailwind.css via:  npm run build:css
+   (or `npm run watch:css` to rebuild on save). Replaces the 273 KB js/tailwind.js
+   Play-CDN runtime. Re-run after adding markup with a brand-new utility class.
+   Custom brand classes (.bg-teal, .text-gold, etc.) live in styles.css, not here. */
+@import "tailwindcss" source(none);
+
+@source "../*.html";
+@source "../guides/*.html";
+@source "../js/admin.js";
+@source "../js/hub.js";
+@source "../js/calendar-picker.js";
+@source "../js/greeting.js";
+@source "../js/receipt.js";
+@source "../js/auth.js";
+@source "../js/pricing.js";

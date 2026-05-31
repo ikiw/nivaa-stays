@@ -1,0 +1,15 @@
+{
+  "name": "nivaa-stays-site",
+  "private": true,
+  "description": "Build tooling for the Nivaa Stays static site (Tailwind compile).",
+  "scripts": {
+    "build:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --minify",
+    "watch:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.3.0"
+  },
+  "volta": {
+    "node": "20.20.2"
+  }
+}

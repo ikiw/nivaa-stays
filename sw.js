@@ -4,15 +4,16 @@
 //   • Same-origin static assets (CSS / JS / fonts / icons): cache-first with
 //     background refresh
 //   • Apps Script API requests: never cached (always live data)
-//   • External CDN (tailwind, google fonts, GSI): pass through (browser cache)
+//   • External CDN (google fonts, GSI): pass through (browser cache)
 
-const CACHE_VERSION = 'nivaa-v3';
+const CACHE_VERSION = 'nivaa-v4';
 const SHELL_ASSETS = [
   '/admin.html',
   '/booking.html',
   '/welcome.html',
   '/receipt.html',
   '/index.html',
+  '/css/tailwind.css',
   '/css/styles.css',
   '/js/admin.js',
   '/js/auth.js',
@@ -20,7 +21,6 @@ const SHELL_ASSETS = [
   '/js/calendar-picker.js',
   '/js/hub.js',
   '/js/receipt.js',
-  '/js/tailwind.js',
   '/data/pricing.json',
   '/assets/logo.png',
   '/assets/pwa/icon-192.png',
