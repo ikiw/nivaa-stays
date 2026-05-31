@@ -206,7 +206,15 @@ Caveats:
 
 ## Tracking
 
-Google Ads gtag (`AW-18059444069`) is on every page, injected right after the viewport meta. If adding a new HTML page, copy the gtag block from `index.html`.
+The shared gtag block (right after the viewport meta) configures **two** products, on all 20 visitor-facing pages (everything **except `admin.html`**, which has no tracking at all — keeps host sessions out):
+- **Google Ads** `AW-18059444069`
+- **GA4** `G-4SHCZ8DF76`
+
+If adding a new HTML page, copy the gtag block from `index.html` (it has both `config` lines).
+
+**Conversion events** — `js/track.js` (loaded on the 14 marketing pages: index, gallery, booking, 8 landing pages, guides + 2 guide articles; NOT guest pages, to keep data clean). A single delegated click listener fires a GA4 `generate_lead` event (`lead_source`: whatsapp / phone / booking) + a Google Ads `conversion` on WhatsApp / Call / Book clicks. Also exposes `window.nivaaTrack(action, source)` for manual calls (e.g. form submits).
+- Google Ads side is dormant until conversion **labels** are pasted into `ADS_LABELS` at the top of `track.js` (create the actions in Google Ads → Goals → Conversions).
+- GA4 side works once `generate_lead` is marked a **Key event** in GA4 (Admin → Events). Link GA4 ↔ Ads to import conversions + build remarketing audiences.
 
 ## Conventions for the user
 
