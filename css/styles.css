@@ -1204,6 +1204,9 @@ footer a:hover { color: var(--brand-gold-soft); }
   .pq-rate-tbl .guest-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .pq-rate-tbl .subtotal-row td { padding-top: 8pt; color: #5B6B68; border-top: 1pt dashed #d8dedb; border-bottom: none; }
   .pq-rate-tbl .discount-row td { color: #1a7a4a; font-weight: 600; border-bottom: none; }
+  /* Render the TOTAL/Advance/Balance footer ONCE — browsers otherwise repeat a
+     <tfoot> at the bottom of every printed page when the table spans pages. */
+  .pq-rate-tbl tfoot { display: table-row-group; break-inside: avoid; }
   .pq-rate-tbl .total-row td {
     padding: 9pt 4pt;
     font-family: 'Playfair Display', serif;
@@ -2157,6 +2160,8 @@ footer a:hover { color: var(--brand-gold-soft); }
   .br-rate-tbl .guest-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .br-rate-tbl .subtotal-row td { padding-top: 8pt; color: #5B6B68; border-top: 1pt dashed #d8dedb; border-bottom: none; }
   .br-rate-tbl .discount-row td { color: #1a7a4a; font-weight: 600; border-bottom: none; }
+  /* Same fix as the quote: render the footer once, not on every printed page. */
+  .br-rate-tbl tfoot { display: table-row-group; break-inside: avoid; }
   .br-rate-tbl .total-row td {
     padding: 9pt 4pt;
     font-family: 'Playfair Display', serif; font-size: 14pt;

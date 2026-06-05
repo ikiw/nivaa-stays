@@ -24,10 +24,20 @@
 const TZ = 'Asia/Kolkata';
 
 const RANK_KEYWORDS = [
-  'guest house near JIPMER',
-  'stay near JIPMER Pondicherry',
+  // Hotel intent — primary focus after the Hotel primary-category change
   'hotels near JIPMER',
+  'hotel near JIPMER',
+  'premium hotels near JIPMER',
+  'hotels in Pondicherry',
+  'budget hotel near JIPMER',
+  'rooms near JIPMER',
+  // Bathtub niche — strong, low-competition differentiator
+  'hotels with bathtub in Pondicherry',
+  'hotel with bathtub near JIPMER',
+  // Guest-house intent — keep, to watch for any drop
+  'guest house near JIPMER',
   'guest house in Pondicherry',
+  'stay near JIPMER Pondicherry',
   'family stay near JIPMER',
   'pet friendly stay Pondicherry',
   'service apartment near JIPMER'
