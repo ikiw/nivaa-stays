@@ -216,6 +216,16 @@ If adding a new HTML page, copy the gtag block from `index.html` (it has both `c
 - Google Ads side is dormant until conversion **labels** are pasted into `ADS_LABELS` at the top of `track.js` (create the actions in Google Ads → Goals → Conversions).
 - GA4 side works once `generate_lead` is marked a **Key event** in GA4 (Admin → Events). Link GA4 ↔ Ads to import conversions + build remarketing audiences.
 
+## Local rank tracker (admin)
+
+Admin-only Google Maps local-rank tracker — geo-grid method (à la Local Falcon), scoped to Nivaa.
+
+- **Page:** `admin-rank.html` + `js/rank.js`, gated by `NivaaAuth.isAdmin()` exactly like `admin.html` (linked from the admin nav). Heatmap = pure CSS grid; trend = inline SVG; cards reuse `.adm-*` classes. No charting library.
+- **Data source:** Google **Places API (New)** Text Search, queried across a 5×5 geo-grid (~1.2 km step) around the JIPMER/Nivaa point for ~7 keywords, recording Nivaa's position (1–20, or 0 = not in top 20) at each point. Ranking is a **trend-grade proxy**, not the pixel-exact Maps pack.
+- **Backend — SEPARATE Apps Script** (`apps-script/rank-app-script.js`), deliberately **not** the Bookings script: a standalone project bound to its own **"Nivaa Rankings"** spreadsheet, with its own `/exec` deployment URL. This keeps the unauthenticated rank endpoint + Places API key away from all booking/guest PII. `js/rank.js` calls it via its own `RANK_SCRIPT_URL` const (not the Bookings `APPS_SCRIPT_URL`). Functions: `rankScan()` (weekly trigger → `Rank Scans` sheet), `rankData_()` (`doGet?rankData=1`), `resolvePlaceId()` + `installRankTrigger()`. Config consts (`RANK_KEYWORDS`, `RANK_GRID`) at the top.
+- **One-time setup:** create the "Nivaa Rankings" sheet → Extensions → Apps Script → paste `rank-app-script.js`; enable Places API (New) in Google Cloud (billing on); add **Script Properties** `PLACES_API_KEY` + `NIVAA_PLACE_ID` (run `resolvePlaceId()` for the id); run `rankScan()` once to seed; run `installRankTrigger()`; deploy as a web app and paste the `/exec` URL into `RANK_SCRIPT_URL` in `js/rank.js`. Cost ≈ 175 calls/week (~760/mo) with a `places.id`-only field mask — usually within the free tier.
+- **ARP** = Average Rank Position across the grid (not-found counts as 21). Lower is better.
+
 ## Conventions for the user
 
 - The user pushes via the **`ikiw`** GitHub account (not `selango_LinkedIn`). Always `gh auth switch --user ikiw` before pushing if status shows a different active account.

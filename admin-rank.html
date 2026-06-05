@@ -11,12 +11,39 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nivaa Admin">
 <meta name="robots" content="noindex,nofollow">
-<title>Admin · Nivaa Stays</title>
+<title>Rank Tracker · Nivaa Stays</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tailwind.css">
 <link rel="stylesheet" href="css/styles.css">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+  /* Rank tracker — page-specific bits (cards reuse .adm-* from styles.css) */
+  .rk-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
+  .rk-tab {
+    font-size: 0.78rem; padding: 0.4rem 0.8rem; border-radius: 999px; cursor: pointer;
+    border: 1px solid #e8ebe8; background: #fff; color: var(--brand-muted); transition: all 0.15s;
+  }
+  .rk-tab:hover { border-color: var(--brand-gold); }
+  .rk-tab.is-active { background: var(--brand-teal); color: #fff; border-color: var(--brand-teal); }
+  .rk-grid { display: grid; gap: 4px; max-width: 420px; margin: 0 auto; }
+  .rk-cell {
+    aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center;
+    font-size: 0.82rem; font-weight: 700; color: #fff;
+  }
+  .rk-cell.rk-none { color: #6b7975; }
+  .rk-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 0.9rem; font-size: 0.72rem; color: var(--brand-muted); }
+  .rk-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .rk-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .rk-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  .rk-table th, .rk-table td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid #eef1ef; }
+  .rk-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-gold); }
+  .rk-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .rk-delta-up { color: #1f9d61; font-weight: 600; }
+  .rk-delta-down { color: #d9603b; font-weight: 600; }
+  .rk-delta-flat { color: var(--brand-muted); }
+  .rk-trend-wrap { max-width: 640px; margin: 0 auto; }
+</style>
 </head>
 <body class="bg-cream">
 
@@ -26,15 +53,12 @@
       <img src="assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
       <div class="min-w-0">
         <div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div>
-        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Admin · Daily Ops</div>
+        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Admin · Rank Tracker</div>
       </div>
     </a>
     <nav class="flex items-center gap-1">
-      <a href="admin-rank.html" class="nav-link hidden md:inline">Rank tracker</a>
-      <a href="booking.html" class="nav-link hidden md:inline">Quote builder</a>
-      <a href="receipt.html" class="nav-link hidden md:inline">Receipt</a>
+      <a href="admin.html" class="nav-link hidden md:inline">← Dashboard</a>
       <span id="admin-user-chip" class="hidden md:inline text-white/80 text-xs px-2"></span>
-      <button id="install-btn" class="nav-link hidden" title="Install Nivaa Admin app">📲 Install</button>
       <button id="logout-btn" class="nav-link hidden">Logout</button>
       <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2 hidden">Refresh</button>
     </nav>
@@ -44,35 +68,35 @@
 <section class="section" style="padding-top: 6rem; padding-bottom: 2rem;">
   <div class="max-w-5xl mx-auto px-4 sm:px-5">
     <div class="text-center mb-6">
-      <div class="eyebrow">Today's Ops</div>
+      <div class="eyebrow">Local Visibility</div>
       <div class="divider-gold divider-center"></div>
-      <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Bookings dashboard</h1>
-      <p class="text-[color:var(--brand-muted)] text-sm" id="date-line"></p>
+      <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Google Maps rank tracker</h1>
+      <p class="text-[color:var(--brand-muted)] text-sm" id="rank-subline">Weekly local-pack rankings across a grid around JIPMER.</p>
     </div>
 
-    <!-- Login gate (shown when not signed in as admin) -->
+    <!-- Login gate -->
     <div id="admin-login" class="hidden bg-cream rounded-2xl p-8 text-center max-w-md mx-auto" style="border:1px dashed var(--brand-gold);">
       <div class="serif text-2xl text-teal mb-2">Admin sign-in</div>
-      <p class="text-[color:var(--brand-muted)] text-sm mb-6">Sign in with the Nivaa Stays Google account to view today's bookings and add charges to a guest's hub.</p>
+      <p class="text-[color:var(--brand-muted)] text-sm mb-6">Sign in with the Nivaa Stays Google account to view the rank tracker.</p>
       <div id="g-signin-btn" class="flex justify-center"></div>
       <p id="login-error" class="text-xs mt-4" style="color:#c45a3a; min-height:1em;"></p>
     </div>
 
-    <!-- Dashboard (shown when signed in as admin) -->
-    <div id="admin-dashboard" class="hidden">
-      <div id="admin-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
-      <div id="admin-content"></div>
+    <!-- Dashboard -->
+    <div id="rank-dashboard" class="hidden">
+      <div id="rank-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
+      <div id="rank-content"></div>
     </div>
   </div>
 </section>
 
 <footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
-  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Site</a> · <a href="booking.html?mode=admin" class="underline">Quote builder</a> · <a href="receipt.html?mode=admin" class="underline">Receipt</a></div>
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="admin.html" class="underline">Dashboard</a> · <a href="index.html" class="underline">Site</a></div>
 </footer>
 
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/auth.js"></script>
-<script src="js/admin.js"></script>
+<script src="js/rank.js"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
