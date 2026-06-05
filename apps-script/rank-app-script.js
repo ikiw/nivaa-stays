@@ -44,9 +44,17 @@ const RANK_KEYWORDS = [
 ];
 const RANK_GRID    = { centerLat: 11.96232, centerLng: 79.79309, size: 5, stepKm: 1.2 };
 const RANK_SHEET   = 'Rank Scans';
-const RANK_HEADERS = ['Scan Date', 'Keyword', 'Row', 'Col', 'Lat', 'Lng', 'Rank'];
+const RANK_HEADERS = ['Scan Date', 'Keyword', 'Row', 'Col', 'Lat', 'Lng', 'Rank', 'Top IDs'];
 const RANK_TOPN    = 20;                 // how deep we read each result list
 const NOT_FOUND_RANK = RANK_TOPN + 1;    // rank value used in ARP math when absent
+
+// Competitor Share-of-Voice: we already fetch the full ranked list per cell —
+// store the top-N ids ('Top IDs' column) and resolve their names/ratings into a
+// Competitors sheet for the SoV dashboard (?compData=1).
+const COMP_TOPN    = 20;                  // ids stored per cell (we fetch RANK_TOPN anyway)
+const COMP_SHEET   = 'Competitors';
+const COMP_HEADERS = ['Place ID', 'Name', 'Rating', 'Reviews', 'Type', 'Updated'];
+const COMP_MAX     = 40;                  // cap competitors resolved per run (cost control)
 const RANK_SHEET_ID = '';                // leave '' if bound; set if standalone
 
 // ---------- helpers ----------
@@ -89,6 +97,7 @@ function getOrCreateSheet_(name, headers) {
 function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.rankData != null) return rankData_();
+  if (params.compData != null) return compData_();
   return jsonOut_({ ok: true, service: 'nivaa-rank' });
 }
 
@@ -150,6 +159,7 @@ function rankScan() {
   const placeId = PropertiesService.getScriptProperties().getProperty('NIVAA_PLACE_ID');
   if (!placeId) throw new Error('NIVAA_PLACE_ID not set — run resolvePlaceId() first');
   const sh = getOrCreateSheet_(RANK_SHEET, RANK_HEADERS);
+  sh.getRange(1, 1, 1, RANK_HEADERS.length).setValues([RANK_HEADERS]); // keep header current (adds 'Top IDs')
   const scanDate = Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd');
   const points = rankGridPoints_();
   const rows = [];
@@ -158,7 +168,7 @@ function rankScan() {
       const ids = placesTextSearch_(kw, pt.lat, pt.lng);
       const idx = ids.indexOf(placeId);
       const rank = idx === -1 ? 0 : idx + 1;     // 0 = not found in top N
-      rows.push([scanDate, kw, pt.row, pt.col, pt.lat, pt.lng, rank]);
+      rows.push([scanDate, kw, pt.row, pt.col, pt.lat, pt.lng, rank, ids.slice(0, COMP_TOPN).join(',')]);
       Utilities.sleep(120);                       // gentle throttle
     }
   }
@@ -227,4 +237,130 @@ function installRankTrigger() {
   });
   ScriptApp.newTrigger(FN).timeBased().onWeekDay(ScriptApp.WeekDay.MONDAY).atHour(6).inTimezone(TZ).create();
   Logger.log('Installed weekly trigger for %s (Mon 06:00 %s)', FN, TZ);
+}
+
+// ============================================================
+// Competitor Share-of-Voice — built on the ranked lists already captured by
+// rankScan() in the 'Top IDs' column. resolveCompetitors() turns place ids into
+// names/ratings; compData_() (?compData=1) computes SoV + per-competitor grids.
+// ============================================================
+
+// Place Details (New) for one place id → { name, rating, reviews, type }.
+function placeDetails_(id) {
+  const key = PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  const res = UrlFetchApp.fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(id), {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'id,displayName,rating,userRatingCount,primaryTypeDisplayName' }
+  });
+  if (res.getResponseCode() !== 200) {
+    Logger.log('Place Details %s for %s → %s', res.getResponseCode(), id, res.getContentText().slice(0, 250));
+    return { name: '', rating: '', reviews: '', type: '' };
+  }
+  const b = JSON.parse(res.getContentText() || '{}');
+  return {
+    name:    (b.displayName && b.displayName.text) || '',
+    rating:  b.rating || '',
+    reviews: b.userRatingCount || '',
+    type:    (b.primaryTypeDisplayName && b.primaryTypeDisplayName.text) || ''
+  };
+}
+
+// Resolve the most-common competitor place ids from the latest scan into names +
+// ratings. Run after rankScan() (cheap: Place Details on up to COMP_MAX ids).
+function resolveCompetitors() {
+  const nivaa = PropertiesService.getScriptProperties().getProperty('NIVAA_PLACE_ID');
+  const sh = rankSpreadsheet_().getSheetByName(RANK_SHEET);
+  if (!sh || sh.getLastRow() < 2) { Logger.log('No scans yet.'); return; }
+  const data = sh.getDataRange().getValues();
+  const H = data[0].map(c => String(c).trim());
+  const dCol = H.indexOf('Scan Date'), tCol = H.indexOf('Top IDs');
+  if (tCol === -1) { Logger.log('No Top IDs column — re-run rankScan() with the updated script first.'); return; }
+  const dates = data.slice(1).map(r => ymd_(r[dCol])).filter(Boolean).sort();
+  const latest = dates[dates.length - 1];
+  const freq = {};
+  data.slice(1).forEach(r => {
+    if (ymd_(r[dCol]) !== latest) return;
+    String(r[tCol] || '').split(',').filter(Boolean).forEach(id => {
+      if (id !== nivaa) freq[id] = (freq[id] || 0) + 1;
+    });
+  });
+  const ids = Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, COMP_MAX);
+  const out = [];
+  ids.forEach(id => {
+    const d = placeDetails_(id);
+    out.push([id, d.name, d.rating, d.reviews, d.type, latest]);
+    Utilities.sleep(80);
+  });
+  const cs = getOrCreateSheet_(COMP_SHEET, COMP_HEADERS);
+  cs.getRange(1, 1, 1, COMP_HEADERS.length).setValues([COMP_HEADERS]);
+  if (cs.getLastRow() > 1) cs.getRange(2, 1, cs.getLastRow() - 1, COMP_HEADERS.length).clearContent();
+  if (out.length) cs.getRange(2, 1, out.length, COMP_HEADERS.length).setValues(out);
+  const named = out.filter(r => r[1]).length;
+  Logger.log('Resolved %s competitors (%s with names) for %s. First id tried: %s', out.length, named, latest, ids[0] || '(none)');
+}
+
+// doGet?compData=1 — Share of Voice leaderboard + per-keyword grids (latest scan).
+function compData_() {
+  const nivaa = PropertiesService.getScriptProperties().getProperty('NIVAA_PLACE_ID');
+  const sh = rankSpreadsheet_().getSheetByName(RANK_SHEET);
+  if (!sh || sh.getLastRow() < 2) return jsonOut_({ ready: false });
+  const data = sh.getDataRange().getValues();
+  const H = data[0].map(c => String(c).trim());
+  const ix = h => H.indexOf(h);
+  if (ix('Top IDs') === -1) return jsonOut_({ ready: false, reason: 'no Top IDs — re-run rankScan()' });
+
+  const rows = data.slice(1).map(r => ({
+    date: ymd_(r[ix('Scan Date')]), keyword: String(r[ix('Keyword')]),
+    row: Number(r[ix('Row')]), col: Number(r[ix('Col')]),
+    ids: String(r[ix('Top IDs')] || '').split(',').filter(Boolean)
+  })).filter(r => r.keyword && r.ids.length);
+  if (!rows.length) return jsonOut_({ ready: false });
+
+  const scans = Array.from(new Set(rows.map(r => r.date))).sort();
+  const latest = scans[scans.length - 1];
+  const latestRows = rows.filter(r => r.date === latest);
+  const total = latestRows.length;
+  const keywords = Array.from(new Set(latestRows.map(r => r.keyword)));
+
+  // appearance counts in top-3 / top-10, and average position, across all cells
+  const f3 = {}, f10 = {}, sumRank = {}, cnt = {};
+  latestRows.forEach(r => {
+    r.ids.slice(0, 3).forEach(id => f3[id] = (f3[id] || 0) + 1);
+    r.ids.slice(0, 10).forEach(id => f10[id] = (f10[id] || 0) + 1);
+    r.ids.forEach((id, i) => { sumRank[id] = (sumRank[id] || 0) + (i + 1); cnt[id] = (cnt[id] || 0) + 1; });
+  });
+
+  // names/ratings lookup from the Competitors sheet
+  const cs = rankSpreadsheet_().getSheetByName(COMP_SHEET);
+  const meta = {};
+  if (cs && cs.getLastRow() > 1) {
+    const cd = cs.getDataRange().getValues();
+    const CH = cd[0].map(c => String(c).trim());
+    const cix = h => CH.indexOf(h);
+    cd.slice(1).forEach(r => {
+      meta[String(r[cix('Place ID')])] = {
+        name: r[cix('Name')], rating: r[cix('Rating')], reviews: r[cix('Reviews')], type: r[cix('Type')]
+      };
+    });
+  }
+
+  const board = Object.keys(f10).map(id => ({
+    id,
+    isNivaa: id === nivaa,
+    name: (meta[id] && meta[id].name) || (id === nivaa ? 'Nivaa Stays' : '(unresolved)'),
+    rating: meta[id] ? meta[id].rating : '',
+    reviews: meta[id] ? meta[id].reviews : '',
+    sov10: Math.round(100 * (f10[id] || 0) / total),
+    sov3: Math.round(100 * (f3[id] || 0) / total),
+    avgRank: cnt[id] ? Number((sumRank[id] / cnt[id]).toFixed(1)) : null
+  })).sort((a, b) => b.sov10 - a.sov10).slice(0, 25);
+
+  // per-keyword grids (top-10 ids per cell) for client-side competitor heatmaps
+  const grids = {};
+  latestRows.forEach(r => {
+    (grids[r.keyword] = grids[r.keyword] || []).push({ row: r.row, col: r.col, ids: r.ids.slice(0, 10) });
+  });
+
+  return jsonOut_({ ready: true, latest, gridSize: RANK_GRID.size, nivaaId: nivaa, keywords, competitors: board, grids });
 }
