@@ -162,8 +162,19 @@ function rankScan() {
       Utilities.sleep(120);                       // gentle throttle
     }
   }
-  if (rows.length) sh.getRange(sh.getLastRow() + 1, 1, rows.length, RANK_HEADERS.length).setValues(rows);
-  Logger.log('rankScan %s: wrote %s rows', scanDate, rows.length);
+  // Idempotent per day: drop any existing rows for today's scan date, keep prior
+  // days, then write today's fresh rows. So a manual re-run (or an accidental
+  // double trigger) overwrites today's scan instead of duplicating it.
+  const lastRow = sh.getLastRow();
+  let kept = [];
+  if (lastRow > 1) {
+    kept = sh.getRange(2, 1, lastRow - 1, RANK_HEADERS.length).getValues()
+             .filter(r => ymd_(r[0]) !== scanDate);
+    sh.getRange(2, 1, lastRow - 1, RANK_HEADERS.length).clearContent();
+  }
+  const out = kept.concat(rows);
+  if (out.length) sh.getRange(2, 1, out.length, RANK_HEADERS.length).setValues(out);
+  Logger.log('rankScan %s: wrote %s rows (%s kept from prior days)', scanDate, rows.length, kept.length);
 }
 
 // doGet?rankData=1 — aggregated scan history for the admin dashboard.
