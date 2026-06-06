@@ -98,6 +98,7 @@ function doGet(e) {
   const params = (e && e.parameter) || {};
   if (params.rankData != null) return rankData_();
   if (params.compData != null) return compData_();
+  if (params.gbpAudit != null) return gbpAudit_();
   return jsonOut_({ ok: true, service: 'nivaa-rank' });
 }
 
@@ -363,4 +364,42 @@ function compData_() {
   });
 
   return jsonOut_({ ready: true, latest, gridSize: RANK_GRID.size, nivaaId: nivaa, keywords, competitors: board, grids });
+}
+
+// Rich Place Details for the GBP audit (category/types/price/reviews).
+function auditDetails_(id) {
+  const key = PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  const res = UrlFetchApp.fetch('https://places.googleapis.com/v1/places/' + encodeURIComponent(id), {
+    method: 'get',
+    muteHttpExceptions: true,
+    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'id,displayName,primaryTypeDisplayName,types,rating,userRatingCount,priceLevel,businessStatus' }
+  });
+  if (res.getResponseCode() !== 200) { Logger.log('audit %s for %s', res.getResponseCode(), id); return null; }
+  const b = JSON.parse(res.getContentText() || '{}');
+  return {
+    id: id,
+    name:        (b.displayName && b.displayName.text) || '',
+    primaryType: (b.primaryTypeDisplayName && b.primaryTypeDisplayName.text) || '',
+    types:       b.types || [],
+    rating:      b.rating || '',
+    reviews:     b.userRatingCount || '',
+    priceLevel:  b.priceLevel || '',
+    status:      b.businessStatus || ''
+  };
+}
+
+// doGet?gbpAudit=1 — Nivaa vs top competitors: category, types, price, reviews.
+function gbpAudit_() {
+  const nivaa = PropertiesService.getScriptProperties().getProperty('NIVAA_PLACE_ID');
+  const cs = rankSpreadsheet_().getSheetByName(COMP_SHEET);
+  const compIds = [];
+  if (cs && cs.getLastRow() > 1) {
+    const cd = cs.getDataRange().getValues();
+    const idCol = cd[0].map(c => String(c).trim()).indexOf('Place ID');
+    cd.slice(1).forEach(r => { if (r[idCol]) compIds.push(String(r[idCol])); });
+  }
+  const ids = [nivaa].concat(compIds.slice(0, 8));
+  const out = ids.map(id => { const d = auditDetails_(id); Utilities.sleep(80); return d; }).filter(Boolean);
+  out.forEach(o => o.isNivaa = o.id === nivaa);
+  return jsonOut_({ audit: out });
 }
