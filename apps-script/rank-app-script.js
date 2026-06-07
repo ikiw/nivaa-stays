@@ -99,6 +99,7 @@ function doGet(e) {
   if (params.rankData != null) return rankData_();
   if (params.compData != null) return compData_();
   if (params.gbpAudit != null) return gbpAudit_();
+  if (params.itinData != null) return itinData_();
   return jsonOut_({ ok: true, service: 'nivaa-rank' });
 }
 
@@ -402,4 +403,126 @@ function gbpAudit_() {
   const out = ids.map(id => { const d = auditDetails_(id); Utilities.sleep(80); return d; }).filter(Boolean);
   out.forEach(o => o.isNivaa = o.id === nivaa);
   return jsonOut_({ audit: out });
+}
+
+// ============================================================
+// Itinerary builder data — one-time generator.
+// Resolves a curated place list (Places API) + a driving distance/time matrix
+// (Routes API computeRouteMatrix), and stores the assembled JSON for the
+// client-side day-planner. The live tool reads a STATIC copy of this — zero
+// per-user API cost. Re-run buildItineraryData() when the list changes.
+// SETUP: enable "Routes API" in the Cloud project. The Places key works if
+// Routes is enabled on it; otherwise add a ROUTES_API_KEY script property.
+// ============================================================
+
+const ITIN_SHEET = 'Itin Data';
+const ITIN_PLACES = [
+  { name: 'Promenade (Rock) Beach',        q: 'Promenade Beach, Pondicherry',                 cat: 'Beach' },
+  { name: 'Paradise Beach',                q: 'Paradise Beach, Pondicherry',                  cat: 'Beach' },
+  { name: 'Serenity Beach',                q: 'Serenity Beach, Pondicherry',                  cat: 'Beach' },
+  { name: 'Auroville Beach',               q: 'Auroville Beach',                              cat: 'Beach' },
+  { name: 'Eden Beach',                    q: 'Eden Beach, Pondicherry',                      cat: 'Beach' },
+  { name: 'Sri Aurobindo Ashram',          q: 'Sri Aurobindo Ashram, Pondicherry',            cat: 'Attraction' },
+  { name: 'Matrimandir (Auroville)',       q: 'Matrimandir, Auroville',                       cat: 'Attraction' },
+  { name: 'Sacred Heart Basilica',         q: 'Basilica of the Sacred Heart of Jesus, Pondicherry', cat: 'Attraction' },
+  { name: 'Manakula Vinayagar Temple',     q: 'Sri Manakula Vinayagar Temple, Pondicherry',   cat: 'Attraction' },
+  { name: 'Botanical Garden',              q: 'Botanical Garden, Pondicherry',                cat: 'Attraction' },
+  { name: 'Bharathi Park (White Town)',    q: 'Bharathi Park, Pondicherry',                   cat: 'Attraction' },
+  { name: 'Chunnambar Boat House',         q: 'Chunnambar Boat House, Pondicherry',           cat: 'Attraction' },
+  { name: 'Arikamedu',                     q: 'Arikamedu, Pondicherry',                       cat: 'Attraction' },
+  { name: 'Ousteri Lake',                  q: 'Ousteri Lake, Pondicherry',                    cat: 'Attraction' },
+  { name: 'Café des Arts',                 q: 'Cafe des Arts, Pondicherry',                   cat: 'Food' },
+  { name: 'Villa Shanti',                  q: 'Villa Shanti, Pondicherry',                    cat: 'Food' },
+  { name: 'Surguru',                       q: 'Surguru, Pondicherry',                         cat: 'Food' },
+  { name: 'Baker Street',                  q: 'Baker Street, Pondicherry',                    cat: 'Food' },
+  { name: 'Goubert Market',                q: 'Goubert Market, Pondicherry',                  cat: 'Shopping' },
+  { name: 'Hidesign',                      q: 'Hidesign, Pondicherry',                        cat: 'Shopping' }
+];
+
+// Start-point AREAS (category 'Area'): selectable as the day's starting point but
+// not as stops. The user picks the area nearest their hotel.
+const ITIN_STARTS = [
+  { name: 'Pondicherry Gate (entrance)',  q: 'Pondicherry Gate, Puducherry',     cat: 'Area' },
+  { name: 'White Town (French Quarter)',  q: 'French Quarter, Pondicherry',      cat: 'Area' },
+  { name: 'Beach Road (Promenade)',       q: 'Goubert Avenue, Pondicherry',      cat: 'Area' },
+  { name: 'Pondicherry Bus Stand',        q: 'Puducherry Bus Stand',             cat: 'Area' },
+  { name: 'Puducherry Railway Station',   q: 'Puducherry Railway Station',       cat: 'Area' },
+  { name: 'Auroville',                    q: 'Auroville Visitor Centre',         cat: 'Area' },
+  { name: 'Mission Street',               q: 'Mission Street, Pondicherry',      cat: 'Area' }
+];
+
+// Places Text Search → { name, lat, lng } for the top match.
+function resolvePlace_(query) {
+  const key = PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  const res = UrlFetchApp.fetch('https://places.googleapis.com/v1/places:searchText', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'places.id,places.displayName,places.location' },
+    payload: JSON.stringify({ textQuery: query, pageSize: 1 })
+  });
+  if (res.getResponseCode() !== 200) { Logger.log('resolve "%s" → %s', query, res.getResponseCode()); return null; }
+  const p = (JSON.parse(res.getContentText() || '{}').places || [])[0];
+  if (!p || !p.location) return null;
+  return { lat: p.location.latitude, lng: p.location.longitude };
+}
+
+// Routes API computeRouteMatrix → { min:[[]], km:[[]] } driving matrix.
+// Chunks origins so each call stays under the 625-element (origins×destinations) cap.
+function routeMatrix_(points) {
+  const key = PropertiesService.getScriptProperties().getProperty('ROUTES_API_KEY')
+            || PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  const n = points.length;
+  const wpAll = points.map(p => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } }));
+  const min = Array.from({ length: n }, () => new Array(n).fill(null));
+  const km  = Array.from({ length: n }, () => new Array(n).fill(null));
+  const batch = Math.max(1, Math.floor(600 / n));   // origins per call (≤600 elements)
+  for (let o = 0; o < n; o += batch) {
+    const origins = wpAll.slice(o, o + batch);
+    const res = UrlFetchApp.fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'originIndex,destinationIndex,distanceMeters,duration,condition' },
+      payload: JSON.stringify({ origins: origins, destinations: wpAll, travelMode: 'DRIVE' })
+    });
+    if (res.getResponseCode() !== 200) throw new Error('Route Matrix ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 250));
+    JSON.parse(res.getContentText() || '[]').forEach(e => {
+      if (e.condition === 'ROUTE_EXISTS') {
+        const i = o + e.originIndex, j = e.destinationIndex;   // offset origin by batch start
+        min[i][j] = Math.round((parseInt(e.duration, 10) || 0) / 60);
+        km[i][j]  = Math.round((e.distanceMeters || 0) / 100) / 10;
+      }
+    });
+    Utilities.sleep(250);
+  }
+  return { min, km };
+}
+
+// Run ONCE from the editor. Resolves places + builds the matrix, stores the JSON
+// in the 'Itin Data' sheet (served via doGet?itinData=1).
+function buildItineraryData() {
+  // origin = Nivaa (grid centre is the Nivaa point)
+  const points = [{ name: 'Nivaa Stays', cat: 'Stay', lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng }];
+  ITIN_PLACES.concat(ITIN_STARTS).forEach(p => {
+    const r = resolvePlace_(p.q);
+    if (r) points.push({ name: p.name, cat: p.cat, lat: r.lat, lng: r.lng });
+    else Logger.log('skipped (unresolved): %s', p.name);
+    Utilities.sleep(120);
+  });
+  const m = routeMatrix_(points);
+  const data = {
+    generated: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
+    origin: 0,
+    places: points,
+    minutes: m.min,
+    km: m.km
+  };
+  const sh = getOrCreateSheet_(ITIN_SHEET, ['JSON']);
+  sh.getRange(2, 1).setValue(JSON.stringify(data));
+  Logger.log('Itinerary data built: %s places, %sx%s matrix.', points.length, points.length, points.length);
+}
+
+// doGet?itinData=1 — returns the stored itinerary JSON (for me to bake into a static file).
+function itinData_() {
+  const sh = rankSpreadsheet_().getSheetByName(ITIN_SHEET);
+  if (!sh || sh.getLastRow() < 2) return jsonOut_({ ready: false });
+  return ContentService.createTextOutput(sh.getRange(2, 1).getValue() || '{}')
+    .setMimeType(ContentService.MimeType.JSON);
 }
