@@ -94,6 +94,9 @@
   .section-head { display: flex; align-items: baseline; gap: 0.7rem; margin-bottom: 1.25rem; scroll-margin-top: 5rem; }
   .section-head h2 { font-family: 'Playfair Display', serif; font-size: 1.7rem; color: var(--brand-teal); }
   .section-head .num { font-family: 'Playfair Display', serif; color: var(--brand-gold); font-size: 1.5rem; font-weight: 700; }
+  .section-head a.anchor { color: var(--brand-gold); opacity: 0.35; font-weight: 700; text-decoration: none; margin-left: 0.4rem; font-size: 1.1rem; transition: opacity 0.15s; align-self: center; }
+  .section-head:hover a.anchor { opacity: 0.8; }
+  .section-head a.anchor:hover { opacity: 1; }
   .lede { color: var(--brand-muted); line-height: 1.6; margin-bottom: 1.25rem; max-width: 44rem; }
   .toc { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
   .toc a { font-size: 0.78rem; padding: 0.35rem 0.8rem; border-radius: 999px; border: 1px solid #e8ebe8; background: #fff; color: var(--brand-teal); transition: all 0.15s; }
@@ -151,7 +154,7 @@
 
     <!-- Beaches -->
     <div class="mb-12">
-      <div class="section-head" id="beaches"><span class="num">01</span><h2>Beaches</h2></div>
+      <div class="section-head" id="beaches"><span class="num">01</span><h2>Beaches</h2><a href="#beaches" class="anchor" aria-label="Link to this section">#</a></div>
       <p class="lede">The town beach is rocky (great for walks, not swimming) — for sand and a swim, head a little out of town.</p>
       <div class="pg-grid">
         <div class="pg-card">
@@ -191,7 +194,7 @@
 
     <!-- Attractions -->
     <div class="mb-12">
-      <div class="section-head" id="attractions"><span class="num">02</span><h2>Things to See &amp; Do</h2></div>
+      <div class="section-head" id="attractions"><span class="num">02</span><h2>Things to See &amp; Do</h2><a href="#attractions" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="pg-grid">
         <div class="pg-card">
           <h3>🏛️ Heritage &amp; spiritual</h3><div class="pg-note">Don't miss</div>
@@ -228,7 +231,7 @@
 
     <!-- Eat & Drink -->
     <div class="mb-12">
-      <div class="section-head" id="eat"><span class="num">03</span><h2>Where to Eat &amp; Drink</h2></div>
+      <div class="section-head" id="eat"><span class="num">03</span><h2>Where to Eat &amp; Drink</h2><a href="#eat" class="anchor" aria-label="Link to this section">#</a></div>
       <p class="lede">Pondicherry punches above its weight — French-Creole heritage dining, sea-view cafés and proper South Indian tiffin. A community-loved shortlist by meal:</p>
       <div class="pg-grid">
         <div class="pg-card">
@@ -280,7 +283,7 @@
 
     <!-- Getting Around -->
     <div class="mb-12">
-      <div class="section-head" id="getaround"><span class="num">04</span><h2>Getting Around</h2></div>
+      <div class="section-head" id="getaround"><span class="num">04</span><h2>Getting Around</h2><a href="#getaround" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="pg-grid">
         <div class="pg-card">
           <h3>🛵 Scooty &amp; bike rentals</h3><div class="pg-note">Best on two wheels</div>
@@ -316,7 +319,7 @@
 
     <!-- Shopping -->
     <div class="mb-12">
-      <div class="section-head" id="shopping"><span class="num">05</span><h2>Shopping</h2></div>
+      <div class="section-head" id="shopping"><span class="num">05</span><h2>Shopping</h2><a href="#shopping" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="pg-grid">
         <div class="pg-card">
           <h3>🛍️ What to buy &amp; where</h3><div class="pg-note">Ethical &amp; local</div>
@@ -343,7 +346,7 @@
 
     <!-- Itineraries -->
     <div class="mb-12">
-      <div class="section-head" id="itineraries"><span class="num">06</span><h2>Ready-Made Itineraries</h2></div>
+      <div class="section-head" id="itineraries"><span class="num">06</span><h2>Ready-Made Itineraries</h2><a href="#itineraries" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="grid md:grid-cols-3 gap-4">
         <div class="itin">
           <h4>1 day · highlights</h4>
@@ -380,7 +383,7 @@
 
     <!-- Plan your trip -->
     <div class="mb-12">
-      <div class="section-head" id="plan"><span class="num">07</span><h2>Plan Your Trip</h2></div>
+      <div class="section-head" id="plan"><span class="num">07</span><h2>Plan Your Trip</h2><a href="#plan" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="grid md:grid-cols-2 gap-4">
         <div class="guide-card"><h4>Best time to visit</h4><p>Oct–Mar is pleasant and dry — the sweet spot. Apr–Jun is hot and humid. Jul–Sep brings the monsoon: green and best for surf, but wet.</p></div>
         <div class="guide-card"><h4>Matrimandir</h4><p>Book the inner-chamber visit a day ahead via auroville.org; early-morning slots are calmer. The viewing point needs no booking.</p></div>
@@ -391,7 +394,7 @@
 
     <!-- FAQ -->
     <div class="mb-12">
-      <div class="section-head" id="faq"><span class="num">08</span><h2>Pondicherry FAQ</h2></div>
+      <div class="section-head" id="faq"><span class="num">08</span><h2>Pondicherry FAQ</h2><a href="#faq" class="anchor" aria-label="Link to this section">#</a></div>
       <div class="space-y-3 max-w-3xl">
         <details class="faq"><summary>What is the best time to visit Pondicherry?</summary><p>October to March is the best time — pleasant and dry. April to June is hot and humid, and July to September brings the northeast monsoon, which is beautiful but wet.</p></details>
         <details class="faq"><summary>How many days do you need in Pondicherry?</summary><p>Two days cover the highlights — the French Quarter, Promenade Beach and a couple of cafés. Three to four days let you add Auroville and Matrimandir, the quieter beaches, and a backwater or scuba day trip.</p></details>
