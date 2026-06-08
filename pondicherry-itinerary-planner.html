@@ -70,8 +70,17 @@
   .ip-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; justify-content: center; margin-bottom: 1.5rem; }
   .ip-controls label { font-size: 0.78rem; color: var(--brand-muted); display: flex; flex-direction: column; gap: 0.25rem; font-weight: 600; }
   .ip-controls select, .ip-controls input[type="time"] { font-size: 0.9rem; padding: 0.45rem 0.6rem; border: 1px solid #e8ebe8; border-radius: 8px; color: var(--brand-teal); background: #fff; }
-  .ip-layout { display: grid; grid-template-columns: 1fr 1.3fr; gap: 1.25rem; align-items: start; }
-  @media (max-width: 820px) { .ip-layout { grid-template-columns: 1fr; } }
+  .ip-layout { display: grid; grid-template-columns: 0.92fr 1.3fr 1fr; gap: 1rem; align-items: start; }
+  .ip-mapcol { position: sticky; top: 5.5rem; }
+  .ip-daycol { position: sticky; top: 5.5rem; display: flex; flex-direction: column; max-height: calc(100vh - 6.5rem); }
+  .ip-daycol #ip-itinerary { overflow-y: auto; min-height: 0; padding-right: 0.3rem; }
+  @media (max-width: 1100px) {
+    .ip-layout { grid-template-columns: 1fr; }
+    .ip-mapcol, .ip-daycol { position: static; max-height: none; }
+    .ip-daycol #ip-itinerary { overflow-y: visible; }
+  }
+  .ip-mapempty { border: 1px dashed #d7ddd8; border-radius: 14px; padding: 5rem 1rem; text-align: center; color: var(--brand-muted); font-size: 0.85rem; background: #fff; }
+  .ip-mapwrap:not(.hidden) ~ .ip-mapempty { display: none; }
   .ip-panel { background: var(--brand-cream); border: 1px solid #eceee9; border-radius: 16px; padding: 1.1rem 1.25rem; }
   .ip-panel > h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--brand-teal); margin-bottom: 0.8rem; }
   .ip-catgroup { margin-bottom: 0.9rem; }
@@ -124,10 +133,12 @@
     body > #ip-print-root { display: block !important; }
     header.sticky-nav, footer, #ip-hero, #ip-footnote, .ip-controls,
     .ip-layout > .ip-panel:first-child, .ip-dayhead, .ip-acts, .ip-drag,
-    .ip-maplink, .ip-maplink-sm, #ip-mapwrap { display: none !important; }
+    .ip-maplink, .ip-maplink-sm, #ip-mapwrap, .ip-mapcol { display: none !important; }
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section.section { padding-top: 1rem !important; }
     .ip-layout { display: block; }
+    .ip-daycol { position: static !important; max-height: none !important; display: block !important; }
+    .ip-daycol #ip-itinerary { overflow: visible !important; max-height: none !important; }
     .ip-panel { background: #fff !important; border: none !important; padding: 0 !important; }
     .ip-printhead { display: block; font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--brand-teal); margin-bottom: 0.6rem; }
     .ip-summary { font-size: 0.85rem; margin-bottom: 1rem; }
@@ -154,7 +165,7 @@
 </header>
 
 <section id="ip-print-root" class="section" style="padding-top: 6rem;">
-  <div class="max-w-5xl mx-auto px-5">
+  <div class="max-w-7xl mx-auto px-5">
 
     <div id="ip-hero" class="text-center mb-8">
       <div class="eyebrow">Plan Your Day</div>
@@ -174,16 +185,7 @@
         <h3>Add places</h3>
         <div id="ip-picker"></div>
       </div>
-      <div class="ip-panel">
-        <div class="ip-dayhead">
-          <h3>Your day</h3>
-          <div class="ip-dayactions">
-            <button id="ip-optimize" class="btn-outline-teal text-xs">Optimize route</button>
-            <button id="ip-clear" class="btn-outline-teal text-xs">Clear</button>
-            <button id="ip-pdf" class="btn-outline-teal text-xs hidden">Save as PDF</button>
-            <a id="ip-gmaps" class="btn-gold text-xs hidden" target="_blank" rel="noopener">Open in Maps →</a>
-          </div>
-        </div>
+      <div class="ip-mapcol">
         <div id="ip-mapwrap" class="ip-mapwrap hidden">
           <img id="ip-map" alt="Route map of your selected stops" loading="lazy">
           <div class="ip-maplegend">
@@ -192,6 +194,18 @@
             <span><i style="background:#0E3B35"></i>Attraction</span>
             <span><i style="background:#d9603b"></i>Food</span>
             <span><i style="background:#8b5cf6"></i>Shopping</span>
+          </div>
+        </div>
+        <div class="ip-mapempty">🗺️ Your route map appears here as you add stops.</div>
+      </div>
+      <div class="ip-panel ip-daycol">
+        <div class="ip-dayhead">
+          <h3>Your day</h3>
+          <div class="ip-dayactions">
+            <button id="ip-optimize" class="btn-outline-teal text-xs">Optimize route</button>
+            <button id="ip-clear" class="btn-outline-teal text-xs">Clear</button>
+            <button id="ip-pdf" class="btn-outline-teal text-xs hidden">Save as PDF</button>
+            <a id="ip-gmaps" class="btn-gold text-xs hidden" target="_blank" rel="noopener">Open in Maps →</a>
           </div>
         </div>
         <div class="ip-printhead">My Pondicherry Day Plan</div>

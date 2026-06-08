@@ -176,7 +176,7 @@ function staticMapUrl() {
   const fmt = q => q.lat.toFixed(6) + ',' + q.lng.toFixed(6);
   const p = [
     'https://maps.googleapis.com/maps/api/staticmap?key=' + MAPS_KEY,
-    'size=540x460', 'scale=2'
+    'size=540x560', 'scale=2'
   ];
   p.push('markers=' + encodeURIComponent('color:0xC9A227|label:S|' + fmt(pos[0])));
   state.stops.forEach((s, n) => {
