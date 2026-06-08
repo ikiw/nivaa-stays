@@ -3,7 +3,11 @@
 // (data/pondicherry-itinerary.json) — zero per-user API calls, no key.
 
 const DATA_URL = 'data/pondicherry-itinerary.json';
+// Maps key (Static Maps + Embed) — referrer-locked to nivaastays.com, so safe in
+// client code.
+const MAPS_KEY = 'AIzaSyApP7gtPnoI2D571tCjW3ANxIXTmcD3ECU';
 const CAT_ICON = { Stay: '🛏️', Beach: '🏖️', Attraction: '🏛️', Food: '🍴', Shopping: '🛍️' };
+const CAT_COLOR = { Stay: '0xC9A227', Area: '0xC9A227', Beach: '0x2f80c4', Attraction: '0x0E3B35', Food: '0xd9603b', Shopping: '0x8b5cf6' };
 const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Shopping: 30, Stay: 0 };
 
 let DATA = null;
@@ -52,6 +56,7 @@ function renderItinerary() {
     sum.innerHTML = '';
     document.getElementById('ip-gmaps').classList.add('hidden');
     document.getElementById('ip-pdf').classList.add('hidden');
+    document.getElementById('ip-mapwrap').classList.add('hidden');
     return;
   }
 
@@ -118,6 +123,14 @@ function renderItinerary() {
   g.href = gmapsUrl();
   g.classList.remove('hidden');
   document.getElementById('ip-pdf').classList.remove('hidden');
+
+  // live route map — only reload when the route actually changes
+  if (MAPS_KEY) {
+    const map = document.getElementById('ip-map');
+    const newSrc = staticMapUrl();
+    if (map.getAttribute('src') !== newSrc) map.setAttribute('src', newSrc);
+    document.getElementById('ip-mapwrap').classList.remove('hidden');
+  }
 }
 
 function gmapsUrl() {
@@ -127,6 +140,51 @@ function gmapsUrl() {
   const wps = state.stops.map(s => pt(s.idx)).join('|');
   if (wps) u += `&waypoints=${encodeURIComponent(wps)}`;
   return u;
+}
+
+// Nudge near-coincident markers apart so they don't stack on the static image.
+// The offset scales with the map's lat/lng span, so it works at any zoom.
+function fanOut_(pos) {
+  const n = pos.length;
+  if (n < 2) return;
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  pos.forEach(q => { minLat = Math.min(minLat, q.lat); maxLat = Math.max(maxLat, q.lat); minLng = Math.min(minLng, q.lng); maxLng = Math.max(maxLng, q.lng); });
+  const span = Math.max(maxLat - minLat, maxLng - minLng, 0.01);
+  const unit = span * 0.045;   // ring radius ≈ one marker width
+  const dist = (a, b) => Math.hypot(a.lat - b.lat, a.lng - b.lng);
+  const used = new Array(n).fill(false);
+  for (let i = 0; i < n; i++) {
+    if (used[i]) continue;
+    const cl = [i]; used[i] = true;
+    for (let j = i + 1; j < n; j++) { if (!used[j] && dist(pos[i], pos[j]) < unit) { cl.push(j); used[j] = true; } }
+    if (cl.length > 1) {   // spread the colliding markers in a ring around their centroid
+      const cx = cl.reduce((s, k) => s + pos[k].lat, 0) / cl.length;
+      const cy = cl.reduce((s, k) => s + pos[k].lng, 0) / cl.length;
+      cl.forEach((k, m) => { const a = 2 * Math.PI * m / cl.length; pos[k] = { lat: cx + unit * Math.sin(a), lng: cy + unit * Math.cos(a) }; });
+    }
+  }
+}
+
+// Static Maps — numbered markers (Start = S, stops 1..9), colour-coded by category,
+// + a connecting path. Colliding markers are fanned apart for legibility.
+function staticMapUrl() {
+  const order = [state.start].concat(state.stops.map(s => s.idx));   // route order
+  const pos = order.map(i => ({ lat: DATA.places[i].lat, lng: DATA.places[i].lng }));
+  fanOut_(pos);
+  const fmt = q => q.lat.toFixed(6) + ',' + q.lng.toFixed(6);
+  const p = [
+    'https://maps.googleapis.com/maps/api/staticmap?key=' + MAPS_KEY,
+    'size=540x460', 'scale=2'
+  ];
+  p.push('markers=' + encodeURIComponent('color:0xC9A227|label:S|' + fmt(pos[0])));
+  state.stops.forEach((s, n) => {
+    const label = (n + 1) <= 9 ? 'label:' + (n + 1) + '|' : '';
+    const color = CAT_COLOR[DATA.places[s.idx].cat] || '0x0E3B35';
+    p.push('markers=' + encodeURIComponent('color:' + color + '|' + label + fmt(pos[n + 1])));
+  });
+  const path = pos.map(fmt).concat(fmt(pos[0])).join('|');
+  p.push('path=' + encodeURIComponent('color:0x0E3B35cc|weight:3|' + path));
+  return p.join('&');
 }
 
 function optimize() {

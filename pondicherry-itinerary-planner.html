@@ -112,6 +112,11 @@
   .ip-node[draggable] { cursor: grab; }
   .ip-node.dragging { opacity: 0.45; }
   .ip-drag { color: #c2cbc7; font-size: 0.95rem; cursor: grab; user-select: none; padding: 0 0.15rem; }
+  .ip-mapwrap { margin-bottom: 1rem; border-radius: 12px; overflow: hidden; border: 1px solid #e8ebe8; }
+  .ip-mapwrap img { width: 100%; height: auto; display: block; }
+  .ip-maplegend { display: flex; flex-wrap: wrap; gap: 0.4rem 0.9rem; padding: 0.5rem 0.7rem; font-size: 0.72rem; color: var(--brand-muted); background: #fff; border-top: 1px solid #e8ebe8; }
+  .ip-maplegend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+  .ip-maplegend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   .ip-printhead { display: none; }
   @media print {
     /* styles.css (quote/receipt) forces `body > * { display:none }` site-wide in
@@ -119,7 +124,7 @@
     body > #ip-print-root { display: block !important; }
     header.sticky-nav, footer, #ip-hero, #ip-footnote, .ip-controls,
     .ip-layout > .ip-panel:first-child, .ip-dayhead, .ip-acts, .ip-drag,
-    .ip-maplink, .ip-maplink-sm { display: none !important; }
+    .ip-maplink, .ip-maplink-sm, #ip-mapwrap { display: none !important; }
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section.section { padding-top: 1rem !important; }
     .ip-layout { display: block; }
@@ -177,6 +182,16 @@
             <button id="ip-clear" class="btn-outline-teal text-xs">Clear</button>
             <button id="ip-pdf" class="btn-outline-teal text-xs hidden">Save as PDF</button>
             <a id="ip-gmaps" class="btn-gold text-xs hidden" target="_blank" rel="noopener">Open in Maps →</a>
+          </div>
+        </div>
+        <div id="ip-mapwrap" class="ip-mapwrap hidden">
+          <img id="ip-map" alt="Route map of your selected stops" loading="lazy">
+          <div class="ip-maplegend">
+            <span><i style="background:#C9A227"></i>Start</span>
+            <span><i style="background:#2f80c4"></i>Beach</span>
+            <span><i style="background:#0E3B35"></i>Attraction</span>
+            <span><i style="background:#d9603b"></i>Food</span>
+            <span><i style="background:#8b5cf6"></i>Shopping</span>
           </div>
         </div>
         <div class="ip-printhead">My Pondicherry Day Plan</div>
