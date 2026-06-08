@@ -6,8 +6,11 @@ const DATA_URL = 'data/pondicherry-itinerary.json';
 // Maps key (Static Maps + Embed) — referrer-locked to nivaastays.com, so safe in
 // client code.
 const MAPS_KEY = 'AIzaSyApP7gtPnoI2D571tCjW3ANxIXTmcD3ECU';
-const CAT_ICON = { Stay: '🛏️', Beach: '🏖️', Attraction: '🏛️', Food: '🍴', Shopping: '🛍️' };
-const CAT_COLOR = { Stay: '0xC9A227', Area: '0xC9A227', Beach: '0x2f80c4', Attraction: '0x0E3B35', Food: '0xd9603b', Shopping: '0x8b5cf6' };
+const CAT_ICON = { Stay: '🛏️', Beach: '🏖️', Attraction: '🏛️', Breakfast: '🥐', Cafe: '☕', Lunch: '🍽️', Dinner: '🍴', Food: '🍴', Shopping: '🛍️' };
+// Map markers: food sub-categories all share the "food" colour (one legend entry).
+const CAT_COLOR = { Stay: '0xC9A227', Area: '0xC9A227', Beach: '0x2f80c4', Attraction: '0x0E3B35', Breakfast: '0xd9603b', Cafe: '0xd9603b', Lunch: '0xd9603b', Dinner: '0xd9603b', Food: '0xd9603b', Shopping: '0x8b5cf6' };
+const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Breakfast: 'Breakfast', Cafe: 'Cafés & Coffee', Lunch: 'Lunch & South Indian', Dinner: 'Dinner', Shopping: 'Shopping' };
+const PICK_ORDER = ['Beach', 'Attraction', 'Breakfast', 'Cafe', 'Lunch', 'Dinner', 'Shopping'];
 const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Shopping: 30, Stay: 0 };
 
 let DATA = null;
@@ -29,11 +32,10 @@ function mapLink(i) { return 'https://www.google.com/maps/search/?api=1&query=' 
 function renderPicker() {
   const byCat = {};
   DATA.places.forEach((p, i) => { if (i === state.start) return; (byCat[p.cat] = byCat[p.cat] || []).push(i); });
-  const order = ['Beach', 'Attraction', 'Food', 'Shopping'];
   let html = '';
-  order.forEach(cat => {
+  PICK_ORDER.forEach(cat => {
     if (!byCat[cat]) return;
-    html += `<div class="ip-catgroup"><div class="ip-cathead">${CAT_ICON[cat] || ''} ${cat}s</div>`;
+    html += `<div class="ip-catgroup"><div class="ip-cathead">${CAT_ICON[cat] || ''} ${CAT_LABEL[cat] || cat}</div>`;
     byCat[cat].forEach(i => {
       const added = isStop(i);
       html += `<div class="ip-pickrow">

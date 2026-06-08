@@ -417,11 +417,14 @@ function gbpAudit_() {
 
 const ITIN_SHEET = 'Itin Data';
 const ITIN_PLACES = [
+  // Beaches
   { name: 'Promenade (Rock) Beach',        q: 'Promenade Beach, Pondicherry',                 cat: 'Beach' },
   { name: 'Paradise Beach',                q: 'Paradise Beach, Pondicherry',                  cat: 'Beach' },
   { name: 'Serenity Beach',                q: 'Serenity Beach, Pondicherry',                  cat: 'Beach' },
   { name: 'Auroville Beach',               q: 'Auroville Beach',                              cat: 'Beach' },
   { name: 'Eden Beach',                    q: 'Eden Beach, Pondicherry',                      cat: 'Beach' },
+  { name: 'Veerampattinam Beach',          q: 'Veerampattinam Beach, Pondicherry',            cat: 'Beach' },
+  // Attractions
   { name: 'Sri Aurobindo Ashram',          q: 'Sri Aurobindo Ashram, Pondicherry',            cat: 'Attraction' },
   { name: 'Matrimandir (Auroville)',       q: 'Matrimandir, Auroville',                       cat: 'Attraction' },
   { name: 'Sacred Heart Basilica',         q: 'Basilica of the Sacred Heart of Jesus, Pondicherry', cat: 'Attraction' },
@@ -431,12 +434,36 @@ const ITIN_PLACES = [
   { name: 'Chunnambar Boat House',         q: 'Chunnambar Boat House, Pondicherry',           cat: 'Attraction' },
   { name: 'Arikamedu',                     q: 'Arikamedu, Pondicherry',                       cat: 'Attraction' },
   { name: 'Ousteri Lake',                  q: 'Ousteri Lake, Pondicherry',                    cat: 'Attraction' },
-  { name: 'Café des Arts',                 q: 'Cafe des Arts, Pondicherry',                   cat: 'Food' },
-  { name: 'Villa Shanti',                  q: 'Villa Shanti, Pondicherry',                    cat: 'Food' },
-  { name: 'Surguru',                       q: 'Surguru, Pondicherry',                         cat: 'Food' },
-  { name: 'Baker Street',                  q: 'Baker Street, Pondicherry',                    cat: 'Food' },
+  // Breakfast & bakeries
+  { name: 'Bread & Chocolate',             q: 'Bread and Chocolate, Auroville',               cat: 'Breakfast' },
+  { name: 'Baker Street',                  q: 'Baker Street, Pondicherry',                    cat: 'Breakfast' },
+  { name: 'Crêpe In Touch',                q: 'Crepe In Touch, Pondicherry',                  cat: 'Breakfast' },
+  { name: 'Auroville Bakery',              q: 'Auroville Bakery and Boutique',                cat: 'Breakfast' },
+  { name: 'Sri Murugan Café',              q: 'Sri Murugan Cafe, Pondicherry',                cat: 'Breakfast' },
+  // Cafés & coffee
+  { name: 'Café des Arts',                 q: 'Cafe des Arts, Pondicherry',                   cat: 'Cafe' },
+  { name: 'Coromandel Café',               q: 'Coromandel Cafe, Pondicherry',                 cat: 'Cafe' },
+  { name: "Marc's Café",                   q: "Marc's Cafe, Auroville",                       cat: 'Cafe' },
+  { name: 'La Terrace',                    q: 'La Terrace, Pondicherry',                      cat: 'Cafe' },
+  { name: 'Kasha Ki Aasha',               q: 'Kasha Ki Aasha, Pondicherry',                  cat: 'Cafe' },
+  // Lunch & South Indian
+  { name: 'Surguru',                       q: 'Surguru, Pondicherry',                         cat: 'Lunch' },
+  { name: 'Hotel Madurai Veedu',           q: 'Hotel Madurai Veedu, Pondicherry',             cat: 'Lunch' },
+  { name: 'The Sprout',                    q: 'The Sprout, Pondicherry',                      cat: 'Lunch' },
+  { name: 'Viji Tiffen Centre',            q: 'Viji Tiffen Centre, Pondicherry',              cat: 'Lunch' },
+  // Dinner
+  { name: 'Villa Shanti',                  q: 'Villa Shanti, Pondicherry',                    cat: 'Dinner' },
+  { name: 'Maison Perumal',                q: 'Maison Perumal, Pondicherry',                  cat: 'Dinner' },
+  { name: 'Canteen 18',                    q: 'Canteen 18, Pondicherry',                      cat: 'Dinner' },
+  { name: 'Hotel Atithi',                  q: 'Hotel Atithi, Pondicherry',                    cat: 'Dinner' },
+  { name: 'Ende Nadu',                     q: 'Ende Nadu, Pondicherry',                       cat: 'Dinner' },
+  { name: 'The Groves',                    q: 'The Groves, Pondicherry',                      cat: 'Dinner' },
+  // Shopping
   { name: 'Goubert Market',                q: 'Goubert Market, Pondicherry',                  cat: 'Shopping' },
-  { name: 'Hidesign',                      q: 'Hidesign, Pondicherry',                        cat: 'Shopping' }
+  { name: 'Hidesign',                      q: 'Hidesign, Pondicherry',                        cat: 'Shopping' },
+  { name: "Boutique d'Auroville",          q: "La Boutique d'Auroville, Pondicherry",         cat: 'Shopping' },
+  { name: 'Casablanca',                    q: 'Casablanca, Pondicherry',                      cat: 'Shopping' },
+  { name: 'Kalki',                         q: 'Kalki, Pondicherry',                           cat: 'Shopping' }
 ];
 
 // Start-point AREAS (category 'Area'): selectable as the day's starting point but
