@@ -6,15 +6,25 @@ const DATA_URL = 'data/pondicherry-itinerary.json';
 // Maps key (Static Maps + Embed) — referrer-locked to nivaastays.com, so safe in
 // client code.
 const MAPS_KEY = 'AIzaSyApP7gtPnoI2D571tCjW3ANxIXTmcD3ECU';
-const CAT_ICON = { Stay: '🛏️', Beach: '🏖️', Attraction: '🏛️', Breakfast: '🥐', Cafe: '☕', Lunch: '🍽️', Dinner: '🍴', Food: '🍴', Shopping: '🛍️' };
-// Map markers: food sub-categories all share the "food" colour (one legend entry).
-const CAT_COLOR = { Stay: '0xC9A227', Area: '0xC9A227', Beach: '0x2f80c4', Attraction: '0x0E3B35', Breakfast: '0xd9603b', Cafe: '0xd9603b', Lunch: '0xd9603b', Dinner: '0xd9603b', Food: '0xd9603b', Shopping: '0x8b5cf6' };
-const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Breakfast: 'Breakfast', Cafe: 'Cafés & Coffee', Lunch: 'Lunch & South Indian', Dinner: 'Dinner', Shopping: 'Shopping' };
-const PICK_ORDER = ['Beach', 'Attraction', 'Breakfast', 'Cafe', 'Lunch', 'Dinner', 'Shopping'];
-const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Shopping: 30, Stay: 0 };
+const CAT_ICON = { Stay: '🛏️', Beach: '🏖️', Attraction: '🏛️', Food: '🍴', Social: '🍸', Shopping: '🛍️' };
+// Map markers: one colour per top-level category (sub-categories share it → simple legend).
+const CAT_COLOR = { Stay: '0xC9A227', Area: '0xC9A227', Beach: '0x2f80c4', Attraction: '0x0E3B35', Food: '0xd9603b', Social: '0xdb2777', Shopping: '0x8b5cf6' };
+const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Food: 'Food & Drink', Social: 'Bars & Nightlife', Shopping: 'Shopping' };
+const PICK_ORDER = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
+// Categories whose places are further grouped by sub-category in the picker.
+const SUB_ORDER = {
+  Attraction: ['heritage', 'nature', 'spiritual', 'adventure'],
+  Food: ['south-indian', 'north-indian', 'multicuisine', 'continental', 'asian', 'cafe', 'dessert', 'fine']
+};
+const SUB_LABEL = {
+  heritage: 'Heritage & Museums', nature: 'Nature & Outdoors', spiritual: 'Spiritual', adventure: 'Adventure & Diving',
+  'south-indian': 'South Indian', 'north-indian': 'North Indian', multicuisine: 'Multi-cuisine',
+  continental: 'Continental', asian: 'Asian', cafe: 'Cafés & Bakeries', dessert: 'Desserts & Ice Cream', fine: 'Fine Dining'
+};
+const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Social: 45, Shopping: 30, Stay: 0 };
 
 let DATA = null;
-const state = { start: 0, startTime: '09:00', stops: [] }; // stops = [{ idx, stay }]
+const state = { start: 0, startTime: '09:00', stops: [], filter: 'All', subFilter: 'All' }; // stops = [{ idx, stay }]
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function parseTime(s) { const [h, m] = String(s).split(':').map(Number); return (h || 0) * 60 + (m || 0); }
@@ -26,24 +36,70 @@ function fmtClock(t) {
 function driveMin(a, b) { const v = DATA.minutes[a][b]; return v == null ? 0 : v; }
 function driveKm(a, b)  { const v = DATA.km[a][b];      return v == null ? 0 : v; }
 function isStop(i) { return state.stops.some(s => s.idx === i); }
-function mapLink(i) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(DATA.places[i].name + ', Pondicherry'); }
+function mapLink(i) { return DATA.places[i].map || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(DATA.places[i].name + ', Pondicherry')); }
 
 // ---------- place picker ----------
+function pickRow(i) {
+  const p = DATA.places[i], added = isStop(i);
+  return `<div class="ip-pickrow">
+    <button type="button" class="ip-pick ${added ? 'is-added' : ''}" data-add="${i}">
+      <span class="ip-pickmain"><span class="ip-pickname">${esc(p.name)}</span>${p.desc ? `<span class="ip-pickdesc">${esc(p.desc)}</span>` : ''}</span>
+      <span class="ip-pick-act">${added ? '✓ Added' : '+ Add'}</span></button>
+    <a class="ip-maplink" href="${mapLink(i)}" target="_blank" rel="noopener" title="View on Google Maps" aria-label="View ${esc(p.name)} on Google Maps">↗</a>
+  </div>`;
+}
+
+function renderFilters() {
+  const counts = {};
+  DATA.places.forEach((p, i) => { if (i !== state.start && PICK_ORDER.includes(p.cat)) counts[p.cat] = (counts[p.cat] || 0) + 1; });
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  const chips = [['All', 'All places', total]]
+    .concat(PICK_ORDER.filter(c => counts[c]).map(c => [c, `${CAT_ICON[c] || ''} ${CAT_LABEL[c] || c}`, counts[c]]));
+  document.getElementById('ip-filters').innerHTML = chips.map(([key, label, n]) =>
+    `<button type="button" class="ip-filterchip ${state.filter === key ? 'is-on' : ''}" data-filter="${key}">${label} <span style="opacity:.6">${n}</span></button>`
+  ).join('');
+}
+
+// Second-level chips (cuisine / attraction type) — shown only when a category
+// that has sub-categories is the active filter.
+function renderSubFilters() {
+  const el = document.getElementById('ip-subfilters');
+  const cat = state.filter;
+  if (!SUB_ORDER[cat]) { el.innerHTML = ''; return; }
+  const counts = {};
+  DATA.places.forEach((p, i) => { if (i !== state.start && p.cat === cat) counts[p.sub || ''] = (counts[p.sub || ''] || 0) + 1; });
+  const total = Object.keys(counts).reduce((a, s) => a + counts[s], 0);
+  const subs = SUB_ORDER[cat].filter(s => counts[s]).concat(Object.keys(counts).filter(s => s && !SUB_ORDER[cat].includes(s)));
+  const chips = [['All', 'All', total]].concat(subs.map(s => [s, SUB_LABEL[s] || s, counts[s]]));
+  el.innerHTML = chips.map(([key, label, n]) =>
+    `<button type="button" class="ip-subchip ${state.subFilter === key ? 'is-on' : ''}" data-sub="${key}">${esc(label)} <span style="opacity:.6">${n}</span></button>`
+  ).join('');
+}
+
 function renderPicker() {
   const byCat = {};
   DATA.places.forEach((p, i) => { if (i === state.start) return; (byCat[p.cat] = byCat[p.cat] || []).push(i); });
+  const cats = state.filter === 'All' ? PICK_ORDER : PICK_ORDER.filter(c => c === state.filter);
   let html = '';
-  PICK_ORDER.forEach(cat => {
-    if (!byCat[cat]) return;
-    html += `<div class="ip-catgroup"><div class="ip-cathead">${CAT_ICON[cat] || ''} ${CAT_LABEL[cat] || cat}</div>`;
-    byCat[cat].forEach(i => {
-      const added = isStop(i);
-      html += `<div class="ip-pickrow">
-        <button type="button" class="ip-pick ${added ? 'is-added' : ''}" data-add="${i}">
-          <span>${esc(DATA.places[i].name)}</span><span class="ip-pick-act">${added ? '✓ Added' : '+ Add'}</span></button>
-        <a class="ip-maplink" href="${mapLink(i)}" target="_blank" rel="noopener" title="View on Google Maps" aria-label="View ${esc(DATA.places[i].name)} on Google Maps">↗</a>
-      </div>`;
-    });
+  cats.forEach(cat => {
+    const items = byCat[cat];
+    if (!items) return;
+    html += `<div class="ip-catgroup">`;
+    if (state.filter === 'All') html += `<div class="ip-cathead">${CAT_ICON[cat] || ''} ${CAT_LABEL[cat] || cat}</div>`;
+    if (SUB_ORDER[cat]) {
+      // group by sub-category, in the configured order; anything else falls to the end
+      const bySub = {};
+      items.forEach(i => { const s = DATA.places[i].sub || ''; (bySub[s] = bySub[s] || []).push(i); });
+      let subs = SUB_ORDER[cat].filter(s => bySub[s]).concat(Object.keys(bySub).filter(s => !SUB_ORDER[cat].includes(s)));
+      const single = (state.filter === cat && state.subFilter !== 'All');
+      if (single) subs = subs.filter(s => s === state.subFilter);
+      subs.forEach(s => {
+        if (s && !single) html += `<div class="ip-subhead">${esc(SUB_LABEL[s] || s)}</div>`;
+        if (bySub[s]) html += `<div class="ip-pickgrid">${bySub[s].map(pickRow).join('')}</div>`;
+      });
+    } else {
+      html += `<div class="ip-pickgrid">${items.map(pickRow).join('')}</div>`;
+    }
     html += `</div>`;
   });
   document.getElementById('ip-picker').innerHTML = html;
@@ -58,7 +114,15 @@ function renderItinerary() {
     sum.innerHTML = '';
     document.getElementById('ip-gmaps').classList.add('hidden');
     document.getElementById('ip-pdf').classList.add('hidden');
-    document.getElementById('ip-mapwrap').classList.add('hidden');
+    // show a default Pondicherry map with a prompt (legend hidden via .ip-no-stops CSS)
+    if (MAPS_KEY) {
+      const map = document.getElementById('ip-map');
+      const d = defaultMapUrl();
+      if (map.getAttribute('src') !== d) map.setAttribute('src', d);
+      document.getElementById('ip-mapwrap').classList.remove('hidden');
+    } else {
+      document.getElementById('ip-mapwrap').classList.add('hidden');
+    }
     return;
   }
 
@@ -135,6 +199,12 @@ function renderItinerary() {
   }
 }
 
+// Default map shown before any stop is added — landscape banner centred on Pondicherry.
+function defaultMapUrl() {
+  return ['https://maps.googleapis.com/maps/api/staticmap?key=' + MAPS_KEY,
+    'size=640x300', 'scale=2', 'center=11.9340,79.8300', 'zoom=12'].join('&');
+}
+
 function gmapsUrl() {
   const pt = i => `${DATA.places[i].lat},${DATA.places[i].lng}`;
   // round trip: start → all stops → back to start
@@ -203,7 +273,11 @@ function optimize() {
   render();
 }
 
-function render() { renderStartSelect(); renderPicker(); renderItinerary(); }
+function render() {
+  const lay = document.querySelector('.ip-layout');
+  if (lay) lay.classList.toggle('ip-no-stops', state.stops.length === 0);  // hide "Your day" until a stop exists
+  renderStartSelect(); renderFilters(); renderSubFilters(); renderPicker(); renderItinerary();
+}
 
 function renderStartSelect() {
   const sel = document.getElementById('ip-start');
@@ -224,6 +298,19 @@ function bind() {
     if (isStop(i)) state.stops = state.stops.filter(s => s.idx !== i);
     else state.stops.push({ idx: i, stay: DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45 });
     render();
+  });
+
+  document.getElementById('ip-filters').addEventListener('click', e => {
+    const b = e.target.closest('[data-filter]'); if (!b) return;
+    state.filter = b.getAttribute('data-filter');
+    state.subFilter = 'All';
+    renderFilters(); renderSubFilters(); renderPicker();
+  });
+
+  document.getElementById('ip-subfilters').addEventListener('click', e => {
+    const b = e.target.closest('[data-sub]'); if (!b) return;
+    state.subFilter = b.getAttribute('data-sub');
+    renderSubFilters(); renderPicker();
   });
 
   document.getElementById('ip-itinerary').addEventListener('click', e => {
