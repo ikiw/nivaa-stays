@@ -474,76 +474,133 @@ function resolvePlace_(query) {
   return { lat: p.location.latitude, lng: p.location.longitude };
 }
 
-// Routes API computeRouteMatrix → { min:[[]], km:[[]] } driving matrix.
-// Chunks origins so each call stays under the 625-element (origins×destinations) cap.
-function routeMatrix_(points) {
-  const key = PropertiesService.getScriptProperties().getProperty('ROUTES_API_KEY')
-            || PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
-  const n = points.length;
-  const wpAll = points.map(p => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } }));
-  const min = Array.from({ length: n }, () => new Array(n).fill(null));
-  const km  = Array.from({ length: n }, () => new Array(n).fill(null));
-  const batch = Math.max(1, Math.floor(600 / n));   // origins per call (≤600 elements)
-  for (let o = 0; o < n; o += batch) {
-    const origins = wpAll.slice(o, o + batch);
-    let attempt = 0;
-    for (;;) {
-      const res = UrlFetchApp.fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
-        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-        headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'originIndex,destinationIndex,distanceMeters,duration,condition' },
-        payload: JSON.stringify({ origins: origins, destinations: wpAll, travelMode: 'DRIVE' })
-      });
-      const code = res.getResponseCode();
-      if (code === 200) {
-        JSON.parse(res.getContentText() || '[]').forEach(e => {
-          if (e.condition === 'ROUTE_EXISTS') {
-            const i = o + e.originIndex, j = e.destinationIndex;   // offset origin by batch start
-            min[i][j] = Math.round((parseInt(e.duration, 10) || 0) / 60);
-            km[i][j]  = Math.round((e.distanceMeters || 0) / 100) / 10;
-          }
-        });
-        break;
-      }
-      if ((code === 429 || code >= 500) && attempt < 7) {
-        attempt++;
-        const wait = Math.min(60000, 3000 * Math.pow(2, attempt - 1));   // 3,6,12,24,48,60,60s
-        Logger.log('Route Matrix %s (chunk @%s/%s) — backoff %ss (attempt %s)', code, o, n, wait / 1000, attempt);
-        Utilities.sleep(wait);
-        continue;
-      }
-      throw new Error('Route Matrix ' + code + ': ' + res.getContentText().slice(0, 250));
-    }
-    Utilities.sleep(1500);   // steady pace to stay under the per-minute element quota
-  }
-  return { min, km };
+// ---- Incremental cache (Itin Coords / Itin Legs sheets) ----------------------
+// Coordinates and directional driving legs are cached so each build only fetches
+// what's NEW. This makes builds incremental (adding a few places computes just
+// their legs) and RESUMABLE (a 6-min timeout or quota stall keeps its progress —
+// re-run to continue). Driving time between two fixed points never changes.
+const ITIN_COORDS_SHEET = 'Itin Coords';
+const ITIN_LEGS_SHEET   = 'Itin Legs';
+function legKey_(a, b) { return a + '\t' + b; }
+
+function loadCoords_() {
+  const sh = rankSpreadsheet_().getSheetByName(ITIN_COORDS_SHEET); const out = {};
+  if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 3).getValues()
+    .forEach(r => { if (r[0]) out[r[0]] = { lat: r[1], lng: r[2] }; });
+  return out;
+}
+function loadLegs_() {
+  const sh = rankSpreadsheet_().getSheetByName(ITIN_LEGS_SHEET); const out = {};
+  if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues()
+    .forEach(r => { if (r[0]) out[legKey_(r[0], r[1])] = { min: r[2], km: r[3] }; });
+  return out;
 }
 
-// Run ONCE from the editor. Resolves places + builds the matrix, stores the JSON
-// in the 'Itin Data' sheet (served via doGet?itinData=1).
+// One computeRouteMatrix call with 429/5xx backoff. Returns ROUTE_EXISTS rows.
+function routeChunk_(originWps, destWps) {
+  const key = PropertiesService.getScriptProperties().getProperty('ROUTES_API_KEY')
+            || PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  let attempt = 0;
+  for (;;) {
+    const res = UrlFetchApp.fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'originIndex,destinationIndex,distanceMeters,duration,condition' },
+      payload: JSON.stringify({ origins: originWps, destinations: destWps, travelMode: 'DRIVE' })
+    });
+    const code = res.getResponseCode();
+    if (code === 200) return JSON.parse(res.getContentText() || '[]')
+      .filter(e => e.condition === 'ROUTE_EXISTS').map(e => ({
+        destinationIndex: e.destinationIndex || 0,
+        min: Math.round((parseInt(e.duration, 10) || 0) / 60),
+        km: Math.round((e.distanceMeters || 0) / 100) / 10 }));
+    if ((code === 429 || code >= 500) && attempt < 7) {
+      attempt++; const wait = Math.min(60000, 3000 * Math.pow(2, attempt - 1));
+      Logger.log('Route Matrix %s — backoff %ss (attempt %s)', code, wait / 1000, attempt);
+      Utilities.sleep(wait); continue;
+    }
+    throw new Error('Route Matrix ' + code + ': ' + res.getContentText().slice(0, 250));
+  }
+}
+
+// Fill ONLY the missing legs (1 origin x its missing dests per call), persisting
+// each batch to the sheet so progress survives a timeout/stall.
+function computeMissingLegs_(points, legs) {
+  const n = points.length;
+  const wp = points.map(p => ({ waypoint: { location: { latLng: { latitude: p.lat, longitude: p.lng } } } }));
+  const sh = getOrCreateSheet_(ITIN_LEGS_SHEET, ['from', 'to', 'min', 'km']);
+  let computed = 0;
+  for (let i = 0; i < n; i++) {
+    const missing = [];
+    for (let j = 0; j < n; j++)
+      if (j !== i && legs[legKey_(points[i].name, points[j].name)] === undefined) missing.push(j);
+    if (!missing.length) continue;
+    for (let c = 0; c < missing.length; c += 500) {           // 1 x <=500 = <=500 elements
+      const destIdx = missing.slice(c, c + 500);
+      const got = routeChunk_([wp[i]], destIdx.map(j => wp[j]));
+      const rows = [];
+      got.forEach(e => {
+        const j = destIdx[e.destinationIndex];
+        legs[legKey_(points[i].name, points[j].name)] = { min: e.min, km: e.km };
+        rows.push([points[i].name, points[j].name, e.min, e.km]);
+      });
+      if (rows.length) { sh.getRange(sh.getLastRow() + 1, 1, rows.length, 4).setValues(rows); computed += rows.length; }
+      Utilities.sleep(1200);
+    }
+  }
+  return computed;
+}
+
+// Run from the editor. INCREMENTAL + RESUMABLE — only resolves coords and computes
+// legs not already cached. To force a full rebuild, run clearItinCache() first.
 function buildItineraryData() {
   const cat = JSON.parse(UrlFetchApp.fetch(ITIN_CATALOG_URL, { muteHttpExceptions: true }).getContentText() || '{}');
-  const starts = (cat.starts || []).map(name => ({ name: name, cat: 'Area', sub: '', desc: '', map: '' }));
-  const places = (cat.places || []);
-  const total = 1 + places.length + starts.length;
-  // origin = Nivaa (grid centre is the Nivaa point)
-  const points = [{ name: 'Nivaa Stays', cat: 'Stay', sub: '', desc: '', map: '', lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng }];
-  places.concat(starts).forEach(p => {
-    const r = resolveBest_(p.name);
-    if (r) points.push({ name: p.name, cat: p.cat, sub: p.sub || '', desc: p.desc || '', map: p.map || '', lat: r.lat, lng: r.lng });
-    else Logger.log('skipped (unresolved): %s', p.name);
+  const meta = [{ name: 'Nivaa Stays', cat: 'Stay', sub: '', desc: '', map: '' }]
+    .concat((cat.places || []).map(p => ({ name: p.name, cat: p.cat, sub: p.sub || '', desc: p.desc || '', map: p.map || '' })))
+    .concat((cat.starts || []).map(name => ({ name: name, cat: 'Area', sub: '', desc: '', map: '' })));
+
+  // 1) coordinates — resolve only uncached names
+  getOrCreateSheet_(ITIN_COORDS_SHEET, ['name', 'lat', 'lng']);
+  const coords = loadCoords_();
+  const cs = rankSpreadsheet_().getSheetByName(ITIN_COORDS_SHEET);
+  coords['Nivaa Stays'] = coords['Nivaa Stays'] || { lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng };
+  if (!loadCoords_()['Nivaa Stays']) cs.appendRow(['Nivaa Stays', coords['Nivaa Stays'].lat, coords['Nivaa Stays'].lng]);
+  let resolved = 0;
+  meta.forEach(m => {
+    if (coords[m.name]) return;
+    const r = resolveBest_(m.name);
+    if (r) { coords[m.name] = r; cs.appendRow([m.name, r.lat, r.lng]); resolved++; }
+    else Logger.log('skipped (unresolved): %s', m.name);
     Utilities.sleep(120);
   });
-  const m = routeMatrix_(points);
-  const data = {
-    generated: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'),
-    origin: 0,
-    places: points,
-    minutes: m.min,
-    km: m.km
-  };
-  const sh = getOrCreateSheet_(ITIN_SHEET, ['JSON']);
-  sh.getRange(2, 1).setValue(JSON.stringify(data));
-  Logger.log('Itinerary data built: %s of %s points resolved, %sx%s matrix.', points.length, total, points.length, points.length);
+
+  // 2) point list (only places with known coords)
+  const points = meta.filter(m => coords[m.name]).map(m => ({
+    name: m.name, cat: m.cat, sub: m.sub, desc: m.desc, map: m.map,
+    lat: coords[m.name].lat, lng: coords[m.name].lng }));
+
+  // 3) legs — compute only the missing ones (persisted as we go)
+  const legs = loadLegs_();
+  const newLegs = computeMissingLegs_(points, legs);
+
+  // 4) assemble matrix from the cache
+  const n = points.length;
+  const minM = Array.from({ length: n }, () => new Array(n).fill(null));
+  const kmM  = Array.from({ length: n }, () => new Array(n).fill(null));
+  for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) {
+    if (i === j) { minM[i][j] = 0; kmM[i][j] = 0; continue; }
+    const leg = legs[legKey_(points[i].name, points[j].name)];
+    if (leg) { minM[i][j] = leg.min; kmM[i][j] = leg.km; }
+  }
+  const data = { generated: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), origin: 0, places: points, minutes: minM, km: kmM };
+  getOrCreateSheet_(ITIN_SHEET, ['JSON']).getRange(2, 1).setValue(JSON.stringify(data));
+  Logger.log('Itinerary built: %s points (%s newly resolved), %s new legs, %sx%s matrix.', n, resolved, newLegs, n, n);
+}
+
+// Wipe the coord + leg caches to force a full rebuild next run.
+function clearItinCache() {
+  const cs = getOrCreateSheet_(ITIN_COORDS_SHEET, ['name', 'lat', 'lng']); cs.clear(); cs.appendRow(['name', 'lat', 'lng']);
+  const ls = getOrCreateSheet_(ITIN_LEGS_SHEET, ['from', 'to', 'min', 'km']); ls.clear(); ls.appendRow(['from', 'to', 'min', 'km']);
+  Logger.log('Itinerary caches cleared.');
 }
 
 // doGet?itinData=1 — returns the stored itinerary JSON (for me to bake into a static file).
