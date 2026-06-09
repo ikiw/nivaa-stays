@@ -444,7 +444,21 @@ const ITIN_QUERY = {
   'Auroville':                   'Auroville Visitor Centre',
   'Mission Street':              'Mission Street, Pondicherry'
 };
-function itinQuery_(name) { return ITIN_QUERY[name] || (name + ', Puducherry'); }
+function itinQuery_(name) { return ITIN_QUERY[name] || (name + ', Pondicherry'); }
+
+// Resolve a place, trying the tuned query then spelling/area fallbacks.
+function resolveBest_(name) {
+  const tries = [itinQuery_(name), name + ', Pondicherry', name + ', Puducherry', name];
+  const seen = {};
+  for (let i = 0; i < tries.length; i++) {
+    const q = tries[i];
+    if (seen[q]) continue; seen[q] = 1;
+    const r = resolvePlace_(q);
+    if (r) return r;
+    Utilities.sleep(60);
+  }
+  return null;
+}
 
 // Places Text Search → { name, lat, lng } for the top match.
 function resolvePlace_(query) {
@@ -472,20 +486,34 @@ function routeMatrix_(points) {
   const batch = Math.max(1, Math.floor(600 / n));   // origins per call (≤600 elements)
   for (let o = 0; o < n; o += batch) {
     const origins = wpAll.slice(o, o + batch);
-    const res = UrlFetchApp.fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
-      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
-      headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'originIndex,destinationIndex,distanceMeters,duration,condition' },
-      payload: JSON.stringify({ origins: origins, destinations: wpAll, travelMode: 'DRIVE' })
-    });
-    if (res.getResponseCode() !== 200) throw new Error('Route Matrix ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 250));
-    JSON.parse(res.getContentText() || '[]').forEach(e => {
-      if (e.condition === 'ROUTE_EXISTS') {
-        const i = o + e.originIndex, j = e.destinationIndex;   // offset origin by batch start
-        min[i][j] = Math.round((parseInt(e.duration, 10) || 0) / 60);
-        km[i][j]  = Math.round((e.distanceMeters || 0) / 100) / 10;
+    let attempt = 0;
+    for (;;) {
+      const res = UrlFetchApp.fetch('https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix', {
+        method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+        headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'originIndex,destinationIndex,distanceMeters,duration,condition' },
+        payload: JSON.stringify({ origins: origins, destinations: wpAll, travelMode: 'DRIVE' })
+      });
+      const code = res.getResponseCode();
+      if (code === 200) {
+        JSON.parse(res.getContentText() || '[]').forEach(e => {
+          if (e.condition === 'ROUTE_EXISTS') {
+            const i = o + e.originIndex, j = e.destinationIndex;   // offset origin by batch start
+            min[i][j] = Math.round((parseInt(e.duration, 10) || 0) / 60);
+            km[i][j]  = Math.round((e.distanceMeters || 0) / 100) / 10;
+          }
+        });
+        break;
       }
-    });
-    Utilities.sleep(250);
+      if ((code === 429 || code >= 500) && attempt < 7) {
+        attempt++;
+        const wait = Math.min(60000, 3000 * Math.pow(2, attempt - 1));   // 3,6,12,24,48,60,60s
+        Logger.log('Route Matrix %s (chunk @%s/%s) — backoff %ss (attempt %s)', code, o, n, wait / 1000, attempt);
+        Utilities.sleep(wait);
+        continue;
+      }
+      throw new Error('Route Matrix ' + code + ': ' + res.getContentText().slice(0, 250));
+    }
+    Utilities.sleep(1500);   // steady pace to stay under the per-minute element quota
   }
   return { min, km };
 }
@@ -500,7 +528,7 @@ function buildItineraryData() {
   // origin = Nivaa (grid centre is the Nivaa point)
   const points = [{ name: 'Nivaa Stays', cat: 'Stay', sub: '', desc: '', map: '', lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng }];
   places.concat(starts).forEach(p => {
-    const r = resolvePlace_(itinQuery_(p.name));
+    const r = resolveBest_(p.name);
     if (r) points.push({ name: p.name, cat: p.cat, sub: p.sub || '', desc: p.desc || '', map: p.map || '', lat: r.lat, lng: r.lng });
     else Logger.log('skipped (unresolved): %s', p.name);
     Utilities.sleep(120);
