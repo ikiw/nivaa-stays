@@ -592,8 +592,18 @@ function buildItineraryData() {
     if (leg) { minM[i][j] = leg.min; kmM[i][j] = leg.km; }
   }
   const data = { generated: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), origin: 0, places: points, minutes: minM, km: kmM };
-  getOrCreateSheet_(ITIN_SHEET, ['JSON']).getRange(2, 1).setValue(JSON.stringify(data));
+  writeItinJson_(JSON.stringify(data));
   Logger.log('Itinerary built: %s points (%s newly resolved), %s new legs, %sx%s matrix.', n, resolved, newLegs, n, n);
+}
+
+// A Sheets cell maxes out at 50,000 chars; the itinerary JSON is larger, so store
+// it split across consecutive cells in column A (reassembled in itinData_).
+function writeItinJson_(json) {
+  const sh = getOrCreateSheet_(ITIN_SHEET, ['JSON']);
+  if (sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 1).clearContent();
+  const size = 45000, rows = [];
+  for (let i = 0; i < json.length; i += size) rows.push([json.substr(i, size)]);
+  if (rows.length) sh.getRange(2, 1, rows.length, 1).setValues(rows);
 }
 
 // Wipe the coord + leg caches to force a full rebuild next run.
@@ -607,6 +617,7 @@ function clearItinCache() {
 function itinData_() {
   const sh = rankSpreadsheet_().getSheetByName(ITIN_SHEET);
   if (!sh || sh.getLastRow() < 2) return jsonOut_({ ready: false });
-  return ContentService.createTextOutput(sh.getRange(2, 1).getValue() || '{}')
+  const parts = sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().map(r => r[0] || '');
+  return ContentService.createTextOutput(parts.join('') || '{}')
     .setMimeType(ContentService.MimeType.JSON);
 }
