@@ -1,0 +1,574 @@
+{
+  "_note": "Editable catalog. Coordinates are resolved at build time via Places API (do NOT hand-edit coords here). cat/sub/desc/map are the curated fields.",
+  "starts": [
+    "Pondicherry Gate (entrance)",
+    "White Town (French Quarter)",
+    "Beach Road (Promenade)",
+    "Pondicherry Bus Stand",
+    "Puducherry Railway Station",
+    "Auroville",
+    "Mission Street"
+  ],
+  "places": [
+    {
+      "name": "Promenade Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "A 1.5 km long stretch along the Bay of Bengal, perfect for evening strolls with French colonial architecture.",
+      "map": "https://maps.app.goo.gl/fCnoR5SFwYmQxWnZ9"
+    },
+    {
+      "name": "Pondy Marina Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "Rip off of a beach in Chennai. Still worth visiting though.",
+      "map": "https://maps.app.goo.gl/AfhHVyo7eVnwEEfC9"
+    },
+    {
+      "name": "Paradise Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "A pristine beach accessible by boat, known for its golden sands and clear waters.",
+      "map": "https://maps.app.goo.gl/rufWef4qwV4YPnQt5"
+    },
+    {
+      "name": "Serenity Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "Popular surfing destination with laid-back beach shacks and surf schools.",
+      "map": "https://maps.app.goo.gl/F6w3gQpVLMb5dMwg7"
+    },
+    {
+      "name": "Sri Aurobindo Ashram",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "Founded in 1926, this spiritual community attracts seekers from around the world.",
+      "map": "https://maps.app.goo.gl/B3kJEqd767dVCGQg9"
+    },
+    {
+      "name": "Marbling Group",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "The marbling unit of Sti Aurobindo Ashram produces sarees, scarves, dupattas and many more items on pure silk or pure silk. chiffon",
+      "map": "https://maps.app.goo.gl/ZN8NJM7cf1WLtuVA6"
+    },
+    {
+      "name": "Sacred Heart Basilica",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "Gothic-style church built in the 1900s, featuring beautiful stained glass panels.",
+      "map": "https://maps.app.goo.gl/7Qu2hbHky311xjHT7"
+    },
+    {
+      "name": "Manakula Vinayagar Temple",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "300-year-old temple dedicated to Lord Ganesha, known for its elephant Lakshmi.",
+      "map": "https://maps.app.goo.gl/yh56iKHtUPPopzdR8"
+    },
+    {
+      "name": "Botanical Garden",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "22-acre garden dating back to 1826, featuring rare plant species and musical fountains.",
+      "map": "https://maps.app.goo.gl/L8qdcxWwVMqVniSX9"
+    },
+    {
+      "name": "Chunnambar Boat House",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "Backwater paradise offering boating experiences through mangrove forests.",
+      "map": "https://maps.app.goo.gl/d7mFAzCBR42An54Q7"
+    },
+    {
+      "name": "Oussudu Lake (Ousteri Lake)",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "An important wetlands and migratory location home to over 200 species of birds. Popular destination for birdwatchers!",
+      "map": "https://maps.app.goo.gl/Bgmt3aqsXz4WKLtg6"
+    },
+    {
+      "name": "Auroville Bird Park",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "Le Paradise D' Auro is a bird park and petting zoo open to visitors of all ages.",
+      "map": "https://maps.app.goo.gl/XMtnzc9vuhAjmAPr7"
+    },
+    {
+      "name": "Kizhoor Referendum Monument",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Historic monument marking the independence of Pondicherry from the French and its merger with the Indian Union in 1962.",
+      "map": "https://maps.app.goo.gl/1mf1GsbwMhDvwFeW6"
+    },
+    {
+      "name": "Arikamedu",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Ruins of a Roman trading post established in 2nd Century BCE.",
+      "map": "https://maps.app.goo.gl/bBkLT4HD5Y8QrLpSA"
+    },
+    {
+      "name": "Mahakavi Bharathiyar Memorial Centre",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Museum in the former home of renowned writer & activist Mahakavi Bharathiyar, featuring historical artifacts & more.",
+      "map": "https://maps.app.goo.gl/atD8GVM7edBhJr9t8"
+    },
+    {
+      "name": "Puducherry Museum",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Quaint museum known for its rare sculpture collection, including ancient bronze & stone artifacts.",
+      "map": "https://maps.app.goo.gl/pKkYKaTzWmeRRS3M6"
+    },
+    {
+      "name": "Tasmai a Centre for Art & Culture",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "A platform for contemporary visual art connecting Pondicherry with the world through art and culture understood in the widest and deepest sense.",
+      "map": "https://maps.app.goo.gl/bdXJQjtfnyqj6bT88"
+    },
+    {
+      "name": "Art and Craft Village",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "A witness to the cultural and artistic heritage of India, this venture was conceptualized in the vision of preserving and patronizing traditional Indian art and crafts while creating space for modern-day artistic expression.",
+      "map": "https://maps.app.goo.gl/RkAgTJhAnDNW7MV47"
+    },
+    {
+      "name": "Temple Adventures - Scuba Diving Experience Centre",
+      "cat": "Attraction",
+      "sub": "adventure",
+      "desc": "",
+      "map": "https://maps.app.goo.gl/GZRbxkVf2CdWJb9b9"
+    },
+    {
+      "name": "Urban Nomad Dive Adventures & Watersports",
+      "cat": "Attraction",
+      "sub": "adventure",
+      "desc": "",
+      "map": "https://maps.app.goo.gl/iSbeieoq72vqS9D78"
+    },
+    {
+      "name": "Hotel Madurai Veedu",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "A top restaurant serving high-quality South Indian dishes in a family-friendly atmosphere.",
+      "map": "https://maps.app.goo.gl/qXtdYVd9iYTHbK5U9"
+    },
+    {
+      "name": "Nalla Thambi Mess",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Offers a delightful culinary experience steeped in traditional flavors and is renowned for its authentic South Indian dishes.",
+      "map": "https://maps.app.goo.gl/TZWGdVMYNrnYxwnt5"
+    },
+    {
+      "name": "Hotel Sri Kamatchi",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Authentic Non-Veg Restaurant | Kamatchi Special Meals Some meals don't just fill your stomach - they take you back to tradition.",
+      "map": "https://maps.app.goo.gl/JUyXvhHU6nKrqBV77"
+    },
+    {
+      "name": "Hotel Sri Kamatchi, White Town branch",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "White Town Branch of the famous Hotel Sri Kamatchi.",
+      "map": "https://maps.app.goo.gl/QLqDrpFAHKsFXhLx7"
+    },
+    {
+      "name": "Ende Nadu",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Authentic Kerala cuisine right here in Pondicherry.",
+      "map": "https://maps.app.goo.gl/6XiaeEyxQaME6LjR7"
+    },
+    {
+      "name": "Kamireddy Foods",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Affordable, tasty, and huge variety of non-vegetarian dishes.",
+      "map": "https://maps.app.goo.gl/dX3g1J288NqmiVyVA"
+    },
+    {
+      "name": "Kushi Hyderabadi Biriyani",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "The best Hyderabadi Dum Biriyani in the city.",
+      "map": "https://maps.app.goo.gl/LRKj3xna3h7Uop519"
+    },
+    {
+      "name": "Kongu Kitchen",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Offers Kongunadu Cuisine from 50 towns in the North Western part of Tamil Nadu like Coimbatore and neighboring areas like Salem, Erode, Tirupur and Dindugul.",
+      "map": "https://maps.app.goo.gl/XWHuMXSYZZk73LXg7"
+    },
+    {
+      "name": "Maison Perumal Hotel & Restaurant",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Savor Franco-Tamil cuisine at Maison Perumal with terrace & courtyard dining,",
+      "map": "https://maps.app.goo.gl/DmrAAdJp95TcLU5E8"
+    },
+    {
+      "name": "Sri Murugan Cafe",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "Small outlet serving only the best vegetarian South-Indian food.",
+      "map": "https://maps.app.goo.gl/RFtEXWrS5U5aDEqU9"
+    },
+    {
+      "name": "Surguru Restaurant",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "One of the all time classics, serving a huge range of South-Indian vegetarian food.",
+      "map": "https://maps.app.goo.gl/txzFFDPZbPbmiKe87"
+    },
+    {
+      "name": "Punjabi Dhaba",
+      "cat": "Food",
+      "sub": "north-indian",
+      "desc": "Pondicherry's little slice of Amritsar.",
+      "map": "https://maps.app.goo.gl/oGtLZowCycMTC4fH7"
+    },
+    {
+      "name": "Dilliwaala6",
+      "cat": "Food",
+      "sub": "north-indian",
+      "desc": "A colourful vegetarian restaurant with a wide array of North-Indian dishes.",
+      "map": "https://maps.app.goo.gl/9BuwvkD1gmgMUFws6"
+    },
+    {
+      "name": "Bro's plan B",
+      "cat": "Food",
+      "sub": "north-indian",
+      "desc": "Delicious, affordable North-Indian food in Auroville.",
+      "map": "https://maps.app.goo.gl/RSxCN2apRE5ixRdQ8"
+    },
+    {
+      "name": "Just Parathas",
+      "cat": "Food",
+      "sub": "north-indian",
+      "desc": "As the name suggests, come here for their delectable parathas.",
+      "map": "https://maps.app.goo.gl/CGcQid1gu583eMbn7"
+    },
+    {
+      "name": "Kokonut Lagoon",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "In their own words, \"Mallufied ambience with delicious Kerala cuisine in Pondicherry\"",
+      "map": "https://maps.app.goo.gl/7RgLigie48oo2EHfA"
+    },
+    {
+      "name": "Copper Kitchen",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Chennai's favourite multicuisine restaurant chain.",
+      "map": "https://maps.app.goo.gl/DtR2NfXzkD6WbNQE8"
+    },
+    {
+      "name": "Prawn and Crab",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Indulge in the freshest seafood delights at Prawn and Crab - The House of Seafood, Pondicherry's premier seafood restaurant!",
+      "map": "https://maps.app.goo.gl/MfyNiUgHcSXJULPX7"
+    },
+    {
+      "name": "Terrassen Cafe",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Family-friendly vegan restaurant and vegetarian cafe serving a diverse menu inspired by Mediterranean, North Indian, Italian, and American cuisines.",
+      "map": "https://maps.app.goo.gl/HUdXZcMeNVjtCSnX7"
+    },
+    {
+      "name": "Conscious Cafe",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "Experience artisanal vegetarian & vegan food and beverages made with conscious ingredients at Conscious Cafe Auroville.",
+      "map": "https://maps.app.goo.gl/PLTHXjyzqk9pooC1A"
+    },
+    {
+      "name": "Hope Cafe",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "Get tiny bites and beverages in this artistic café.",
+      "map": "https://maps.app.goo.gl/zPUgdmLjXC8w7G9a9"
+    },
+    {
+      "name": "Cafe des Arts",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "This 19th-century building with vintage decor & garden seating offers French cafe fare & coffee.",
+      "map": "https://maps.app.goo.gl/ACcLE1Adfx8ZhZ9V6"
+    },
+    {
+      "name": "Hot Breads",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "Try it for a variety of breads, pastries, and cookies. Very popular amongst the locals.",
+      "map": "https://maps.app.goo.gl/jLkv2Yiw5r85sjsEA"
+    },
+    {
+      "name": "Bread & Chocolate",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "Lively rooftop cafe that servers French pastries.",
+      "map": "https://maps.app.goo.gl/Vrnok1HB4QsxSHtV8"
+    },
+    {
+      "name": "Mira",
+      "cat": "Food",
+      "sub": "continental",
+      "desc": "From traditional South Indian spices to contemporary European culinary techniques, the dishes on offer transcend borders and expectations.",
+      "map": "https://maps.app.goo.gl/qoVXSW6PXMaTifMS8"
+    },
+    {
+      "name": "Cafe 73",
+      "cat": "Food",
+      "sub": "continental",
+      "desc": "Café known for its burgers and dishes named after motorcycles.",
+      "map": "https://maps.app.goo.gl/FFga9VtZVXHquYhaA"
+    },
+    {
+      "name": "Daddy Amma Momo Shop",
+      "cat": "Food",
+      "sub": "asian",
+      "desc": "Rumoured to be the best momos in Pondy.",
+      "map": "https://maps.app.goo.gl/K6y9K9CLuQxokugS6"
+    },
+    {
+      "name": "Gelato Artigianale Italiano",
+      "cat": "Food",
+      "sub": "dessert",
+      "desc": "Italian-style gelateria serving handcrafted gelato in classic and seasonal flavors.",
+      "map": "https://maps.app.goo.gl/or1Z3rFV1RdW9wEQ6"
+    },
+    {
+      "name": "Tipsy cream",
+      "cat": "Food",
+      "sub": "dessert",
+      "desc": "Dessert spot known for creative ice creams and alcohol-infused frozen treats.",
+      "map": "https://maps.app.goo.gl/2BaWHcbhVDuJxGUu5"
+    },
+    {
+      "name": "Zuka",
+      "cat": "Food",
+      "sub": "dessert",
+      "desc": "Snug desert shop offering decadent cakes, homemade chocolates, and other sweets.",
+      "map": "https://maps.app.goo.gl/P89xobMN8b776Thw6"
+    },
+    {
+      "name": "Villa Shanti Hotel Restaurant",
+      "cat": "Food",
+      "sub": "fine",
+      "desc": "Refined restaurant blending Indian and European flavors within a heritage hotel setting.",
+      "map": "https://maps.app.goo.gl/LeJVxD2KSthub8gw9"
+    },
+    {
+      "name": "Pavilion",
+      "cat": "Food",
+      "sub": "fine",
+      "desc": "Luxury hotel restaurant offering an upscale multi-cuisine dining experience with polished service.",
+      "map": "https://maps.app.goo.gl/AfveaGABdhUepUCH7"
+    },
+    {
+      "name": "Anthé Restaurant",
+      "cat": "Food",
+      "sub": "fine",
+      "desc": "Fine-dining venue focusing on modern Indian cuisine with curated menus and elegant presentation.",
+      "map": "https://maps.app.goo.gl/US7RJ9RrZt2BYsY76"
+    },
+    {
+      "name": "Mel Whisks",
+      "cat": "Social",
+      "sub": "",
+      "desc": "A very happening bar with lots of great food options, fun activities, and karaoke nights.",
+      "map": "https://maps.app.goo.gl/3KgJfsUugyvJ5sMV6"
+    },
+    {
+      "name": "Catamaran Brewing Company",
+      "cat": "Social",
+      "sub": "",
+      "desc": "Pondicherry's craft brewery offering house-brewed beers, pub food, and a vibrant social setting.",
+      "map": "https://maps.app.goo.gl/KmDgo1UKLJoy2ApaA"
+    },
+    {
+      "name": "Asian House Pub",
+      "cat": "Social",
+      "sub": "",
+      "desc": "Offers a unique blend of Asian-inspired cuisine and a lively nightlife experience.",
+      "map": "https://maps.app.goo.gl/AD4rXmXMfVd8gYPs8"
+    },
+    {
+      "name": "Bike & Barrel",
+      "cat": "Social",
+      "sub": "",
+      "desc": "Fashioned as an English pub in Puducherry, Bike & Barrel is the place to hit with your friends for a pint of beer!",
+      "map": "https://maps.app.goo.gl/rKLSExuRZTzwMnHZ7"
+    },
+    {
+      "name": "Cantos Social House",
+      "cat": "Social",
+      "sub": "",
+      "desc": "A calm, community-driven third place with 300+ board games, arts and creativity, informal co-working, and slow social time, without the pressure to buy anything.",
+      "map": "https://maps.app.goo.gl/NrPFvwLMcf2AH36s6"
+    },
+    {
+      "name": "Auroville Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Auroville+Beach+Pondicherry"
+    },
+    {
+      "name": "Eden Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Eden+Beach+Pondicherry"
+    },
+    {
+      "name": "Veerampattinam Beach",
+      "cat": "Beach",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Veerampattinam+Beach+Pondicherry"
+    },
+    {
+      "name": "Matrimandir (Auroville)",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Matrimandir+(Auroville)+Pondicherry"
+    },
+    {
+      "name": "Bharathi Park (White Town)",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Bharathi+Park+(White+Town)+Pondicherry"
+    },
+    {
+      "name": "Baker Street",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Baker+Street+Pondicherry"
+    },
+    {
+      "name": "Crêpe In Touch",
+      "cat": "Food",
+      "sub": "continental",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Crêpe+In+Touch+Pondicherry"
+    },
+    {
+      "name": "Auroville Bakery",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Auroville+Bakery+Pondicherry"
+    },
+    {
+      "name": "Coromandel Café",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Coromandel+Café+Pondicherry"
+    },
+    {
+      "name": "Marc's Café",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Marc's+Café+Pondicherry"
+    },
+    {
+      "name": "La Terrace",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=La+Terrace+Pondicherry"
+    },
+    {
+      "name": "Kasha Ki Aasha",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Kasha+Ki+Aasha+Pondicherry"
+    },
+    {
+      "name": "The Sprout",
+      "cat": "Food",
+      "sub": "continental",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=The+Sprout+Pondicherry"
+    },
+    {
+      "name": "Viji Tiffen Centre",
+      "cat": "Food",
+      "sub": "south-indian",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Viji+Tiffen+Centre+Pondicherry"
+    },
+    {
+      "name": "Canteen 18",
+      "cat": "Food",
+      "sub": "fine",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Canteen+18+Pondicherry"
+    },
+    {
+      "name": "Hotel Atithi",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Hotel+Atithi+Pondicherry"
+    },
+    {
+      "name": "The Groves",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=The+Groves+Pondicherry"
+    },
+    {
+      "name": "Goubert Market",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Goubert+Market+Pondicherry"
+    },
+    {
+      "name": "Hidesign",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Hidesign+Pondicherry"
+    },
+    {
+      "name": "Boutique d'Auroville",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Boutique+d'Auroville+Pondicherry"
+    },
+    {
+      "name": "Casablanca",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Casablanca+Pondicherry"
+    },
+    {
+      "name": "Kalki",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "",
+      "map": "https://www.google.com/maps/search/?api=1&query=Kalki+Pondicherry"
+    }
+  ]
+}

@@ -416,67 +416,35 @@ function gbpAudit_() {
 // ============================================================
 
 const ITIN_SHEET = 'Itin Data';
-const ITIN_PLACES = [
-  // Beaches
-  { name: 'Promenade (Rock) Beach',        q: 'Promenade Beach, Pondicherry',                 cat: 'Beach' },
-  { name: 'Paradise Beach',                q: 'Paradise Beach, Pondicherry',                  cat: 'Beach' },
-  { name: 'Serenity Beach',                q: 'Serenity Beach, Pondicherry',                  cat: 'Beach' },
-  { name: 'Auroville Beach',               q: 'Auroville Beach',                              cat: 'Beach' },
-  { name: 'Eden Beach',                    q: 'Eden Beach, Pondicherry',                      cat: 'Beach' },
-  { name: 'Veerampattinam Beach',          q: 'Veerampattinam Beach, Pondicherry',            cat: 'Beach' },
-  // Attractions
-  { name: 'Sri Aurobindo Ashram',          q: 'Sri Aurobindo Ashram, Pondicherry',            cat: 'Attraction' },
-  { name: 'Matrimandir (Auroville)',       q: 'Matrimandir, Auroville',                       cat: 'Attraction' },
-  { name: 'Sacred Heart Basilica',         q: 'Basilica of the Sacred Heart of Jesus, Pondicherry', cat: 'Attraction' },
-  { name: 'Manakula Vinayagar Temple',     q: 'Sri Manakula Vinayagar Temple, Pondicherry',   cat: 'Attraction' },
-  { name: 'Botanical Garden',              q: 'Botanical Garden, Pondicherry',                cat: 'Attraction' },
-  { name: 'Bharathi Park (White Town)',    q: 'Bharathi Park, Pondicherry',                   cat: 'Attraction' },
-  { name: 'Chunnambar Boat House',         q: 'Chunnambar Boat House, Pondicherry',           cat: 'Attraction' },
-  { name: 'Arikamedu',                     q: 'Arikamedu, Pondicherry',                       cat: 'Attraction' },
-  { name: 'Ousteri Lake',                  q: 'Ousteri Lake, Pondicherry',                    cat: 'Attraction' },
-  // Breakfast & bakeries
-  { name: 'Bread & Chocolate',             q: 'Bread and Chocolate, Auroville',               cat: 'Breakfast' },
-  { name: 'Baker Street',                  q: 'Baker Street, Pondicherry',                    cat: 'Breakfast' },
-  { name: 'Crêpe In Touch',                q: 'Crepe In Touch, Pondicherry',                  cat: 'Breakfast' },
-  { name: 'Auroville Bakery',              q: 'Auroville Bakery and Boutique',                cat: 'Breakfast' },
-  { name: 'Sri Murugan Café',              q: 'Sri Murugan Cafe, Pondicherry',                cat: 'Breakfast' },
-  // Cafés & coffee
-  { name: 'Café des Arts',                 q: 'Cafe des Arts, Pondicherry',                   cat: 'Cafe' },
-  { name: 'Coromandel Café',               q: 'Coromandel Cafe, Pondicherry',                 cat: 'Cafe' },
-  { name: "Marc's Café",                   q: "Marc's Cafe, Auroville",                       cat: 'Cafe' },
-  { name: 'La Terrace',                    q: 'La Terrace, Pondicherry',                      cat: 'Cafe' },
-  { name: 'Kasha Ki Aasha',               q: 'Kasha Ki Aasha, Pondicherry',                  cat: 'Cafe' },
-  // Lunch & South Indian
-  { name: 'Surguru',                       q: 'Surguru, Pondicherry',                         cat: 'Lunch' },
-  { name: 'Hotel Madurai Veedu',           q: 'Hotel Madurai Veedu, Pondicherry',             cat: 'Lunch' },
-  { name: 'The Sprout',                    q: 'The Sprout, Pondicherry',                      cat: 'Lunch' },
-  { name: 'Viji Tiffen Centre',            q: 'Viji Tiffen Centre, Pondicherry',              cat: 'Lunch' },
-  // Dinner
-  { name: 'Villa Shanti',                  q: 'Villa Shanti, Pondicherry',                    cat: 'Dinner' },
-  { name: 'Maison Perumal',                q: 'Maison Perumal, Pondicherry',                  cat: 'Dinner' },
-  { name: 'Canteen 18',                    q: 'Canteen 18, Pondicherry',                      cat: 'Dinner' },
-  { name: 'Hotel Atithi',                  q: 'Hotel Atithi, Pondicherry',                    cat: 'Dinner' },
-  { name: 'Ende Nadu',                     q: 'Ende Nadu, Pondicherry',                       cat: 'Dinner' },
-  { name: 'The Groves',                    q: 'The Groves, Pondicherry',                      cat: 'Dinner' },
-  // Shopping
-  { name: 'Goubert Market',                q: 'Goubert Market, Pondicherry',                  cat: 'Shopping' },
-  { name: 'Hidesign',                      q: 'Hidesign, Pondicherry',                        cat: 'Shopping' },
-  { name: "Boutique d'Auroville",          q: "La Boutique d'Auroville, Pondicherry",         cat: 'Shopping' },
-  { name: 'Casablanca',                    q: 'Casablanca, Pondicherry',                      cat: 'Shopping' },
-  { name: 'Kalki',                         q: 'Kalki, Pondicherry',                           cat: 'Shopping' }
-];
 
-// Start-point AREAS (category 'Area'): selectable as the day's starting point but
-// not as stops. The user picks the area nearest their hotel.
-const ITIN_STARTS = [
-  { name: 'Pondicherry Gate (entrance)',  q: 'Pondicherry Gate, Puducherry',     cat: 'Area' },
-  { name: 'White Town (French Quarter)',  q: 'French Quarter, Pondicherry',      cat: 'Area' },
-  { name: 'Beach Road (Promenade)',       q: 'Goubert Avenue, Pondicherry',      cat: 'Area' },
-  { name: 'Pondicherry Bus Stand',        q: 'Puducherry Bus Stand',             cat: 'Area' },
-  { name: 'Puducherry Railway Station',   q: 'Puducherry Railway Station',       cat: 'Area' },
-  { name: 'Auroville',                    q: 'Auroville Visitor Centre',         cat: 'Area' },
-  { name: 'Mission Street',               q: 'Mission Street, Pondicherry',      cat: 'Area' }
-];
+// The editable place catalog lives in the repo and is served as a static file
+// (data/pondicherry-places.json). buildItineraryData() fetches it, resolves each
+// place's coordinates via the Places API (community-sourced coords are NOT trusted),
+// and builds the driving matrix. To add/edit places: edit the catalog JSON, push,
+// then re-run buildItineraryData() and re-bake the static itinerary file.
+const ITIN_CATALOG_URL = 'https://nivaastays.com/data/pondicherry-places.json';
+
+// Text-search query overrides for names the Places API resolves poorly.
+// Anything not listed defaults to "<name>, Puducherry".
+const ITIN_QUERY = {
+  'Sacred Heart Basilica':       'Basilica of the Sacred Heart of Jesus, Pondicherry',
+  'Manakula Vinayagar Temple':   'Sri Manakula Vinayagar Temple, Pondicherry',
+  'Matrimandir (Auroville)':     'Matrimandir, Auroville',
+  'Bread & Chocolate':           'Bread and Chocolate, Auroville',
+  'Auroville Bakery':            'Auroville Bakery and Boutique',
+  "Boutique d'Auroville":        "La Boutique d'Auroville, Pondicherry",
+  'Bharathi Park (White Town)':  'Bharathi Park, Pondicherry',
+  'Auroville Beach':             'Auroville Beach',
+  // start areas
+  'Pondicherry Gate (entrance)': 'Pondicherry Gate, Puducherry',
+  'White Town (French Quarter)': 'French Quarter, Pondicherry',
+  'Beach Road (Promenade)':      'Goubert Avenue, Pondicherry',
+  'Pondicherry Bus Stand':       'Puducherry Bus Stand',
+  'Puducherry Railway Station':  'Puducherry Railway Station',
+  'Auroville':                   'Auroville Visitor Centre',
+  'Mission Street':              'Mission Street, Pondicherry'
+};
+function itinQuery_(name) { return ITIN_QUERY[name] || (name + ', Puducherry'); }
 
 // Places Text Search → { name, lat, lng } for the top match.
 function resolvePlace_(query) {
@@ -525,11 +493,15 @@ function routeMatrix_(points) {
 // Run ONCE from the editor. Resolves places + builds the matrix, stores the JSON
 // in the 'Itin Data' sheet (served via doGet?itinData=1).
 function buildItineraryData() {
+  const cat = JSON.parse(UrlFetchApp.fetch(ITIN_CATALOG_URL, { muteHttpExceptions: true }).getContentText() || '{}');
+  const starts = (cat.starts || []).map(name => ({ name: name, cat: 'Area', sub: '', desc: '', map: '' }));
+  const places = (cat.places || []);
+  const total = 1 + places.length + starts.length;
   // origin = Nivaa (grid centre is the Nivaa point)
-  const points = [{ name: 'Nivaa Stays', cat: 'Stay', lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng }];
-  ITIN_PLACES.concat(ITIN_STARTS).forEach(p => {
-    const r = resolvePlace_(p.q);
-    if (r) points.push({ name: p.name, cat: p.cat, lat: r.lat, lng: r.lng });
+  const points = [{ name: 'Nivaa Stays', cat: 'Stay', sub: '', desc: '', map: '', lat: RANK_GRID.centerLat, lng: RANK_GRID.centerLng }];
+  places.concat(starts).forEach(p => {
+    const r = resolvePlace_(itinQuery_(p.name));
+    if (r) points.push({ name: p.name, cat: p.cat, sub: p.sub || '', desc: p.desc || '', map: p.map || '', lat: r.lat, lng: r.lng });
     else Logger.log('skipped (unresolved): %s', p.name);
     Utilities.sleep(120);
   });
@@ -543,7 +515,7 @@ function buildItineraryData() {
   };
   const sh = getOrCreateSheet_(ITIN_SHEET, ['JSON']);
   sh.getRange(2, 1).setValue(JSON.stringify(data));
-  Logger.log('Itinerary data built: %s places, %sx%s matrix.', points.length, points.length, points.length);
+  Logger.log('Itinerary data built: %s of %s points resolved, %sx%s matrix.', points.length, total, points.length, points.length);
 }
 
 // doGet?itinData=1 — returns the stored itinerary JSON (for me to bake into a static file).
