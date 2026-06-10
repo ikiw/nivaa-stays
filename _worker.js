@@ -64,9 +64,11 @@ async function handlePlan(request, env) {
   const sys = `You are a Pondicherry (India) day-trip planner. From the lists below, choose places for ONE day that best match the user's request.
 Rules:
 - Use ONLY the numeric ids shown. Never invent a place or id.
-- Pick 4 to 8 stops unless the user clearly wants more or fewer.
+- If a CURRENT PLAN is given, treat the request as an EDIT of it: keep its stops and their order, changing only what the request implies (add, remove, replace, reorder, or relax). Otherwise build a fresh day.
+- "Relax" or "easier" -> fewer stops and/or nearer places; "fuller" or "more" -> add stops.
+- Default to 4 to 8 stops unless the user or the current plan implies otherwise.
 - Include a lunch and/or dinner spot when it suits the day.
-- Choose one start id from START AREAS — prefer the user's stated start, else the most central.
+- Choose one start id from START AREAS — prefer the current/stated start, else the most central.
 - Honour the user's interests and pace; exclude anything they say to avoid.
 Respond with ONLY JSON: {"start": <id>, "stops": [<id>,...], "note": "<one short friendly sentence>"}.
 
@@ -76,7 +78,15 @@ ${starts.join('\n')}
 PLACES (id  name [category/sub] — description):
 ${stops.join('\n')}`;
 
-  const user = `Current start: ${body.start || 'unspecified'}. Start time: ${body.startTime || '09:00'}.\nRequest: ${query}`;
+  // Current plan (if any) so the model can edit instead of always rebuilding.
+  const cur = body.current || {};
+  const curStops = Array.isArray(cur.stops)
+    ? cur.stops.filter(i => Number.isInteger(i) && places[i] && PLAN_CATS.includes(places[i].cat)) : [];
+  const startName = Number.isInteger(cur.start) && places[cur.start] ? places[cur.start].name : 'unspecified';
+  const currentBlock = curStops.length
+    ? `CURRENT PLAN (already built by the user — modify this, do not start over unless asked):\nStart: ${startName}\nStops in order: ${curStops.map(i => i + ' ' + places[i].name).join(', ')}\n\n`
+    : '';
+  const user = `${currentBlock}Start time: ${body.startTime || '09:00'}. Current start: ${startName}.\nRequest: ${query}`;
 
   let out;
   try {

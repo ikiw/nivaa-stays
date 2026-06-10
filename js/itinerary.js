@@ -285,10 +285,13 @@ async function aiPlan() {
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = 'Planning…';
   note.classList.add('hidden');
+  // snapshot current plan so the model can edit it, and so we keep manual stay edits
+  const hadStops = state.stops.length > 0;
+  const prevStay = {}; state.stops.forEach(s => { prevStay[s.idx] = s.stay; });
   try {
     const res = await fetch('/api/plan', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: q, start: DATA.places[state.start] && DATA.places[state.start].name, startTime: state.startTime })
+      body: JSON.stringify({ query: q, startTime: state.startTime, current: { start: state.start, stops: state.stops.map(s => s.idx) } })
     });
     const data = await res.json();
     if (!res.ok || !Array.isArray(data.stops) || !data.stops.length) throw new Error(data.error || 'no_plan');
@@ -296,8 +299,9 @@ async function aiPlan() {
         (DATA.places[data.start].cat === 'Area' || DATA.places[data.start].cat === 'Stay')) state.start = data.start;
     state.stops = data.stops
       .filter(i => DATA.places[i] && i !== state.start)
-      .map(i => ({ idx: i, stay: DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45 }));
-    if (state.stops.length >= 2) optimize(); else render();   // optimize() reorders by the matrix + renders
+      .map(i => ({ idx: i, stay: prevStay[i] != null ? prevStay[i] : (DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45) }));
+    // fresh plan → order by the matrix; edit of an existing plan → keep the model's order
+    if (!hadStops && state.stops.length >= 2) optimize(); else render();
     note.textContent = data.note ? '✨ ' + data.note : '✨ Here is a suggested day — tweak it freely below.';
     note.classList.remove('hidden');
   } catch (e) {
