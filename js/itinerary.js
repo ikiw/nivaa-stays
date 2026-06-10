@@ -273,6 +273,41 @@ function optimize() {
   render();
 }
 
+// ---------- AI: "Plan my day" ----------
+// Sends the request to /api/plan (Workers AI picks places from our catalog), then
+// orders the selection by the real driving matrix via optimize().
+async function aiPlan() {
+  const input = document.getElementById('ip-ai-q');
+  const btn = document.getElementById('ip-ai-go');
+  const note = document.getElementById('ip-ai-note');
+  const q = (input.value || '').trim();
+  if (!q) { input.focus(); return; }
+  const label = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Planning…';
+  note.classList.add('hidden');
+  try {
+    const res = await fetch('/api/plan', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: q, start: DATA.places[state.start] && DATA.places[state.start].name, startTime: state.startTime })
+    });
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data.stops) || !data.stops.length) throw new Error(data.error || 'no_plan');
+    if (typeof data.start === 'number' && DATA.places[data.start] &&
+        (DATA.places[data.start].cat === 'Area' || DATA.places[data.start].cat === 'Stay')) state.start = data.start;
+    state.stops = data.stops
+      .filter(i => DATA.places[i] && i !== state.start)
+      .map(i => ({ idx: i, stay: DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45 }));
+    if (state.stops.length >= 2) optimize(); else render();   // optimize() reorders by the matrix + renders
+    note.textContent = data.note ? '✨ ' + data.note : '✨ Here is a suggested day — tweak it freely below.';
+    note.classList.remove('hidden');
+  } catch (e) {
+    note.textContent = 'Could not auto-plan just now — add places manually, or try rephrasing your request.';
+    note.classList.remove('hidden');
+  } finally {
+    btn.disabled = false; btn.textContent = label;
+  }
+}
+
 function render() {
   const lay = document.querySelector('.ip-layout');
   if (lay) lay.classList.toggle('ip-no-stops', state.stops.length === 0);  // hide "Your day" until a stop exists
@@ -357,6 +392,8 @@ function bind() {
     render();
   });
   document.getElementById('ip-time').addEventListener('change', e => { state.startTime = e.target.value || '09:00'; renderItinerary(); });
+  document.getElementById('ip-ai-go').addEventListener('click', aiPlan);
+  document.getElementById('ip-ai-q').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); aiPlan(); } });
   document.getElementById('ip-optimize').addEventListener('click', optimize);
   document.getElementById('ip-clear').addEventListener('click', () => { state.stops = []; render(); });
   document.getElementById('ip-pdf').addEventListener('click', () => window.print());

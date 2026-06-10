@@ -70,6 +70,15 @@
   /* Wider page container for this app-style tool (Tailwind caps at 80rem). */
   .ip-wrap { width: 100%; max-width: 1660px; margin-left: auto; margin-right: auto; padding-left: 1.5rem; padding-right: 1.5rem; }
   .ip-topbar { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem 2rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+  .ip-ai { display: flex; gap: 0.6rem; margin-bottom: 0.75rem; }
+  .ip-ai input { flex: 1; min-width: 0; font-size: 0.92rem; padding: 0.72rem 0.95rem; border: 1px solid #e2dcc8; border-radius: 12px;
+                 background: #fff; color: var(--brand-teal); box-shadow: 0 1px 2px rgba(14,59,53,0.04); }
+  .ip-ai input:focus { outline: none; border-color: var(--brand-gold); }
+  .ip-ai button { white-space: nowrap; }
+  .ip-ai button[disabled] { opacity: 0.6; cursor: default; }
+  .ip-ai-note { font-size: 0.82rem; color: var(--brand-teal); background: rgba(201,162,39,0.1); border: 1px solid #ece4cf;
+                border-radius: 10px; padding: 0.55rem 0.8rem; margin-bottom: 1rem; }
+  @media (max-width: 560px) { .ip-ai { flex-wrap: wrap; } .ip-ai button { width: 100%; } }
   #ip-hero { flex: 1 1 320px; min-width: 0; }
   .ip-controls { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; flex: 0 0 auto;
                  background: var(--brand-cream); border: 1px solid #eceee9; border-radius: 14px; padding: 0.7rem 0.9rem; }
@@ -164,7 +173,7 @@
     body > #ip-print-root { display: block !important; }
     header.sticky-nav, footer, #ip-hero, #ip-footnote, .ip-controls,
     .ip-layout > .ip-panel:first-child, .ip-dayhead, .ip-acts, .ip-drag,
-    .ip-maplink, .ip-maplink-sm, #ip-mapwrap, .ip-mapcol { display: none !important; }
+    .ip-maplink, .ip-maplink-sm, #ip-mapwrap, .ip-mapcol, .ip-ai, .ip-ai-note { display: none !important; }
     body { background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     section.section { padding-top: 1rem !important; }
     .ip-layout { display: block; }
@@ -208,6 +217,13 @@
         <label>Start time <input type="time" id="ip-time" value="09:00"></label>
       </div>
     </div>
+
+    <div class="ip-ai">
+      <input id="ip-ai-q" type="text" maxlength="400" autocomplete="off"
+             placeholder="Describe your ideal day — e.g. “beaches and great filter coffee, easy pace, no nightlife”">
+      <button id="ip-ai-go" type="button" class="btn-gold">✨ Plan my day</button>
+    </div>
+    <div id="ip-ai-note" class="ip-ai-note hidden"></div>
 
     <div class="ip-layout">
       <div class="ip-panel ip-pickpanel">

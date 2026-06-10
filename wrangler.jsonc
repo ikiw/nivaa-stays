@@ -3,6 +3,9 @@
   "name": "nivaastays",
   "main": "./_worker.js",
   "compatibility_date": "2026-04-25",
+  "ai": {
+    "binding": "AI"
+  },
   "observability": {
     "enabled": true
   },
