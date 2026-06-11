@@ -100,6 +100,24 @@
   .ip-mapprompt { display: none; padding: 0.7rem 0.9rem; font-size: 0.8rem; color: var(--brand-muted); background: #fff; border-top: 1px solid #e8ebe8; text-align: center; }
   .ip-layout.ip-no-stops .ip-mapprompt { display: block; }
   .ip-layout.ip-no-stops .ip-maplegend { display: none; }
+  /* ---- Mobile (<=900px): map banner on top + segmented Places/Day tabs, no nav ---- */
+  .ip-mobtabs { display: none; }
+  @media (max-width: 900px) {
+    header.sticky-nav { display: none; }
+    section#ip-print-root { padding-top: 0.85rem !important; }
+    .ip-topbar { margin-bottom: 0.8rem; }
+    .ip-layout { display: flex; flex-direction: column; gap: 0.6rem; }
+    .ip-mapcol { order: 1; position: static; }
+    .ip-mapcol #ip-map { height: 26vh; object-fit: cover; }
+    .ip-mobtabs { order: 2; display: flex; gap: 0.4rem; position: sticky; top: 0; z-index: 6; background: var(--brand-cream); padding: 0.45rem 0; }
+    .ip-mobtabs button { flex: 1; font-size: 0.82rem; font-weight: 700; padding: 0.55rem 0.4rem; border: 1px solid #e2dcc8; border-radius: 10px; background: #fff; color: var(--brand-teal); cursor: pointer; }
+    .ip-mobtabs button.is-on { background: var(--brand-teal); color: #fff; border-color: var(--brand-teal); }
+    .ip-pickpanel { order: 3; }
+    .ip-daycol { order: 3; position: static; max-height: none; }
+    .ip-layout:not(.mob-day) .ip-daycol { display: none !important; }
+    .ip-layout.mob-day .ip-pickpanel { display: none !important; }
+    .ip-layout.mob-day .ip-daycol { display: flex !important; }
+  }
   .ip-panel { background: var(--brand-cream); border: 1px solid #eceee9; border-radius: 16px; padding: 1.1rem 1.25rem; }
   .ip-panel > h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--brand-teal); margin-bottom: 0.8rem; }
   .ip-pickhead { margin-bottom: 0.7rem; }
@@ -248,6 +266,10 @@
           <div class="ip-mapprompt">📍 Add places from the left to start building your itinerary.</div>
         </div>
       </div>
+      <div class="ip-mobtabs">
+        <button type="button" data-mtab="places">📍 Add places</button>
+        <button type="button" data-mtab="day">🗓 Your day<span id="ip-tab-daycount"></span></button>
+      </div>
       <div class="ip-panel ip-daycol">
         <div class="ip-dayhead">
           <h3>Your day</h3>
@@ -273,6 +295,6 @@
   <div class="ip-wrap text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="pondicherry-travel-guide.html" class="underline">Guide</a> · <a href="guides.html" class="underline">Guides</a></div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
-<script src="js/itinerary.js?v=017daa3f"></script>
+<script src="js/itinerary.js?v=dd41c53c"></script>
 </body>
 </html>
