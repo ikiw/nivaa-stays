@@ -4,7 +4,9 @@
   "description": "Build tooling for the Nivaa Stays static site (Tailwind compile).",
   "scripts": {
     "build:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --minify",
-    "watch:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --watch"
+    "watch:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --watch",
+    "cache-bust": "node scripts/cache-bust.mjs",
+    "build": "npm run build:css && npm run cache-bust"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0"

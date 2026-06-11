@@ -195,10 +195,17 @@ Caveats:
 - Apps Script POSTs from `checkin.html`, `welcome.html`, `order.html` will succeed end-to-end against the live script — be careful: a local checkin submission writes a real row to the production Sheet.
 - Cloudflare's `.html`-stripping redirect does NOT happen locally, so links work as-is.
 
+## Cache-busting / build
+
+Assets are **content-hash versioned** to defeat browser + service-worker caching (the SW serves JS/CSS stale-while-revalidate, which otherwise needs a hard refresh after each deploy). `npm run cache-bust` (`scripts/cache-bust.mjs`) stamps `?v=<hash>` on every local `js/`/`css/` reference across all HTML and sets `sw.js`'s `CACHE_VERSION` to a global build hash. It's **idempotent** — re-running with no asset changes makes no diff.
+
+- **`npm run build`** = `build:css` then `cache-bust`. **Run it before committing whenever you change any `js/*.js` or `css/*` (or add a new utility class).** Then commit the restamped HTML + `sw.js` alongside the asset change.
+- A file's `?v=` only changes when its bytes change, so unchanged assets stay cached.
+
 ## Deploy / push checklist
 
 1. Make edits, validate locally (the user prefers to eyeball changes before push).
-2. `git -C site add -A && git -C site commit -m "..."`
+2. **If any `js`/`css` changed: `npm run build`** (stamps cache-bust hashes), then `git -C site add -A && git -C site commit -m "..."`
 3. **Push as `ikiw`**: `gh auth switch --user ikiw` if needed (`gh auth status` to verify), then `git push origin main`.
 4. Cloudflare auto-deploys in ~1-2 min. Workers + Assets builds occasionally take longer than pure static deploys.
 5. If sitemap/SEO touched: resubmit sitemap in Search Console and use URL Inspection → Request Indexing on changed pages.
