@@ -300,9 +300,9 @@ async function aiPlan() {
     state.stops = data.stops
       .filter(i => DATA.places[i] && i !== state.start)
       .map(i => ({ idx: i, stay: prevStay[i] != null ? prevStay[i] : (DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45) }));
-    state.mobView = 'day';   // show the resulting plan on mobile
     // fresh plan → order by the matrix; edit of an existing plan → keep the model's order
     if (!hadStops && state.stops.length >= 2) optimize(); else render();
+    goView('day', true);   // reveal the resulting plan (mobile)
     note.textContent = data.note ? '✨ ' + data.note : '✨ Here is a suggested day — tweak it freely below.';
     note.classList.remove('hidden');
   } catch (e) {
@@ -324,6 +324,19 @@ function syncMobView() {
     b.classList.toggle('is-on', b.getAttribute('data-mtab') === state.mobView));
   const c = document.getElementById('ip-tab-daycount');
   if (c) c.textContent = state.stops.length ? ' (' + state.stops.length + ')' : '';
+}
+
+const isMobileView = () => window.matchMedia('(max-width: 900px)').matches;
+
+// Switch the mobile view (map / places / day), syncing the URL so browser
+// back/forward navigates between them. push=false when replaying a popstate.
+function goView(v, push) {
+  state.mobView = (v === 'places' || v === 'day') ? v : 'map';
+  syncMobView();
+  if (push && isMobileView()) {
+    const url = state.mobView === 'map' ? location.pathname : location.pathname + '?view=' + state.mobView;
+    history.pushState({ mobView: state.mobView }, '', url);
+  }
 }
 
 function render() {
@@ -348,21 +361,22 @@ function bind() {
   document.getElementById('ip-picker').addEventListener('click', e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     const i = +b.getAttribute('data-add');
-    const was = state.stops.length;
     if (isStop(i)) state.stops = state.stops.filter(s => s.idx !== i);
     else state.stops.push({ idx: i, stay: DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45 });
-    if (was === 0 && state.stops.length > 0) state.mobView = 'day';   // first stop → reveal the day sheet (mobile)
-    render();
+    render();   // stay on the current view; the day count in the bottom bar updates
   });
 
   document.querySelector('.ip-mobbar').addEventListener('click', e => {
     const b = e.target.closest('[data-mtab]'); if (!b) return;
     const v = b.getAttribute('data-mtab');
-    state.mobView = (state.mobView === v) ? 'map' : v;   // tap the active item again → back to the map
-    syncMobView();
+    goView(state.mobView === v ? 'map' : v, true);   // tap the active item again → back to the map
   });
   document.querySelectorAll('[data-close]').forEach(btn =>
-    btn.addEventListener('click', () => { state.mobView = 'map'; syncMobView(); }));
+    btn.addEventListener('click', () => goView('map', true)));
+  window.addEventListener('popstate', e => {
+    const v = (e.state && e.state.mobView) || new URLSearchParams(location.search).get('view') || 'map';
+    goView(v, false);
+  });
 
   document.getElementById('ip-filters').addEventListener('click', e => {
     const b = e.target.closest('[data-filter]'); if (!b) return;
@@ -438,6 +452,8 @@ async function init() {
   // default start = Pondicherry Bus Stand (fallback: first place / Nivaa)
   const busIdx = DATA.places.findIndex(p => /bus stand/i.test(p.name));
   if (busIdx >= 0) state.start = busIdx;
+  const v0 = new URLSearchParams(location.search).get('view');
+  if (v0 === 'places' || v0 === 'day') state.mobView = v0;   // restore mobile view on load/refresh
   document.getElementById('ip-time').value = state.startTime;
   bind();
   render();
