@@ -24,7 +24,7 @@ const SUB_LABEL = {
 const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Social: 45, Shopping: 30, Stay: 0 };
 
 let DATA = null;
-const state = { start: 0, startTime: '09:00', stops: [], filter: 'All', subFilter: 'All', mobTab: 'places' }; // stops = [{ idx, stay }]
+const state = { start: 0, startTime: '09:00', stops: [], filter: 'All', subFilter: 'All', mobView: 'map' }; // stops = [{ idx, stay }]
 
 function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
 function parseTime(s) { const [h, m] = String(s).split(':').map(Number); return (h || 0) * 60 + (m || 0); }
@@ -300,7 +300,7 @@ async function aiPlan() {
     state.stops = data.stops
       .filter(i => DATA.places[i] && i !== state.start)
       .map(i => ({ idx: i, stay: prevStay[i] != null ? prevStay[i] : (DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45) }));
-    state.mobTab = 'day';   // show the resulting plan on mobile
+    state.mobView = 'day';   // show the resulting plan on mobile
     // fresh plan → order by the matrix; edit of an existing plan → keep the model's order
     if (!hadStops && state.stops.length >= 2) optimize(); else render();
     note.textContent = data.note ? '✨ ' + data.note : '✨ Here is a suggested day — tweak it freely below.';
@@ -313,20 +313,23 @@ async function aiPlan() {
   }
 }
 
-// Mobile-only: reflect the active Places/Day tab + the day count.
-function syncMobTabs() {
+// Mobile-only: reflect which full-screen sheet (if any) is open + the day count.
+function syncMobView() {
   const lay = document.querySelector('.ip-layout');
-  if (lay) lay.classList.toggle('mob-day', state.mobTab === 'day');
-  document.querySelectorAll('.ip-mobtabs [data-mtab]').forEach(b =>
-    b.classList.toggle('is-on', b.getAttribute('data-mtab') === state.mobTab));
+  if (lay) {
+    lay.classList.toggle('mobview-places', state.mobView === 'places');
+    lay.classList.toggle('mobview-day', state.mobView === 'day');
+  }
+  document.querySelectorAll('.ip-mobbar [data-mtab]').forEach(b =>
+    b.classList.toggle('is-on', b.getAttribute('data-mtab') === state.mobView));
   const c = document.getElementById('ip-tab-daycount');
-  if (c) c.textContent = state.stops.length ? ' ' + state.stops.length : '';
+  if (c) c.textContent = state.stops.length ? ' (' + state.stops.length + ')' : '';
 }
 
 function render() {
   const lay = document.querySelector('.ip-layout');
   if (lay) lay.classList.toggle('ip-no-stops', state.stops.length === 0);  // hide "Your day" until a stop exists
-  renderStartSelect(); renderFilters(); renderSubFilters(); renderPicker(); renderItinerary(); syncMobTabs();
+  renderStartSelect(); renderFilters(); renderSubFilters(); renderPicker(); renderItinerary(); syncMobView();
 }
 
 function renderStartSelect() {
@@ -348,15 +351,18 @@ function bind() {
     const was = state.stops.length;
     if (isStop(i)) state.stops = state.stops.filter(s => s.idx !== i);
     else state.stops.push({ idx: i, stay: DEFAULT_STAY[DATA.places[i].cat] != null ? DEFAULT_STAY[DATA.places[i].cat] : 45 });
-    if (was === 0 && state.stops.length > 0) state.mobTab = 'day';   // first stop → reveal the day (mobile)
+    if (was === 0 && state.stops.length > 0) state.mobView = 'day';   // first stop → reveal the day sheet (mobile)
     render();
   });
 
-  document.querySelector('.ip-mobtabs').addEventListener('click', e => {
+  document.querySelector('.ip-mobbar').addEventListener('click', e => {
     const b = e.target.closest('[data-mtab]'); if (!b) return;
-    state.mobTab = b.getAttribute('data-mtab');
-    syncMobTabs();
+    const v = b.getAttribute('data-mtab');
+    state.mobView = (state.mobView === v) ? 'map' : v;   // tap the active item again → back to the map
+    syncMobView();
   });
+  document.querySelectorAll('[data-close]').forEach(btn =>
+    btn.addEventListener('click', () => { state.mobView = 'map'; syncMobView(); }));
 
   document.getElementById('ip-filters').addEventListener('click', e => {
     const b = e.target.closest('[data-filter]'); if (!b) return;

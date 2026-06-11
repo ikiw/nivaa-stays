@@ -100,23 +100,51 @@
   .ip-mapprompt { display: none; padding: 0.7rem 0.9rem; font-size: 0.8rem; color: var(--brand-muted); background: #fff; border-top: 1px solid #e8ebe8; text-align: center; }
   .ip-layout.ip-no-stops .ip-mapprompt { display: block; }
   .ip-layout.ip-no-stops .ip-maplegend { display: none; }
-  /* ---- Mobile (<=900px): map banner on top + segmented Places/Day tabs, no nav ---- */
-  .ip-mobtabs { display: none; }
+  /* ---- Mobile app-shell (<=900px): full-height map + bottom bar + slide-up sheets ---- */
+  .ip-headrow { display: flex; align-items: center; gap: 0.5rem; }
+  .ip-sheet-close { display: none; margin-left: auto; font-size: 0.78rem; font-weight: 700; color: var(--brand-teal);
+                    background: var(--brand-cream); border: 1px solid #e2dcc8; border-radius: 999px; padding: 0.32rem 0.9rem; cursor: pointer; }
+  .ip-mobbar { display: none; }
   @media (max-width: 900px) {
     header.sticky-nav { display: none; }
-    section#ip-print-root { padding-top: 0.85rem !important; }
-    .ip-topbar { margin-bottom: 0.8rem; }
-    .ip-layout { display: flex; flex-direction: column; gap: 0.6rem; }
-    .ip-mapcol { order: 1; position: static; }
-    .ip-mapcol #ip-map { height: 26vh; object-fit: cover; }
-    .ip-mobtabs { order: 2; display: flex; gap: 0.4rem; position: sticky; top: 0; z-index: 6; background: var(--brand-cream); padding: 0.45rem 0; }
-    .ip-mobtabs button { flex: 1; font-size: 0.82rem; font-weight: 700; padding: 0.55rem 0.4rem; border: 1px solid #e2dcc8; border-radius: 10px; background: #fff; color: var(--brand-teal); cursor: pointer; }
-    .ip-mobtabs button.is-on { background: var(--brand-teal); color: #fff; border-color: var(--brand-teal); }
-    .ip-pickpanel { order: 3; }
-    .ip-daycol { order: 3; position: static; max-height: none; }
-    .ip-layout:not(.mob-day) .ip-daycol { display: none !important; }
-    .ip-layout.mob-day .ip-pickpanel { display: none !important; }
-    .ip-layout.mob-day .ip-daycol { display: flex !important; }
+    body { overflow: hidden; }
+    section#ip-print-root { padding: 0 !important; }
+    section#ip-print-root > .ip-wrap { display: flex; flex-direction: column; height: 100vh; height: 100dvh; padding: 0.55rem 0.7rem 0; gap: 0.5rem; }
+    #ip-footnote { display: none; }
+    #ip-hero p { display: none; }
+    #ip-hero h1 { font-size: 1.3rem; }
+    .ip-topbar { margin: 0; gap: 0.5rem; }
+    .ip-controls { padding: 0.5rem 0.7rem; }
+    .ip-ai, .ip-ai-note { margin: 0; }
+
+    /* map = home canvas, fills the leftover height (no page scroll) */
+    .ip-layout { display: block; flex: 1 1 auto; min-height: 0; position: relative; gap: 0; }
+    .ip-mapcol { position: static; height: 100%; }
+    .ip-mapcol .ip-mapwrap { height: 100%; border-radius: 16px; }
+    .ip-mapcol #ip-map { height: 100%; object-fit: cover; }
+    .ip-layout .ip-mapcol .ip-maplegend, .ip-layout .ip-mapcol .ip-mapprompt { display: none; }
+
+    /* bottom bar */
+    .ip-mobbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; gap: 0.5rem;
+                 background: #fff; border-top: 1px solid #e6e2d4; padding: 0.3rem 0.7rem calc(0.3rem + env(safe-area-inset-bottom)); }
+    .ip-mobbar button { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; cursor: pointer;
+                        font-size: 0.7rem; font-weight: 700; color: var(--brand-muted); background: none; border: none; padding: 0.35rem; border-radius: 10px; }
+    .ip-mobbar button .ic { font-size: 1.15rem; }
+    .ip-mobbar button.is-on { color: var(--brand-teal); background: var(--brand-cream); }
+
+    /* slide-up sheets, above the bottom bar */
+    .ip-pickpanel, .ip-daycol {
+      position: fixed; left: 0; right: 0; top: 0; bottom: 3.6rem; z-index: 45; margin: 0; max-height: none;
+      border-radius: 0; background: var(--brand-cream); overflow-y: auto; -webkit-overflow-scrolling: touch;
+      transform: translateY(110%); transition: transform 0.28s ease; box-shadow: 0 -8px 26px rgba(0,0,0,0.16);
+      display: block; padding: 0.2rem 0.9rem 1.5rem;
+    }
+    .ip-layout.ip-no-stops .ip-daycol { display: block; }   /* keep day renderable as a sheet even with 0 stops */
+    .ip-layout.mobview-places .ip-pickpanel { transform: translateY(0); }
+    .ip-layout.mobview-day .ip-daycol { transform: translateY(0); }
+    .ip-daycol #ip-itinerary { overflow: visible; }
+    .ip-pickhead, .ip-dayhead { position: sticky; top: 0; z-index: 2; background: var(--brand-cream); padding: 0.7rem 0 0.5rem; margin-bottom: 0.5rem; }
+    .ip-sheet-close { display: inline-block; }
   }
   .ip-panel { background: var(--brand-cream); border: 1px solid #eceee9; border-radius: 16px; padding: 1.1rem 1.25rem; }
   .ip-panel > h3 { font-family: 'Playfair Display', serif; font-size: 1.15rem; color: var(--brand-teal); margin-bottom: 0.8rem; }
@@ -246,7 +274,7 @@
     <div class="ip-layout">
       <div class="ip-panel ip-pickpanel">
         <div class="ip-pickhead">
-          <h3>Add places</h3>
+          <div class="ip-headrow"><h3>Add places</h3><button type="button" class="ip-sheet-close" data-close aria-label="Done">Done</button></div>
           <div class="ip-filters" id="ip-filters"></div>
           <div class="ip-subfilters" id="ip-subfilters"></div>
         </div>
@@ -266,13 +294,13 @@
           <div class="ip-mapprompt">📍 Add places from the left to start building your itinerary.</div>
         </div>
       </div>
-      <div class="ip-mobtabs">
-        <button type="button" data-mtab="places">📍 Add places</button>
-        <button type="button" data-mtab="day">🗓 Your day<span id="ip-tab-daycount"></span></button>
+      <div class="ip-mobbar">
+        <button type="button" data-mtab="places"><span class="ic">📍</span>Add places</button>
+        <button type="button" data-mtab="day"><span class="ic">🗓</span>Your day<span id="ip-tab-daycount"></span></button>
       </div>
       <div class="ip-panel ip-daycol">
         <div class="ip-dayhead">
-          <h3>Your day</h3>
+          <div class="ip-headrow"><h3>Your day</h3><button type="button" class="ip-sheet-close" data-close aria-label="Done">Done</button></div>
           <div class="ip-dayactions">
             <button id="ip-optimize" class="btn-outline-teal text-xs">Optimize route</button>
             <button id="ip-clear" class="btn-outline-teal text-xs">Clear</button>
@@ -295,6 +323,6 @@
   <div class="ip-wrap text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="pondicherry-travel-guide.html" class="underline">Guide</a> · <a href="guides.html" class="underline">Guides</a></div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
-<script src="js/itinerary.js?v=dd41c53c"></script>
+<script src="js/itinerary.js?v=d58b5a29"></script>
 </body>
 </html>
