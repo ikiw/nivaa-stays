@@ -274,12 +274,5 @@
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/itinerary.js?v=017daa3f"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
-</script>
 </body>
 </html>

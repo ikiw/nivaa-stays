@@ -196,12 +196,5 @@
   <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="index.html" class="underline">Home</a> · <a href="gallery.html" class="underline">Gallery</a></div>
 </footer>
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
-</script>
 </body>
 </html>

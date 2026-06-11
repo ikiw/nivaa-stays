@@ -61,12 +61,5 @@
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/auth.js?v=4aee52df"></script>
 <script type="module" src="js/receipt.js?v=b2e47102"></script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
-</script>
 </body>
 </html>

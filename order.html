@@ -471,12 +471,5 @@ document.getElementById('send-order').addEventListener('click', async () => {
 renderMenu();
 updateCart();
 </script>
-<script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(() => {});
-    });
-  }
-</script>
 </body>
 </html>

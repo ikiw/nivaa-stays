@@ -12,7 +12,7 @@ Static HTML, vanilla CSS/JS. No build step in the traditional sense. Edits go st
 
 - **Tailwind v4**: pre-compiled to static CSS at `css/tailwind.css` (~24 KB min / ~5 KB gzip), loaded via `<link rel="stylesheet" href="css/tailwind.css">` in every page `<head>`, before `styles.css`. Build with `npm run build:css` (input: `css/tailwind-src.css`; toolchain in `node_modules`, Node 20 auto-selected via the `volta` field in `package.json`). **Re-run the build after adding markup with a brand-new utility class** — reusing existing classes needs no rebuild. The old 273 KB `js/tailwind.js` Play-CDN runtime was removed (it shipped the whole engine to every visitor). Custom brand classes (`.bg-teal`, `.text-gold`, etc.) are hand-written in `styles.css`, not Tailwind-generated.
 - **Cloudflare**: hybrid Worker + static assets via `_worker.js` + `wrangler.jsonc`. The Worker handles dynamic routes (`/api/geo` today); everything else falls through to static-asset serving.
-- **PWA**: `manifest.json` + `sw.js` make `admin.html` installable as "Nivaa Admin". The service worker is admin-shell-focused — network-first for HTML, cache-first for static assets, pass-through for Apps Script.
+- **PWA**: `manifest.json` + `sw.js` make `admin.html` installable as "Nivaa Admin". The service worker is admin-shell-focused — network-first for HTML, cache-first for static assets, pass-through for Apps Script. **Registered only on the admin pages** (`admin.html` / `admin-rank.html` / `admin-competitors.html`). Public pages do NOT register the SW — they rely on Cloudflare's CDN + the cache-busting build for caching/freshness (the SW's stale-while-revalidate was overkill there and caused stale-asset-after-deploy issues).
 
 ## Cloudflare Workers + Assets — IMPORTANT
 
