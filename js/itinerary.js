@@ -468,6 +468,8 @@ async function init() {
   const v0 = new URLSearchParams(location.search).get('view');
   if (v0 === 'places' || v0 === 'day') state.mobView = v0;   // restore mobile view on load/refresh
   document.getElementById('ip-time').value = state.startTime;
+  const q = document.getElementById('ip-ai-q');
+  if (q && isMobileView()) q.placeholder = 'Prompt your ideal day…';   // short, fits the narrow mobile pill
   bind();
   render();
 }
