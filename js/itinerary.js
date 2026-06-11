@@ -201,8 +201,9 @@ function renderItinerary() {
 
 // Default map shown before any stop is added — landscape banner centred on Pondicherry.
 function defaultMapUrl() {
+  const size = isMobileView() ? mapSize() : '640x300';   // portrait to fill on mobile, banner on desktop
   return ['https://maps.googleapis.com/maps/api/staticmap?key=' + MAPS_KEY,
-    'size=640x300', 'scale=2', 'center=11.9340,79.8300', 'zoom=12'].join('&');
+    'size=' + size, 'scale=2', 'center=11.9340,79.8300', 'zoom=12'].join('&');
 }
 
 function gmapsUrl() {
@@ -237,6 +238,18 @@ function fanOut_(pos) {
   }
 }
 
+// Request a static-map size matching the on-screen container's aspect (capped to
+// the 640px Static Maps limit), so the auto-fit is computed for the shape it's
+// shown in and markers aren't cropped by object-fit on tall mobile screens.
+function mapSize() {
+  if (!isMobileView()) return '540x560';                  // desktop: fixed (map column height is image-driven)
+  const el = document.getElementById('ip-mapwrap');
+  let w = el ? el.clientWidth : 0, h = el ? el.clientHeight : 0;
+  if (w < 80 || h < 80) { w = 360; h = 560; }            // fallback before layout settles
+  const s = Math.min(1, 640 / Math.max(w, h));            // keep longest side <= 640
+  return Math.round(w * s) + 'x' + Math.round(h * s);
+}
+
 // Static Maps — numbered markers (Start = S, stops 1..9), colour-coded by category,
 // + a connecting path. Colliding markers are fanned apart for legibility.
 function staticMapUrl() {
@@ -246,7 +259,7 @@ function staticMapUrl() {
   const fmt = q => q.lat.toFixed(6) + ',' + q.lng.toFixed(6);
   const p = [
     'https://maps.googleapis.com/maps/api/staticmap?key=' + MAPS_KEY,
-    'size=540x560', 'scale=2'
+    'size=' + mapSize(), 'scale=2'
   ];
   p.push('markers=' + encodeURIComponent('color:0xC9A227|label:S|' + fmt(pos[0])));
   state.stops.forEach((s, n) => {
