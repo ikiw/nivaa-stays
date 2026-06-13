@@ -17,8 +17,8 @@ import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import MapRounded from '@mui/icons-material/MapRounded';
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
-import AddRounded from '@mui/icons-material/AddRounded';
-import CheckRounded from '@mui/icons-material/CheckRounded';
+import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
+import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
@@ -293,17 +293,22 @@ export default function App() {
     return (
       <Card key={i} variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'divider', bgcolor: added ? 'rgba(33,150,243,0.16)' : 'background.paper', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(33,150,243,0.5), 0 8px 22px rgba(0,0,0,0.4)' } }}>
         <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-          <CardActionArea onClick={(e) => { addToggle(i); e.currentTarget.blur(); }} sx={{ p: 1.1, display: 'flex', alignItems: 'flex-start', gap: 1, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
+          <CardActionArea onClick={(e) => { addToggle(i); e.currentTarget.blur(); }} sx={{ flex: 1, minWidth: 0, p: 1.1, display: 'flex', alignItems: 'flex-start', gap: 1, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
             <Icon sx={{ fontSize: 18, color: CAT_HEX[p.cat] || 'text.secondary', mt: '2px', flexShrink: 0 }} />
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography sx={{ fontWeight: 600, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.2 }}>{p.name}</Typography>
               {p.desc && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</Typography>}
             </Box>
-            <Chip size="small" label={added ? 'Added' : 'Add'} icon={added ? <CheckRounded /> : <AddRounded />}
-              color={added ? 'primary' : 'default'} variant={added ? 'filled' : 'outlined'} sx={{ alignSelf: 'center', fontWeight: 700 }} />
+            <Tooltip title={added ? 'Remove from day' : 'Add to day'}>
+              <Box component="span" sx={{ alignSelf: 'center', flexShrink: 0, display: 'flex' }}>
+                {added
+                  ? <CheckCircleRounded sx={{ fontSize: 25, color: 'primary.main' }} />
+                  : <AddCircleOutlineRounded sx={{ fontSize: 25, color: 'text.secondary' }} />}
+              </Box>
+            </Tooltip>
           </CardActionArea>
           <Tooltip title="Google Maps">
-            <IconButton size="small" component="a" href={mapLink(p)} target="_blank" rel="noopener" sx={{ borderLeft: '1px solid', borderColor: 'divider', borderRadius: 0, color: 'text.secondary' }}>
+            <IconButton size="small" component="a" href={mapLink(p)} target="_blank" rel="noopener" sx={{ flexShrink: 0, borderLeft: '1px solid', borderColor: 'divider', borderRadius: 0, color: 'text.secondary' }}>
               <OpenInNewRounded fontSize="small" />
             </IconButton>
           </Tooltip>
@@ -455,11 +460,13 @@ export default function App() {
 
   const AiBar = () => (
     <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999, border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 24px rgba(0,0,0,0.45)' }}>
-      <TextField fullWidth variant="standard" placeholder={isMobile ? 'Prompt your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
+      <TextField fullWidth variant="standard" placeholder={isMobile ? 'Describe your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
         value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') aiPlan(); }}
         InputProps={{ disableUnderline: true, startAdornment: <AutoAwesomeRounded sx={{ color: 'secondary.main', ml: 0.8, mr: 1 }} />, sx: { fontSize: '0.95rem' } }} />
-      <Button variant="contained" color="primary" onClick={aiPlan} disabled={aiBusy} startIcon={aiBusy ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRounded />} sx={{ borderRadius: 999, flexShrink: 0 }}>
-        {aiBusy ? 'Planning…' : 'Plan my day'}
+      <Button variant="contained" color="primary" onClick={aiPlan} disabled={aiBusy} aria-label="Plan my day"
+        startIcon={isMobile ? undefined : (aiBusy ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRounded />)}
+        sx={{ borderRadius: 999, flexShrink: 0, minWidth: isMobile ? 44 : undefined, px: isMobile ? 0 : 2 }}>
+        {isMobile ? (aiBusy ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeRounded />) : (aiBusy ? 'Planning…' : 'Plan my day')}
       </Button>
     </Paper>
   );
@@ -467,17 +474,18 @@ export default function App() {
   const Controls = () => {
     const sMin = parseTime(startTime), eMin = parseTime(endTime);
     return (
-      <Stack direction="row" spacing={2} alignItems="center" sx={{ flexWrap: 'wrap' }} useFlexGap>
-        <TextField select size="small" label="Start from" value={start} onChange={e => { const v = +e.target.value; setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} sx={{ minWidth: 190 }}>
+      <Stack direction={{ xs: 'row', md: 'row' }} spacing={{ xs: 1.5, md: 2 }} alignItems="center" sx={{ flexWrap: 'wrap' }} useFlexGap>
+        <TextField select size="small" label="Start from" value={start} onChange={e => { const v = +e.target.value; setStart(v); setStops(p => p.filter(s => s.idx !== v)); }}
+          sx={{ flex: { xs: '1 1 46%', md: '0 0 auto' }, minWidth: { md: 190 } }}>
           {starts.map(({ p, i }) => <MenuItem key={i} value={i}>{p.name}</MenuItem>)}
         </TextField>
-        <Stack sx={{ minWidth: 210 }}>
-          <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 600 }}>
-            Day window · {fmtClock(sMin)} – {fmtClock(eMin)}
+        <Stack sx={{ flex: { xs: '1 1 46%', md: '0 0 auto' }, minWidth: { xs: 150, md: 210 } }}>
+          <Typography variant="caption" noWrap sx={{ color: 'text.secondary', fontWeight: 600 }}>
+            {isMobile ? '' : 'Day window · '}{fmtClock(sMin)} – {fmtClock(eMin)}
           </Typography>
           <Slider size="small" value={[sMin, eMin]} min={300} max={1380} step={30} disableSwap
             onChange={(_, v) => { setStartTime(toHHMM(v[0])); setEndTime(toHHMM(v[1])); }}
-            valueLabelDisplay="auto" valueLabelFormat={(m) => fmtClock(m)} getAriaLabel={() => 'Day window'} sx={{ mt: -0.2 }} />
+            valueLabelDisplay="auto" valueLabelFormat={(m) => fmtClock(m)} getAriaLabel={() => 'Day window'} sx={{ mt: -0.2, py: 0.5 }} />
         </Stack>
       </Stack>
     );
@@ -499,23 +507,38 @@ export default function App() {
   if (isMobile) {
     return (
       <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-        <Box sx={{ px: 1.5, pt: 1.5 }}>
-          <Box sx={{ mb: 1.2 }}>{Brand}</Box>
+        <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)' }}>
+          <Box sx={{ mb: 1 }}>{Brand}</Box>
           <Box sx={{ mb: 1 }}>{AiBar()}</Box>
           {Controls()}
         </Box>
-        <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1 }}>{MapView()}</Box>
+        {/* Landing = browse places inline (search stays pinned above). The map mounts
+            on first add; from then on it's the body and "Add places" opens as a sheet. */}
+        <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1, display: 'flex', flexDirection: 'column' }}>
+          {mapActive ? MapView() : (
+            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <Box sx={{ mb: 1 }}>{FilterChips()}</Box>
+              <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{PlacesPanel()}</Box>
+            </Box>
+          )}
+        </Box>
         <Drawer anchor="bottom" open={mobView === 'places'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
           <Sheet title="Add places" onClose={closeView}><Box sx={{ mb: 1 }}>{FilterChips()}</Box>{PlacesPanel()}</Sheet>
         </Drawer>
         <Drawer anchor="bottom" open={mobView === 'day'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
           <Sheet title="Your day" onClose={closeView}>{DayPanel()}</Sheet>
         </Drawer>
-        <BottomNavigation showLabels value={mobView === 'map' ? false : mobView}
-          onChange={(_, v) => { if (mobView === v) closeView(); else openView(v); }} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-          <BottomNavigationAction value="places" label="Add places" icon={<PlaceRounded />} />
-          <BottomNavigationAction value="day" label={`Your day${stops.length ? ` (${stops.length})` : ''}`} icon={<CalendarMonthRounded />} />
-        </BottomNavigation>
+        <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
+          <BottomNavigation showLabels value={mobView !== 'map' ? mobView : (mapActive ? false : 'places')}
+            onChange={(_, v) => {
+              if (mobView === v) { closeView(); return; }            // tapping the open sheet closes it
+              if (v === 'places' && !mapActive) { closeView(); return; } // landing: places is already inline
+              openView(v);
+            }} sx={{ bgcolor: 'transparent' }}>
+            <BottomNavigationAction value="places" label="Add places" icon={<PlaceRounded />} />
+            <BottomNavigationAction value="day" label={`Your day${stops.length ? ` (${stops.length})` : ''}`} icon={<CalendarMonthRounded />} />
+          </BottomNavigation>
+        </Box>
         <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ mb: 7 }} />
       </Box>
     );

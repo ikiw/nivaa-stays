@@ -90,21 +90,12 @@ ${stops.join('\n')}`;
 
   let out;
   try {
+    // NB: the fp8 model rejects response_format json_schema ("5025: doesn't support
+    // JSON Schema"). The system prompt already demands JSON-only and extractJson() +
+    // server-side id grounding below recover the plan, so we parse free-form output.
     out = await env.AI.run(PLAN_MODEL, {
       max_tokens: 400,
       messages: [{ role: 'system', content: sys }, { role: 'user', content: user }],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          type: 'object',
-          properties: {
-            start: { type: 'integer' },
-            stops: { type: 'array', items: { type: 'integer' } },
-            note: { type: 'string' },
-          },
-          required: ['stops', 'note'],
-        },
-      },
     });
   } catch (e) {
     return jsonRes({ error: 'ai_error', detail: String(e).slice(0, 200) }, 502);
