@@ -6,3 +6,5 @@ package.json
 package-lock.json
 apps-script/
 css/tailwind-src.css
+scripts/
+planner-src/
