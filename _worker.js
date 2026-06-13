@@ -152,6 +152,12 @@ export default {
       return withSecurityHeaders(await handlePlan(request, env));
     }
 
+    // Retired HTML planner → new React app (permanent). The old page lived ~1 week,
+    // so a 301 is plenty to carry over any signals it picked up.
+    if (url.pathname === '/pondicherry-itinerary-planner' || url.pathname === '/pondicherry-itinerary-planner.html') {
+      return withSecurityHeaders(new Response(null, { status: 301, headers: { Location: '/pondicherry-itinerary' } }));
+    }
+
     // Everything else: serve from static assets.
     const res = await env.ASSETS.fetch(request);
     return withSecurityHeaders(res);
