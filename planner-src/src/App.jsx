@@ -58,7 +58,20 @@ const fmtClock = (t) => { t = ((Math.round(t) % 1440) + 1440) % 1440; const h = 
 const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const mapLink = (p) => p.map || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ', Pondicherry'));
 
-// Spread near-coincident markers into a small ring so they don't stack on the static map.
+// Read the shareable plan out of the URL query (?s=start &st/&et=window &p=stop-idxs &v=view).
+// Per-stop stay durations are intentionally not encoded — they fall back to the defaults.
+function parseSearch() {
+  const q = new URLSearchParams(window.location.search);
+  const s = q.get('s'), st = q.get('st'), et = q.get('et'), p = q.get('p'), v = q.get('v');
+  return {
+    start: s != null && /^\d+$/.test(s) ? +s : null,
+    startTime: /^\d{1,2}:\d{2}$/.test(st || '') ? st : null,
+    endTime: /^\d{1,2}:\d{2}$/.test(et || '') ? et : null,
+    stopIdxs: p ? p.split('-').map(x => +x).filter(n => Number.isInteger(n) && n >= 0) : [],
+    view: v === 'places' || v === 'day' ? v : null,
+  };
+}
+
 export default function App() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');
@@ -81,13 +94,78 @@ export default function App() {
   const [mapActive, setMapActive] = useState(false);
   useEffect(() => { if (stops.length > 0) setMapActive(true); }, [stops.length]);
 
+  // ---------- shareable URL state (query params) ----------
+  const hydrated = useRef(false);
+  const defaultStartRef = useRef(0);              // the no-op start (bus stand) — omitted from the URL
+  const initialUrl = useRef(null);
+  if (initialUrl.current === null) initialUrl.current = parseSearch();
+  const stateRef = useRef(null);                  // latest itinerary, readable from history callbacks
+  stateRef.current = { start, startTime, endTime, stops };
+  const viewRef = useRef('map');
+  viewRef.current = isMobile ? mobView : deskTab;
+
+  const buildSearch = (viewOverride) => {
+    const { start, startTime, endTime, stops } = stateRef.current;
+    const view = viewOverride !== undefined ? viewOverride : viewRef.current;
+    const q = new URLSearchParams();
+    if (start != null && start !== defaultStartRef.current) q.set('s', String(start));
+    if (startTime && startTime !== '09:00') q.set('st', startTime);
+    if (endTime && endTime !== '19:00') q.set('et', endTime);
+    if (stops.length) q.set('p', stops.map(s => s.idx).join('-'));
+    if (view === 'day') q.set('v', 'day');
+    else if (view === 'places' && isMobile) q.set('v', 'places');   // desktop 'places' is the default, keep it clean
+    const qs = q.toString();
+    return window.location.pathname + (qs ? '?' + qs : '');
+  };
+
+  // Open a panel ("Add places" / "Your day"). On mobile, opening from the map pushes a
+  // history entry so the phone back button closes the panel instead of leaving the app.
+  const openView = (v) => {
+    const wasPanelOpen = isMobile ? mobView !== 'map' : true;
+    setMobView(v); setDeskTab(v === 'day' ? 'day' : 'places');
+    const url = buildSearch(v);
+    if (isMobile && !wasPanelOpen) window.history.pushState({ planner: true }, '', url);
+    else window.history.replaceState(window.history.state, '', url);
+  };
+  const closeView = () => { if (isMobile && mobView !== 'map') window.history.back(); };
+
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then(d => {
       setData(d);
       const bus = d.places.findIndex(p => /bus stand/i.test(p.name));
-      if (bus >= 0) setStart(bus);
+      defaultStartRef.current = bus >= 0 ? bus : 0;
+      // Hydrate from a shared link if present, else fall back to the bus-stand default.
+      const u = initialUrl.current;
+      const startIdx = u.start != null && d.places[u.start] ? u.start : (bus >= 0 ? bus : 0);
+      setStart(startIdx);
+      if (u.startTime) setStartTime(u.startTime);
+      if (u.endTime) setEndTime(u.endTime);
+      if (u.stopIdxs.length) {
+        const seen = new Set();
+        setStops(u.stopIdxs
+          .filter(i => d.places[i] && i !== startIdx && !seen.has(i) && seen.add(i))
+          .map(i => ({ idx: i, stay: DEFAULT_STAY[d.places[i].cat] ?? 45 })));
+      }
+      if (u.view) { setMobView(u.view); setDeskTab(u.view); }
+      hydrated.current = true;
     }).catch(() => setErr(true));
   }, []);
+
+  // Keep the URL in sync with the itinerary (always shareable) — replace, never push.
+  useEffect(() => {
+    if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch());
+  }, [start, startTime, endTime, stops]);
+
+  // Phone back/forward → restore the open view without rolling back the live plan.
+  useEffect(() => {
+    const onPop = () => {
+      const v = parseSearch().view;
+      if (isMobile) setMobView(v || 'map'); else setDeskTab(v === 'day' ? 'day' : 'places');
+      if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch(v || (isMobile ? 'map' : 'places')));
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [isMobile]);
 
   const driveMin = (a, b) => { const v = data?.minutes?.[a]?.[b]; return v == null ? 0 : v; };
   const driveKm = (a, b) => { const v = data?.km?.[a]?.[b]; return v == null ? 0 : v; };
@@ -147,7 +225,7 @@ export default function App() {
         next = ordered;
       }
       setStops(next);
-      setMobView('day'); setDeskTab('day');
+      openView('day');
       setSnack(d.note ? '✨ ' + d.note : '✨ Here’s a suggested day — tweak it freely.');
     } catch {
       setSnack('Couldn’t auto-plan just now — add places manually, or try rephrasing.');
@@ -427,14 +505,14 @@ export default function App() {
           {Controls()}
         </Box>
         <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1 }}>{MapView()}</Box>
-        <Drawer anchor="bottom" open={mobView === 'places'} onClose={() => setMobView('map')} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-          <Sheet title="Add places" onClose={() => setMobView('map')}><Box sx={{ mb: 1 }}>{FilterChips()}</Box>{PlacesPanel()}</Sheet>
+        <Drawer anchor="bottom" open={mobView === 'places'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+          <Sheet title="Add places" onClose={closeView}><Box sx={{ mb: 1 }}>{FilterChips()}</Box>{PlacesPanel()}</Sheet>
         </Drawer>
-        <Drawer anchor="bottom" open={mobView === 'day'} onClose={() => setMobView('map')} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-          <Sheet title="Your day" onClose={() => setMobView('map')}>{DayPanel()}</Sheet>
+        <Drawer anchor="bottom" open={mobView === 'day'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
+          <Sheet title="Your day" onClose={closeView}>{DayPanel()}</Sheet>
         </Drawer>
         <BottomNavigation showLabels value={mobView === 'map' ? false : mobView}
-          onChange={(_, v) => setMobView(mobView === v ? 'map' : v)} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+          onChange={(_, v) => { if (mobView === v) closeView(); else openView(v); }} sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
           <BottomNavigationAction value="places" label="Add places" icon={<PlaceRounded />} />
           <BottomNavigationAction value="day" label={`Your day${stops.length ? ` (${stops.length})` : ''}`} icon={<CalendarMonthRounded />} />
         </BottomNavigation>
@@ -459,7 +537,7 @@ export default function App() {
         <Box sx={{ width: 470, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
             {Controls()}
-            <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && setDeskTab(v)} color="primary">
+            <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && openView(v)} color="primary">
               <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
               <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Your day{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
             </ToggleButtonGroup>
@@ -483,7 +561,7 @@ export default function App() {
               bgcolor: 'rgba(18,20,26,0.93)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: 3, boxShadow: '0 10px 34px rgba(0,0,0,0.55)' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Your day</Typography>
-                <Button size="small" variant="outlined" onClick={() => setDeskTab('day')} sx={{ py: 0.2 }}>Edit</Button>
+                <Button size="small" variant="outlined" onClick={() => openView('day')} sx={{ py: 0.2 }}>Edit</Button>
               </Stack>
               <Stack direction="row" sx={{ px: 1.5, py: 0.8, gap: '2px 12px', flexWrap: 'wrap', fontSize: '0.76rem', color: 'text.secondary' }}>
                 <span><b style={{ color: '#ECEDEE' }}>{stops.length}</b> stops</span>
