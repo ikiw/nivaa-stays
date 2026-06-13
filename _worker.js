@@ -27,7 +27,7 @@ function jsonRes(obj, status = 200) {
 // ---- AI itinerary planner ----------------------------------------------------
 // Llama 3.1 8B picks places from OUR catalog (grounded — ids validated server-side);
 // the client then orders them by the pre-computed driving matrix. No place is invented.
-const PLAN_MODEL = '@cf/meta/llama-3.1-8b-instruct';
+const PLAN_MODEL = '@cf/meta/llama-3.1-8b-instruct-fp8';
 const PLAN_CATS = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
 
 function extractJson(s) {

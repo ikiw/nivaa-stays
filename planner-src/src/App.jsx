@@ -3,6 +3,7 @@ import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
   TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction, Drawer,
   Snackbar, CircularProgress, Divider, useMediaQuery, InputAdornment, Tooltip, Slider,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
@@ -25,32 +26,14 @@ import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
 import ExploreRounded from '@mui/icons-material/ExploreRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
+import { Map, useMap } from '@vis.gl/react-google-maps';
 
 const DATA_URL = '/data/pondicherry-itinerary.json';
-const MAPS_KEY = 'AIzaSyApP7gtPnoI2D571tCjW3ANxIXTmcD3ECU';
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const CAT_ICON = { Beach: BeachAccessRounded, Attraction: AccountBalanceRounded, Food: RestaurantRounded, Social: LocalBarRounded, Shopping: ShoppingBagRounded, Stay: FlagRounded, Area: FlagRounded };
-const CAT_COLOR = { Stay: '0xF59E0B', Area: '0xF59E0B', Beach: '0x38BDF8', Attraction: '0x2DD4BF', Food: '0xFB923C', Social: '0xF472B6', Shopping: '0xA78BFA' };
-// CSS-hex twins of CAT_COLOR — used for the in-app category icons + day dots so they
-// match the map markers exactly and keep categories visually distinguishable.
+// Per-category colours, shared by the map markers, the picker icons and the day dots.
 const CAT_HEX = { Stay: '#F59E0B', Area: '#F59E0B', Beach: '#38BDF8', Attraction: '#2DD4BF', Food: '#FB923C', Social: '#F472B6', Shopping: '#A78BFA' };
-// Dark "Midnight" static-map style (navy to match the app; markers/route pop on top).
-const DARK_MAP_STYLE = [
-  'element:geometry|color:0x0f0f12',
-  'element:labels.text.stroke|color:0x000000',
-  'element:labels.text.fill|color:0x8a8f98',
-  'feature:administrative|element:geometry|color:0x26272b',
-  'feature:administrative.locality|element:labels.text.fill|color:0xb8bcc4',
-  'feature:poi|element:labels.text.fill|color:0x8a8f98',
-  'feature:poi.park|element:geometry|color:0x14241e',
-  'feature:poi.park|element:labels.text.fill|color:0x4e9b86',
-  'feature:road|element:geometry|color:0x1c1d22',
-  'feature:road|element:labels.text.fill|color:0x9aa0aa',
-  'feature:road.highway|element:geometry|color:0x2a2c33',
-  'feature:transit|element:geometry|color:0x1a1b1f',
-  'feature:water|element:geometry|color:0x050509',
-  'feature:water|element:labels.text.fill|color:0x4a4f5e',
-].map(s => 'style=' + s);
 const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Food: 'Food & Drink', Social: 'Bars & Nightlife', Shopping: 'Shopping' };
 const PICK_ORDER = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
 const SUB_ORDER = {
@@ -72,22 +55,6 @@ const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m
 const mapLink = (p) => p.map || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ', Pondicherry'));
 
 // Spread near-coincident markers into a small ring so they don't stack on the static map.
-function fanOut(pos) {
-  const n = pos.length; if (n < 2) return;
-  let mnLat = Infinity, mxLat = -Infinity, mnLng = Infinity, mxLng = -Infinity;
-  pos.forEach(q => { mnLat = Math.min(mnLat, q.lat); mxLat = Math.max(mxLat, q.lat); mnLng = Math.min(mnLng, q.lng); mxLng = Math.max(mxLng, q.lng); });
-  const span = Math.max(mxLat - mnLat, mxLng - mnLng, 0.01), unit = span * 0.045;
-  const dist = (a, b) => Math.hypot(a.lat - b.lat, a.lng - b.lng), used = new Array(n).fill(false);
-  for (let i = 0; i < n; i++) {
-    if (used[i]) continue; const cl = [i]; used[i] = true;
-    for (let j = i + 1; j < n; j++) if (!used[j] && dist(pos[i], pos[j]) < unit) { cl.push(j); used[j] = true; }
-    if (cl.length > 1) {
-      const cx = cl.reduce((s, k) => s + pos[k].lat, 0) / cl.length, cy = cl.reduce((s, k) => s + pos[k].lng, 0) / cl.length;
-      cl.forEach((k, m) => { const a = 2 * Math.PI * m / cl.length; pos[k] = { lat: cx + unit * Math.sin(a), lng: cy + unit * Math.cos(a) }; });
-    }
-  }
-}
-
 export default function App() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');
@@ -99,12 +66,11 @@ export default function App() {
   const [stops, setStops] = useState([]); // [{ idx, stay }]
   const [filter, setFilter] = useState('All');
   const [subFilter, setSubFilter] = useState('All');
-  const [mobView, setMobView] = useState('map'); // map | places | day
+  const [mobView, setMobView] = useState('map'); // map | places | day (mobile)
+  const [deskTab, setDeskTab] = useState('places'); // places | day (desktop rail)
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [snack, setSnack] = useState('');
-  const [mapDims, setMapDims] = useState({ w: 0, h: 0 });
-  const mapBoxRef = useRef(null);
 
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then(d => {
@@ -113,18 +79,6 @@ export default function App() {
       if (bus >= 0) setStart(bus);
     }).catch(() => setErr(true));
   }, []);
-
-  // Measure the map container so the static map is requested at its real aspect
-  // (matches object-fit, so the auto-fit frames all markers without cropping).
-  useEffect(() => {
-    const el = mapBoxRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const measure = () => setMapDims({ w: el.clientWidth, h: el.clientHeight });
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isMobile, data]);
 
   const driveMin = (a, b) => { const v = data?.minutes?.[a]?.[b]; return v == null ? 0 : v; };
   const driveKm = (a, b) => { const v = data?.km?.[a]?.[b]; return v == null ? 0 : v; };
@@ -184,36 +138,13 @@ export default function App() {
         next = ordered;
       }
       setStops(next);
-      setMobView('day');
+      setMobView('day'); setDeskTab('day');
       setSnack(d.note ? '✨ ' + d.note : '✨ Here’s a suggested day — tweak it freely.');
     } catch {
       setSnack('Couldn’t auto-plan just now — add places manually, or try rephrasing.');
     } finally { setAiBusy(false); }
   }
 
-  // ----- static map -----
-  function mapSize() {
-    let { w, h } = mapDims;
-    if (w < 80 || h < 80) { w = 520; h = isMobile ? 640 : 760; }
-    const s = Math.min(1, 640 / Math.max(w, h));
-    return Math.round(w * s) + 'x' + Math.round(h * s);
-  }
-  function routeMapUrl() {
-    const order = [start, ...stops.map(s => s.idx)];
-    const pos = order.map(i => ({ lat: data.places[i].lat, lng: data.places[i].lng }));
-    fanOut(pos);
-    const fmt = q => q.lat.toFixed(6) + ',' + q.lng.toFixed(6);
-    const p = [`https://maps.googleapis.com/maps/api/staticmap?key=${MAPS_KEY}`, 'size=' + mapSize(), 'scale=2'];
-    p.push('markers=' + encodeURIComponent('color:0xF59E0B|label:S|' + fmt(pos[0])));
-    stops.forEach((s, n) => {
-      const label = (n + 1) <= 9 ? 'label:' + (n + 1) + '|' : '';
-      const color = CAT_COLOR[data.places[s.idx].cat] || '0x0E3B35';
-      p.push('markers=' + encodeURIComponent('color:' + color + '|' + label + fmt(pos[n + 1])));
-    });
-    p.push('path=' + encodeURIComponent('color:0x2196F3ee|weight:4|' + pos.map(fmt).concat(fmt(pos[0])).join('|')));
-    return p.join('&');
-  }
-  const defaultMapUrl = () => `https://maps.googleapis.com/maps/api/staticmap?key=${MAPS_KEY}&size=${mapSize()}&scale=2&center=11.9340,79.8300&zoom=12`;
   const gmapsUrl = () => {
     const pt = i => `${data.places[i].lat},${data.places[i].lng}`;
     let u = `https://www.google.com/maps/dir/?api=1&origin=${pt(start)}&destination=${pt(start)}&travelmode=driving`;
@@ -239,33 +170,35 @@ export default function App() {
   totalDrive += rMin; totalKm += rKm; clock += rMin;
 
   // ---------- render helpers ----------
-  const FilterChips = () => (
-    <Box>
-      <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
-        {[['All', 'All places', Object.values(byCat).reduce((a, b) => a + b.length, 0)],
-          ...PICK_ORDER.filter(c => byCat[c]).map(c => [c, CAT_LABEL[c], byCat[c].length])].map(([key, label, n]) => {
-          const Icon = key === 'All' ? null : CAT_ICON[key];
-          return (
-            <Chip key={key} label={`${label} ${n}`} icon={Icon ? <Icon /> : undefined} size="small"
-              color={filter === key ? 'primary' : 'default'} variant={filter === key ? 'filled' : 'outlined'}
-              onClick={() => { setFilter(key); setSubFilter('All'); }} sx={{ fontWeight: 600 }} />
-          );
-        })}
+  const categoryChips = () => (
+    <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
+      {[['All', 'All places', Object.values(byCat).reduce((a, b) => a + b.length, 0)],
+        ...PICK_ORDER.filter(c => byCat[c]).map(c => [c, CAT_LABEL[c], byCat[c].length])].map(([key, label, n]) => {
+        const Icon = key === 'All' ? null : CAT_ICON[key];
+        return (
+          <Chip key={key} label={`${label} ${n}`} icon={Icon ? <Icon /> : undefined} size="small"
+            color={filter === key ? 'primary' : 'default'} variant={filter === key ? 'filled' : 'outlined'}
+            onClick={() => { setFilter(key); setSubFilter('All'); }} sx={{ fontWeight: 600 }} />
+        );
+      })}
+    </Stack>
+  );
+  const subChips = () => {
+    if (!SUB_ORDER[filter]) return null;
+    const counts = {}; (byCat[filter] || []).forEach(i => { const sub = data.places[i].sub || ''; counts[sub] = (counts[sub] || 0) + 1; });
+    const subs = SUB_ORDER[filter].filter(s => counts[s]).concat(Object.keys(counts).filter(s => s && !SUB_ORDER[filter].includes(s)));
+    return (
+      <Stack direction="row" spacing={0.6} useFlexGap flexWrap="wrap">
+        {[['All', 'All', Object.values(counts).reduce((a, b) => a + b, 0)], ...subs.map(s => [s, SUB_LABEL[s] || s, counts[s]])].map(([key, label, n]) => (
+          <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => setSubFilter(key)}
+            color={subFilter === key ? 'primary' : 'default'} variant={subFilter === key ? 'filled' : 'outlined'}
+            sx={{ fontWeight: 600, fontSize: '0.7rem' }} />
+        ))}
       </Stack>
-      {SUB_ORDER[filter] && (
-        <Stack direction="row" spacing={0.6} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
-          {(() => {
-            const counts = {}; (byCat[filter] || []).forEach(i => { const sub = data.places[i].sub || ''; counts[sub] = (counts[sub] || 0) + 1; });
-            const subs = SUB_ORDER[filter].filter(s => counts[s]).concat(Object.keys(counts).filter(s => s && !SUB_ORDER[filter].includes(s)));
-            return [['All', 'All', Object.values(counts).reduce((a, b) => a + b, 0)], ...subs.map(s => [s, SUB_LABEL[s] || s, counts[s]])].map(([key, label, n]) => (
-              <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => setSubFilter(key)}
-                color={subFilter === key ? 'primary' : 'default'} variant={subFilter === key ? 'filled' : 'outlined'}
-                sx={{ fontWeight: 600, fontSize: '0.7rem' }} />
-            ));
-          })()}
-        </Stack>
-      )}
-    </Box>
+    );
+  };
+  const FilterChips = () => (
+    <Box>{categoryChips()}{SUB_ORDER[filter] && <Box sx={{ mt: 1 }}>{subChips()}</Box>}</Box>
   );
 
   const PlaceCard = (i) => {
@@ -389,22 +322,19 @@ export default function App() {
     );
   }
 
-  const MapView = () => {
-    const src = stops.length ? routeMapUrl() : defaultMapUrl();
-    return (
-      <Box ref={mapBoxRef} sx={{ height: isMobile ? '100%' : 'calc(100vh - 110px)', minHeight: isMobile ? 0 : 320, borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
-        <Box component="img" src={src} alt="Route map" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-        {!stops.length && (
-          <Box sx={{ position: 'absolute', left: 0, right: 0, top: 0, bgcolor: 'rgba(10,10,12,0.92)', py: 0.8, px: 1, textAlign: 'center', fontSize: '0.8rem', color: 'text.secondary' }}>
-            <PlaceRounded sx={{ fontSize: 16, verticalAlign: '-3px' }} /> Add places to start building your itinerary.
-          </Box>
-        )}
-      </Box>
-    );
-  };
+  const MapView = () => (
+    <Box sx={{ height: '100%', minHeight: 0, borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
+      <RouteMap data={data} start={start} stops={stops} />
+      {!stops.length && (
+        <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(18,20,26,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
+          <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
+        </Paper>
+      )}
+    </Box>
+  );
 
   const AiBar = () => (
-    <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, maxWidth: 820, mx: 'auto', mb: 1.5, px: 0.6, py: 0.4, borderRadius: 999, border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 24px rgba(0,0,0,0.45)' }}>
+    <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999, border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 24px rgba(0,0,0,0.45)' }}>
       <TextField fullWidth variant="standard" placeholder={isMobile ? 'Prompt your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
         value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') aiPlan(); }}
         InputProps={{ disableUnderline: true, startAdornment: <AutoAwesomeRounded sx={{ color: 'secondary.main', ml: 0.8, mr: 1 }} />, sx: { fontSize: '0.95rem' } }} />
@@ -471,36 +401,103 @@ export default function App() {
     );
   }
 
-  // desktop
+  // desktop — top search bar + two pane (rail + inset map)
   return (
-    <Box sx={{ bgcolor: 'background.default', minHeight: '100vh' }}>
-      <AppBar position="sticky" color="default" elevation={0} sx={{ bgcolor: 'rgba(12,12,14,0.74)', backdropFilter: 'blur(10px)', borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Toolbar sx={{ gap: 2, py: 1 }}>
-          {Brand}
-          <Box sx={{ flexGrow: 1 }} />
-          {Controls()}
-        </Toolbar>
-      </AppBar>
-      <Box sx={{ maxWidth: 1660, mx: 'auto', p: 2.5 }}>
-        <Box sx={{ mb: 2.5 }}>{AiBar()}</Box>
-        <Box sx={{ display: 'grid', gridTemplateColumns: stops.length ? '1.1fr 1.2fr 0.9fr' : '1fr 1.4fr', gap: 2, alignItems: 'start' }}>
-          <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3 }}>
-            <Typography sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>Add places</Typography>
-            <Box sx={{ mb: 1.5 }}>{FilterChips()}</Box>
-            {PlacesPanel()}
-          </Paper>
-          <Box sx={{ position: 'sticky', top: 88 }}>{MapView()}</Box>
-          {stops.length > 0 && (
-            <Paper variant="outlined" sx={{ p: 1.5, borderRadius: 3, position: 'sticky', top: 88 }}>
-              <Typography sx={{ fontWeight: 700, color: 'text.primary', mb: 1 }}>Your day</Typography>
-              {DayPanel()}
+    <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.default' }}>
+      {/* top bar with search */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+        {Brand}
+        <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{AiBar()}</Box>
+      </Box>
+      {/* body */}
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
+        {/* left rail */}
+        <Box sx={{ width: 470, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid', borderColor: 'divider' }}>
+          <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
+            {Controls()}
+            <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && setDeskTab(v)} color="primary">
+              <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
+              <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Your day{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
+            </ToggleButtonGroup>
+            {deskTab === 'places' && SUB_ORDER[filter] && subChips()}
+          </Box>
+          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 2 }}>
+            {deskTab === 'places' ? PlacesPanel() : DayPanel()}
+          </Box>
+        </Box>
+        {/* right map (inset) */}
+        <Box sx={{ flex: 1, minWidth: 0, height: '100%', position: 'relative', p: 1.5 }}>
+          {deskTab === 'places' && (
+            <Paper sx={{ position: 'absolute', top: 26, left: 26, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(100% - 52px)',
+              bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
+              {categoryChips()}
             </Paper>
           )}
+          {MapView()}
         </Box>
       </Box>
       <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
     </Box>
   );
+}
+
+// ---------- interactive Google map ----------
+function RouteMap({ data, start, stops }) {
+  return (
+    <Map defaultCenter={{ lat: 11.934, lng: 79.83 }} defaultZoom={12} gestureHandling="greedy"
+      mapTypeControl={false} streetViewControl={false} fullscreenControl={false} clickableIcons={false}
+      style={{ width: '100%', height: '100%' }}>
+      <RouteLayer data={data} start={start} stops={stops} />
+    </Map>
+  );
+}
+
+function RouteLayer({ data, start, stops }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!map || !window.google?.maps) return;
+    const g = window.google.maps;
+    const order = [start, ...stops.map(s => s.idx)];
+    const bounds = new g.LatLngBounds();
+    const markers = [], infos = [];
+    let openInfo = null;
+    order.forEach((idx, i) => {
+      const p = data.places[idx]; if (!p) return;
+      const pos = { lat: p.lat, lng: p.lng };
+      bounds.extend(pos);
+      const isStart = i === 0;
+      const color = isStart ? '#F59E0B' : (CAT_HEX[p.cat] || '#2196F3');
+      const marker = new g.Marker({
+        position: pos, map, title: p.name,
+        label: { text: isStart ? 'S' : String(i), color: '#0B1020', fontSize: '12px', fontWeight: '700' },
+        icon: { path: g.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#0B1020', strokeWeight: 1.5 },
+        zIndex: isStart ? 9999 : 100 + i,
+      });
+      const info = new g.InfoWindow({ content: infoHtml(p, isStart) });
+      marker.addListener('click', () => { if (openInfo) openInfo.close(); info.open({ map, anchor: marker }); openInfo = info; });
+      markers.push(marker); infos.push(info);
+    });
+    let line = null;
+    if (stops.length && data.places[start]) {
+      const path = order.map(i => ({ lat: data.places[i].lat, lng: data.places[i].lng }));
+      path.push({ lat: data.places[start].lat, lng: data.places[start].lng });
+      line = new g.Polyline({ path, map, strokeColor: '#2196F3', strokeOpacity: 0.95, strokeWeight: 4 });
+    }
+    if (order.length > 1) map.fitBounds(bounds, 70);
+    else if (order.length === 1) { map.setCenter({ lat: data.places[order[0]].lat, lng: data.places[order[0]].lng }); map.setZoom(13); }
+    return () => { markers.forEach(m => m.setMap(null)); infos.forEach(w => w.close()); if (line) line.setMap(null); };
+  }, [map, data, start, stops]);
+  return null;
+}
+
+function infoHtml(p, isStart) {
+  const cat = (CAT_LABEL[p.cat] || p.cat || (isStart ? 'Start' : '')) + (p.sub ? ' · ' + (SUB_LABEL[p.sub] || p.sub) : '');
+  return `<div style="min-width:170px;max-width:240px;color:#1b1b1b;font-family:Inter,system-ui,sans-serif">
+    <div style="font-weight:700;font-size:14px;line-height:1.25">${esc(p.name)}</div>
+    ${cat ? `<div style="font-size:11.5px;color:#666;margin:3px 0">${esc(cat)}</div>` : ''}
+    ${p.desc ? `<div style="font-size:12px;color:#333;margin-bottom:5px">${esc(p.desc)}</div>` : ''}
+    <a href="${mapLink(p)}" target="_blank" rel="noopener" style="font-size:12px;color:#1976d2;text-decoration:none;font-weight:600">Open in Google Maps ↗</a>
+  </div>`;
 }
 
 // small shared bits
