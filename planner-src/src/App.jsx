@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
   TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction, Drawer,
@@ -14,6 +14,7 @@ import ShoppingBagRounded from '@mui/icons-material/ShoppingBagRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
+import MapRounded from '@mui/icons-material/MapRounded';
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import AddRounded from '@mui/icons-material/AddRounded';
@@ -26,7 +27,8 @@ import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
 import ExploreRounded from '@mui/icons-material/ExploreRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
-import { Map, useMap } from '@vis.gl/react-google-maps';
+import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { MAP_ID } from './config.js';
 
 const DATA_URL = '/data/pondicherry-itinerary.json';
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -34,6 +36,8 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '
 const CAT_ICON = { Beach: BeachAccessRounded, Attraction: AccountBalanceRounded, Food: RestaurantRounded, Social: LocalBarRounded, Shopping: ShoppingBagRounded, Stay: FlagRounded, Area: FlagRounded };
 // Per-category colours, shared by the map markers, the picker icons and the day dots.
 const CAT_HEX = { Stay: '#F59E0B', Area: '#F59E0B', Beach: '#38BDF8', Attraction: '#2DD4BF', Food: '#FB923C', Social: '#F472B6', Shopping: '#A78BFA' };
+// Distinct colour per route leg (start→1, 1→2, …) — cycles if there are more legs.
+const LEG_COLORS = ['#2563EB', '#EA580C', '#059669', '#DB2777', '#7C3AED', '#D97706', '#0891B2', '#DC2626', '#65A30D', '#0D9488'];
 const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Food: 'Food & Drink', Social: 'Bars & Nightlife', Shopping: 'Shopping' };
 const PICK_ORDER = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
 const SUB_ORDER = {
@@ -71,6 +75,11 @@ export default function App() {
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [snack, setSnack] = useState('');
+  // Defer mounting the interactive Google Map until the visitor actually engages
+  // (adds a place / plans a day / taps "Load map") — a Map mount is a billed
+  // Dynamic-Maps load, so bounce visitors who never interact cost nothing.
+  const [mapActive, setMapActive] = useState(false);
+  useEffect(() => { if (stops.length > 0) setMapActive(true); }, [stops.length]);
 
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then(d => {
@@ -270,65 +279,98 @@ export default function App() {
                   label={over > 0 ? `over by ${Math.floor(over / 60) ? Math.floor(over / 60) + 'h ' : ''}${over % 60}m` : 'fits your window'} />
               ); })()}
             </Stack>
-            {Node({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S' })}
-            {timeline.map(t => (
-              <Box key={t.n}>
-                <Seg>{t.dm} min · {t.dk} km</Seg>
-                {Node({ idx: t.idx, dot: t.n + 1, title: data.places[t.idx].name, cat: data.places[t.idx].cat,
-                  sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, n: t.n, last: t.n === stops.length - 1 })}
-              </Box>
-            ))}
-            <Seg>{rMin} min · {rKm} km · back to start</Seg>
-            {Node({ icon: FlagRounded, title: `Back at ${data.places[start].name}`, sub: `Arrive ${fmtClock(clock)}`, dot: 'S' })}
+            {Node({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S',
+              legColor: LEG_COLORS[0], drive: `${timeline[0].dm} min · ${timeline[0].dk} km` })}
+            {timeline.map(t => {
+              const lastStop = t.n === stops.length - 1;
+              return <Fragment key={t.n}>{Node({
+                idx: t.idx, dot: t.n + 1, title: data.places[t.idx].name, cat: data.places[t.idx].cat,
+                sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, n: t.n,
+                legColor: lastStop ? '#64748B' : LEG_COLORS[(t.n + 1) % LEG_COLORS.length],
+                drive: lastStop ? `${rMin} min · ${rKm} km · back to start` : `${timeline[t.n + 1].dm} min · ${timeline[t.n + 1].dk} km`,
+              })}</Fragment>;
+            })}
+            {Node({ icon: FlagRounded, title: `Back at ${data.places[start].name}`, sub: `Arrive ${fmtClock(clock)}`, dot: 'S', last: true })}
           </>)}
     </Box>
   );
 
-  // node row in the timeline
-  function Node({ icon, idx, cat, dot, title, sub, stay, n, last }) {
+  // connected timeline row: coloured dot + a leg-coloured line to the next dot,
+  // the place card, and the drive label sitting on the connector.
+  function Node({ icon, idx, cat, dot, title, sub, stay, n, last, legColor, drive }) {
     const Icon = icon || (cat && CAT_ICON[cat]);
     const catColor = cat ? (CAT_HEX[cat] || '#94A3B8') : '#F59E0B';   // match the map markers
     return (
-      <Stack direction="row" spacing={1.2} alignItems="flex-start">
-        <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: catColor, color: '#0B1020', fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
-        <Paper variant="outlined" sx={{ flex: 1, p: 1, mb: 0.3 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6 }}>
-              {Icon && <Icon sx={{ fontSize: 16, color: catColor }} />}{title}
-            </Typography>
-            {typeof n === 'number' && (
-              <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
-                <IconButton size="small" disabled={n === 0} onClick={() => move(n, -1)}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
-                <IconButton size="small" disabled={last} onClick={() => move(n, 1)}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
-                <IconButton size="small" onClick={() => removeStop(idx)}><DeleteOutlineRounded fontSize="small" /></IconButton>
-              </Stack>
-            )}
-          </Stack>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
-            <span>{sub}</span>
-            {typeof n === 'number' && (
-              <TextField select size="small" value={stay} onChange={e => setStay(n, e.target.value)} sx={{ width: 118 }}
-                InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
-                SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
-                {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
-                  <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
-                ))}
-              </TextField>
-            )}
-          </Stack>
-        </Paper>
+      <Stack direction="row" spacing={1.2} alignItems="stretch">
+        <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            bgcolor: catColor, color: '#0B1020', fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
+          {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
+          <Paper variant="outlined" sx={{ p: 1 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
+                {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+              </Typography>
+              {typeof n === 'number' && (
+                <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
+                  <IconButton size="small" disabled={n === 0} onClick={() => move(n, -1)}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
+                  <IconButton size="small" disabled={n === stops.length - 1} onClick={() => move(n, 1)}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={() => removeStop(idx)}><DeleteOutlineRounded fontSize="small" /></IconButton>
+                </Stack>
+              )}
+            </Stack>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
+              <span>{sub}</span>
+              {typeof n === 'number' && (
+                <TextField select size="small" value={stay} onChange={e => setStay(n, e.target.value)} sx={{ width: 118 }}
+                  InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
+                  SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
+                  {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
+                    <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </Stack>
+          </Paper>
+          {!last && drive && (
+            <Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}
+            </Box>
+          )}
+        </Box>
       </Stack>
     );
   }
 
   const MapView = () => (
     <Box sx={{ height: '100%', minHeight: 0, borderRadius: 3, overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
-      <RouteMap data={data} start={start} stops={stops} />
-      {!stops.length && (
-        <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(18,20,26,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
-          <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
-        </Paper>
+      {mapActive ? (
+        <>
+          <RouteMap data={data} start={start} stops={stops} />
+          {!stops.length && (
+            <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(18,20,26,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
+              <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
+            </Paper>
+          )}
+        </>
+      ) : (
+        <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', p: { xs: 2.5, md: 3.5 },
+          backgroundImage: 'linear-gradient(0deg, rgba(10,10,12,0.92) 0%, rgba(10,10,12,0.35) 38%, rgba(10,10,12,0) 70%), url(/images/pondy-planner-bg.avif)',
+          backgroundSize: 'cover', backgroundPosition: 'center' }}>
+          <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ gap: 1.5 }}>
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography sx={{ fontWeight: 700, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                <MapRounded sx={{ fontSize: 20, color: 'primary.light' }} /> {isMobile ? 'Pick places to map your day' : 'Your live map appears here'}
+              </Typography>
+              <Typography sx={{ fontSize: '0.85rem', color: 'text.secondary', mt: 0.4 }}>
+                Add a place or ask the planner — the map and driving route load the moment you start.
+              </Typography>
+            </Box>
+            <Button variant="contained" size="small" startIcon={<MapRounded />} onClick={() => setMapActive(true)} sx={{ flexShrink: 0 }}>Load map now</Button>
+          </Stack>
+        </Box>
       )}
     </Box>
   );
@@ -404,8 +446,10 @@ export default function App() {
   // desktop — top search bar + two pane (rail + inset map)
   return (
     <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.default' }}>
-      {/* top bar with search */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0 }}>
+      {/* top bar with search — Pondicherry French-quarter vibe behind a dark scrim */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0,
+        backgroundImage: 'linear-gradient(90deg, rgba(10,10,12,0.96) 28%, rgba(10,10,12,0.72) 60%, rgba(10,10,12,0.84)), url(/images/pondy-planner-bg.avif)',
+        backgroundSize: 'cover', backgroundPosition: 'center 28%', backgroundRepeat: 'no-repeat' }}>
         {Brand}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{AiBar()}</Box>
       </Box>
@@ -428,9 +472,34 @@ export default function App() {
         {/* right map (inset) */}
         <Box sx={{ flex: 1, minWidth: 0, height: '100%', position: 'relative', p: 1.5 }}>
           {deskTab === 'places' && (
-            <Paper sx={{ position: 'absolute', top: 26, left: 26, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(100% - 52px)',
+            <Paper sx={{ position: 'absolute', top: 26, left: 26, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(70% - 52px)',
               bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
               {categoryChips()}
+            </Paper>
+          )}
+          {/* floating "Your day" overview on the sea — alternate entry point while browsing */}
+          {deskTab === 'places' && stops.length > 0 && (
+            <Paper sx={{ position: 'absolute', top: 26, right: 26, zIndex: 3, width: 300, maxHeight: 'calc(100% - 52px)', display: 'flex', flexDirection: 'column',
+              bgcolor: 'rgba(18,20,26,0.93)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: 3, boxShadow: '0 10px 34px rgba(0,0,0,0.55)' }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Your day</Typography>
+                <Button size="small" variant="outlined" onClick={() => setDeskTab('day')} sx={{ py: 0.2 }}>Edit</Button>
+              </Stack>
+              <Stack direction="row" sx={{ px: 1.5, py: 0.8, gap: '2px 12px', flexWrap: 'wrap', fontSize: '0.76rem', color: 'text.secondary' }}>
+                <span><b style={{ color: '#ECEDEE' }}>{stops.length}</b> stops</span>
+                <span>{totalDrive} min · {totalKm.toFixed(1)} km</span>
+                <span>back {fmtClock(clock)}</span>
+              </Stack>
+              <Box sx={{ overflowY: 'auto', px: 1.5, pb: 1, minHeight: 0 }}>
+                <GlanceRow color="#F59E0B" dot="S" name={data.places[start].name} time={fmtClock(parseTime(startTime))}
+                  legColor={LEG_COLORS[0]} drive={`${timeline[0].dm} min · ${timeline[0].dk} km`} />
+                {timeline.map(t => {
+                  const lastStop = t.n === stops.length - 1;
+                  return <GlanceRow key={t.n} color={CAT_HEX[data.places[t.idx].cat] || '#2196F3'} dot={t.n + 1} name={data.places[t.idx].name} time={fmtClock(t.arrive)}
+                    last={lastStop} legColor={LEG_COLORS[(t.n + 1) % LEG_COLORS.length]}
+                    drive={lastStop ? null : `${timeline[t.n + 1].dm} min · ${timeline[t.n + 1].dk} km`} />;
+                })}
+              </Box>
             </Paper>
           )}
           {MapView()}
@@ -444,7 +513,7 @@ export default function App() {
 // ---------- interactive Google map ----------
 function RouteMap({ data, start, stops }) {
   return (
-    <Map defaultCenter={{ lat: 11.934, lng: 79.83 }} defaultZoom={12} gestureHandling="greedy"
+    <Map mapId={MAP_ID} defaultCenter={{ lat: 11.934, lng: 79.83 }} defaultZoom={12} gestureHandling="greedy"
       mapTypeControl={false} streetViewControl={false} fullscreenControl={false} clickableIcons={false}
       style={{ width: '100%', height: '100%' }}>
       <RouteLayer data={data} start={start} stops={stops} />
@@ -454,57 +523,117 @@ function RouteMap({ data, start, stops }) {
 
 function RouteLayer({ data, start, stops }) {
   const map = useMap();
+  const [selected, setSelected] = useState(null);
+  const order = useMemo(() => [start, ...stops.map(s => s.idx)], [start, stops]);
+
+  // Centre on the start when there's no route (Directions auto-fits otherwise).
   useEffect(() => {
-    if (!map || !window.google?.maps) return;
+    if (!map || stops.length || !data.places[start]) return;
+    map.setCenter({ lat: data.places[start].lat, lng: data.places[start].lng });
+    map.setZoom(13);
+  }, [map, start, stops.length, data]);
+
+  const sel = selected != null ? data.places[selected] : null;
+  return (
+    <>
+      {order.map((idx, i) => {
+        const p = data.places[idx]; if (!p) return null;
+        const isStart = i === 0;
+        return (
+          <AdvancedMarker key={idx + '-' + i} position={{ lat: p.lat, lng: p.lng }} zIndex={isStart ? 9999 : 100 + i} onClick={() => setSelected(idx)}>
+            <PinChip label={isStart ? 'S' : String(i)} name={p.name} color={isStart ? '#F59E0B' : (CAT_HEX[p.cat] || '#2196F3')} />
+          </AdvancedMarker>
+        );
+      })}
+      {sel && (
+        <InfoWindow position={{ lat: sel.lat, lng: sel.lng }} onCloseClick={() => setSelected(null)}>
+          <div style={{ minWidth: 160, maxWidth: 230, fontFamily: 'Inter, system-ui, sans-serif', color: '#1b1b1b' }}>
+            <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.25 }}>{sel.name}</div>
+            <div style={{ fontSize: 11.5, color: '#666', margin: '3px 0' }}>{(CAT_LABEL[sel.cat] || sel.cat || 'Start') + (sel.sub ? ' · ' + (SUB_LABEL[sel.sub] || sel.sub) : '')}</div>
+            {sel.desc && <div style={{ fontSize: 12, color: '#333', marginBottom: 5 }}>{sel.desc}</div>}
+            <a href={mapLink(sel)} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#1976d2', textDecoration: 'none', fontWeight: 600 }}>Open in Google Maps ↗</a>
+          </div>
+        </InfoWindow>
+      )}
+      <DirectionsRoute data={data} start={start} stops={stops} />
+    </>
+  );
+}
+
+// A pill marker: coloured numbered badge + the place name, sitting above its point.
+function PinChip({ label, name, color }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 9px 3px 3px', transform: 'translateY(-6px)',
+      background: '#15171c', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 999, boxShadow: '0 3px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+      <span style={{ width: 20, height: 20, borderRadius: '50%', background: color, color: '#0B1020', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: '#ECEDEE', fontSize: 12.5, fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+    </div>
+  );
+}
+
+// Real driving route along roads (one Directions request), drawn as per-leg
+// polylines coloured by each leg's destination category — so segments stay distinct.
+function DirectionsRoute({ data, start, stops }) {
+  const map = useMap();
+  const routesLib = useMapsLibrary('routes');
+  const linesRef = useRef([]);
+  useEffect(() => {
+    if (!map || !routesLib) return;
+    const clear = () => { linesRef.current.forEach(l => l.setMap(null)); linesRef.current = []; };
+    clear();
+    if (!stops.length || !data.places[start]) return;
     const g = window.google.maps;
-    const order = [start, ...stops.map(s => s.idx)];
-    const bounds = new g.LatLngBounds();
-    const markers = [], infos = [];
-    let openInfo = null;
-    order.forEach((idx, i) => {
-      const p = data.places[idx]; if (!p) return;
-      const pos = { lat: p.lat, lng: p.lng };
-      bounds.extend(pos);
-      const isStart = i === 0;
-      const color = isStart ? '#F59E0B' : (CAT_HEX[p.cat] || '#2196F3');
-      const marker = new g.Marker({
-        position: pos, map, title: p.name,
-        label: { text: isStart ? 'S' : String(i), color: '#0B1020', fontSize: '12px', fontWeight: '700' },
-        icon: { path: g.SymbolPath.CIRCLE, scale: 12, fillColor: color, fillOpacity: 1, strokeColor: '#0B1020', strokeWeight: 1.5 },
-        zIndex: isStart ? 9999 : 100 + i,
+    const pt = i => ({ lat: data.places[i].lat, lng: data.places[i].lng });
+    const stopIdxs = stops.map(s => s.idx);
+    const last = stopIdxs[stopIdxs.length - 1];
+    new routesLib.DirectionsService().route({   // forward journey only (no loop back to start)
+      origin: pt(start), destination: pt(last),
+      waypoints: stopIdxs.slice(0, -1).map(idx => ({ location: pt(idx), stopover: true })),
+      travelMode: g.TravelMode.DRIVING, optimizeWaypoints: false,
+    }, (res, status) => {
+      if (status !== 'OK' || !res.routes[0]) return;
+      const bounds = new g.LatLngBounds();
+      res.routes[0].legs.forEach((leg, i) => {
+        const path = [];
+        leg.steps.forEach(st => (st.path || []).forEach(q => { path.push(q); bounds.extend(q); }));
+        const color = LEG_COLORS[i % LEG_COLORS.length];   // distinct colour per leg
+        linesRef.current.push(new g.Polyline({ path, map, strokeColor: color, strokeOpacity: 0.95, strokeWeight: 5 }));
       });
-      const info = new g.InfoWindow({ content: infoHtml(p, isStart) });
-      marker.addListener('click', () => { if (openInfo) openInfo.close(); info.open({ map, anchor: marker }); openInfo = info; });
-      markers.push(marker); infos.push(info);
+      if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
     });
-    let line = null;
-    if (stops.length && data.places[start]) {
-      const path = order.map(i => ({ lat: data.places[i].lat, lng: data.places[i].lng }));
-      path.push({ lat: data.places[start].lat, lng: data.places[start].lng });
-      line = new g.Polyline({ path, map, strokeColor: '#2196F3', strokeOpacity: 0.95, strokeWeight: 4 });
-    }
-    if (order.length > 1) map.fitBounds(bounds, 70);
-    else if (order.length === 1) { map.setCenter({ lat: data.places[order[0]].lat, lng: data.places[order[0]].lng }); map.setZoom(13); }
-    return () => { markers.forEach(m => m.setMap(null)); infos.forEach(w => w.close()); if (line) line.setMap(null); };
-  }, [map, data, start, stops]);
+    return clear;
+  }, [map, routesLib, data, start, stops]);
   return null;
 }
 
-function infoHtml(p, isStart) {
-  const cat = (CAT_LABEL[p.cat] || p.cat || (isStart ? 'Start' : '')) + (p.sub ? ' · ' + (SUB_LABEL[p.sub] || p.sub) : '');
-  return `<div style="min-width:170px;max-width:240px;color:#1b1b1b;font-family:Inter,system-ui,sans-serif">
-    <div style="font-weight:700;font-size:14px;line-height:1.25">${esc(p.name)}</div>
-    ${cat ? `<div style="font-size:11.5px;color:#666;margin:3px 0">${esc(cat)}</div>` : ''}
-    ${p.desc ? `<div style="font-size:12px;color:#333;margin-bottom:5px">${esc(p.desc)}</div>` : ''}
-    <a href="${mapLink(p)}" target="_blank" rel="noopener" style="font-size:12px;color:#1976d2;text-decoration:none;font-weight:600">Open in Google Maps ↗</a>
-  </div>`;
+// compact connected day-glance row (used in the on-map floating card) — dot + a
+// leg-coloured line down to the next dot, with the drive label on the connector.
+function GlanceRow({ color, dot, name, time, legColor, drive, last }) {
+  return (
+    <Stack direction="row" spacing={1} alignItems="stretch">
+      <Box sx={{ width: 20, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <Box sx={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, bgcolor: color, color: '#0B1020', fontSize: '0.68rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{dot}</Box>
+        {!last && <Box sx={{ flex: 1, width: 2.5, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.3, minHeight: 14 }} />}
+      </Box>
+      <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0.4 : 0.8 }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ pt: 0.1 }}>
+          <Typography sx={{ flex: 1, minWidth: 0, fontSize: '0.82rem', fontWeight: 600, color: 'text.primary', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</Typography>
+          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', flexShrink: 0 }}>{time}</Typography>
+        </Stack>
+        {!last && drive && (
+          <Box sx={{ mt: 0.3, fontSize: '0.7rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.4 }}>
+            <DirectionsCarRounded sx={{ fontSize: 13, color: legColor || 'inherit' }} />{drive}
+          </Box>
+        )}
+      </Box>
+    </Stack>
+  );
 }
 
 // small shared bits
 function Centered({ children }) { return <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>{children}</Box>; }
 function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 0.8 }}>{children}</Box>; }
 function CatHead({ cat }) { const Icon = CAT_ICON[cat]; return <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.6, display: 'flex', alignItems: 'center', gap: 0.5 }}><Icon sx={{ fontSize: 15 }} />{CAT_LABEL[cat]}</Typography>; }
-function Seg({ children }) { return <Box sx={{ ml: '13px', pl: 1.6, py: 0.4, borderLeft: '2px dashed', borderColor: 'divider', fontSize: '0.78rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.6 }}><DirectionsCarRounded sx={{ fontSize: 15 }} />{children}</Box>; }
 function Sheet({ title, onClose, children }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
