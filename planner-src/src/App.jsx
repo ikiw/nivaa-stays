@@ -3,7 +3,7 @@ import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
   TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction, Drawer,
   Snackbar, CircularProgress, Divider, useMediaQuery, InputAdornment, Tooltip, Slider,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, Collapse,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
@@ -18,6 +18,7 @@ import MapRounded from '@mui/icons-material/MapRounded';
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
+import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
@@ -82,6 +83,8 @@ export default function App() {
   const [stops, setStops] = useState([]); // [{ idx, stay }]
   const [filter, setFilter] = useState('All');
   const [subFilter, setSubFilter] = useState('All');
+  const [collapsed, setCollapsed] = useState(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
+  const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
   const [mobView, setMobView] = useState('map'); // map | places | day (mobile)
   const [deskTab, setDeskTab] = useState('places'); // places | day (desktop rail)
   const [aiQuery, setAiQuery] = useState('');
@@ -289,26 +292,36 @@ export default function App() {
 
   const PlaceCard = (i) => {
     const p = data.places[i], added = isStop(i), Icon = CAT_ICON[p.cat];
+    const cat = CAT_HEX[p.cat] || '#94A3B8';
+    const dm = driveMin(start, i), dk = driveKm(start, i);
     return (
-      <Card key={i} variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'rgba(255,255,255,0.10)', bgcolor: added ? 'rgba(33,150,243,0.16)' : 'background.paper', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(33,150,243,0.5), 0 8px 22px rgba(0,0,0,0.45)' } }}>
+      <Card key={i} variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'rgba(255,255,255,0.10)', bgcolor: added ? 'rgba(33,150,243,0.16)' : 'background.paper', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(33,150,243,0.5), 0 8px 22px rgba(0,0,0,0.45)' }, '&:hover .map-ghost': { opacity: 1 } }}>
         <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-          <CardActionArea onClick={(e) => { addToggle(i); e.currentTarget.blur(); }} sx={{ flex: 1, minWidth: 0, p: 1.1, display: 'flex', alignItems: 'flex-start', gap: 1, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
-            <Icon sx={{ fontSize: 18, color: CAT_HEX[p.cat] || 'text.secondary', mt: '2px', flexShrink: 0 }} />
+          <CardActionArea onClick={(e) => { addToggle(i); e.currentTarget.blur(); }} sx={{ flex: 1, minWidth: 0, p: 1.25, display: 'flex', alignItems: 'center', gap: 1.25, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
+            <Box sx={{ width: 38, height: 38, borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${cat}22`, color: cat }}>
+              <Icon sx={{ fontSize: 20 }} />
+            </Box>
             <Box sx={{ minWidth: 0, flex: 1 }}>
               <Typography sx={{ fontWeight: 700, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.25, letterSpacing: '-0.01em' }}>{p.name}</Typography>
-              {p.desc && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</Typography>}
+              {p.desc && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.2, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</Typography>}
+              {dm > 0 && (
+                <Box sx={{ mt: 0.4, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }}>
+                  <DirectionsCarRounded sx={{ fontSize: 13 }} /> {dm} min · {dk.toFixed(1)} km
+                </Box>
+              )}
             </Box>
             <Tooltip title={added ? 'Remove from day' : 'Add to day'}>
-              <Box component="span" sx={{ alignSelf: 'center', flexShrink: 0, display: 'flex' }}>
+              <Box component="span" sx={{ flexShrink: 0, display: 'flex' }}>
                 {added
                   ? <CheckCircleRounded sx={{ fontSize: 25, color: 'primary.main' }} />
                   : <AddCircleOutlineRounded sx={{ fontSize: 25, color: 'text.secondary' }} />}
               </Box>
             </Tooltip>
           </CardActionArea>
-          <Tooltip title="Google Maps">
-            <IconButton size="small" component="a" href={mapLink(p)} target="_blank" rel="noopener" sx={{ flexShrink: 0, borderLeft: '1px solid', borderColor: 'divider', borderRadius: 0, color: 'text.secondary' }}>
-              <OpenInNewRounded fontSize="small" />
+          <Tooltip title="Open in Google Maps">
+            <IconButton size="small" component="a" href={mapLink(p)} target="_blank" rel="noopener" className="map-ghost"
+              sx={{ flexShrink: 0, alignSelf: 'center', mr: 0.5, color: 'text.secondary', opacity: { xs: 0.65, md: 0 }, transition: 'opacity .15s ease, color .15s ease', '&:hover': { opacity: 1, color: 'primary.light' } }}>
+              <OpenInNewRounded sx={{ fontSize: 17 }} />
             </IconButton>
           </Tooltip>
         </Box>
@@ -322,21 +335,31 @@ export default function App() {
       <Box>
         {cats.map(cat => {
           const items = byCat[cat]; if (!items) return null;
-          const blocks = [];
-          if (filter === 'All') blocks.push(<CatHead key={'h' + cat} cat={cat} />);
+          const collapsible = filter === 'All';
+          const isCollapsed = collapsible && collapsed.has(cat);
+          const inner = [];
           if (SUB_ORDER[cat]) {
             const bySub = {}; items.forEach(i => { const s = data.places[i].sub || ''; (bySub[s] = bySub[s] || []).push(i); });
             let subs = SUB_ORDER[cat].filter(s => bySub[s]).concat(Object.keys(bySub).filter(s => !SUB_ORDER[cat].includes(s)));
             const single = filter === cat && subFilter !== 'All';
             if (single) subs = subs.filter(s => s === subFilter);
             subs.forEach(s => {
-              if (s && !single) blocks.push(<Typography key={cat + s} sx={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.secondary', mt: 1, mb: 0.5 }}>{SUB_LABEL[s] || s}</Typography>);
-              blocks.push(<Grid key={cat + s + 'g'}>{bySub[s].map(PlaceCard)}</Grid>);
+              if (s && !single) inner.push(<Typography key={cat + s} sx={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.secondary', mt: 1, mb: 0.5 }}>{SUB_LABEL[s] || s}</Typography>);
+              inner.push(<Grid key={cat + s + 'g'}>{bySub[s].map(PlaceCard)}</Grid>);
             });
           } else {
-            blocks.push(<Grid key={cat + 'g'}>{items.map(PlaceCard)}</Grid>);
+            inner.push(<Grid key={cat + 'g'}>{items.map(PlaceCard)}</Grid>);
           }
-          return <Box key={cat} sx={{ mb: 1.5 }}>{blocks}</Box>;
+          return (
+            <Box key={cat} sx={{ mb: 1.5 }}>
+              {collapsible
+                ? <CatHead cat={cat} count={items.length} collapsed={isCollapsed} onToggle={() => toggleCat(cat)} />
+                : null}
+              {collapsible
+                ? <Collapse in={!isCollapsed} timeout="auto" unmountOnExit><Box sx={{ mt: 0.6 }}>{inner}</Box></Collapse>
+                : <Box>{inner}</Box>}
+            </Box>
+          );
         })}
       </Box>
     );
@@ -481,7 +504,7 @@ export default function App() {
     return (
       <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }} useFlexGap>
         <TextField select size="small" label="Start from" value={start} onChange={e => { const v = +e.target.value; setStart(v); setStops(p => p.filter(s => s.idx !== v)); }}
-          sx={{ flex: '1 1 0', minWidth: { xs: '46%', md: 0 } }}>
+          sx={{ flex: '1 1 0', minWidth: { xs: '46%', md: 0 }, '& .MuiInputBase-input': { fontSize: '0.85rem', fontWeight: 600 } }}>
           {starts.map(({ p, i }) => <MenuItem key={i} value={i}>{p.name}</MenuItem>)}
         </TextField>
         <Stack sx={{ flex: '1 1 0', minWidth: { xs: 150, md: 0 } }}>
@@ -740,8 +763,19 @@ function GlanceRow({ color, dot, name, time, legColor, drive, last }) {
 
 // small shared bits
 function Centered({ children }) { return <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>{children}</Box>; }
-function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 1 }}>{children}</Box>; }
-function CatHead({ cat }) { const Icon = CAT_ICON[cat]; return <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.6, display: 'flex', alignItems: 'center', gap: 0.5 }}><Icon sx={{ fontSize: 15 }} />{CAT_LABEL[cat]}</Typography>; }
+function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>{children}</Box>; }
+function CatHead({ cat, count, collapsed, onToggle }) {
+  const Icon = CAT_ICON[cat];
+  return (
+    <Box onClick={onToggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle?.(); } }}
+      sx={{ display: 'flex', alignItems: 'center', gap: 0.6, py: 0.5, cursor: 'pointer', userSelect: 'none', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}>
+      <Icon sx={{ fontSize: 15, flexShrink: 0 }} />
+      <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>{CAT_LABEL[cat]}</Typography>
+      <Typography component="span" sx={{ fontSize: '0.72rem', fontWeight: 700 }}>{count}</Typography>
+      <ExpandMoreRounded sx={{ fontSize: 18, transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none' }} />
+    </Box>
+  );
+}
 function Sheet({ title, onClose, children }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

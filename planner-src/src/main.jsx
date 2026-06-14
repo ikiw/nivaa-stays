@@ -37,6 +37,8 @@ const theme = createTheme({
     MuiAppBar: { styleOverrides: { root: { backgroundImage: 'none' } } },
     MuiOutlinedInput: { styleOverrides: { root: { borderRadius: 9 } } },
     MuiTextField: { defaultProps: { size: 'small' } },
+    MuiMenuItem: { styleOverrides: { root: { fontSize: '0.85rem', minHeight: 'auto', paddingTop: 5, paddingBottom: 5 } } },
+    MuiMenu: { styleOverrides: { paper: { borderRadius: 10 } } },
     MuiTooltip: { defaultProps: { arrow: true } },
   },
 });
