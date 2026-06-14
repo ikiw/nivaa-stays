@@ -286,9 +286,6 @@ export default function App() {
       </Stack>
     );
   };
-  const FilterChips = () => (
-    <Box>{categoryChips()}{SUB_ORDER[filter] && <Box sx={{ mt: 1 }}>{subChips()}</Box>}</Box>
-  );
 
   const PlaceCard = (i) => {
     const p = data.places[i], added = isStop(i), Icon = CAT_ICON[p.cat];
@@ -545,14 +542,11 @@ export default function App() {
             on first add; from then on it's the body and "Add places" opens as a sheet. */}
         <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1, display: 'flex', flexDirection: 'column' }}>
           {mapActive ? MapView() : (
-            <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <Box sx={{ mb: 1 }}>{FilterChips()}</Box>
-              <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{PlacesPanel()}</Box>
-            </Box>
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{PlacesPanel()}</Box>
           )}
         </Box>
         <Drawer anchor="bottom" open={mobView === 'places'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-          <Sheet title="Add places" onClose={closeView}><Box sx={{ mb: 1 }}>{FilterChips()}</Box>{PlacesPanel()}</Sheet>
+          <Sheet title="Add places" onClose={closeView}>{PlacesPanel()}</Sheet>
         </Drawer>
         <Drawer anchor="bottom" open={mobView === 'day'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
           <Sheet title="Your day" onClose={closeView}>{DayPanel()}</Sheet>
