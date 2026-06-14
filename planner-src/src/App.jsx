@@ -25,7 +25,6 @@ import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRound
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
-import ExploreRounded from '@mui/icons-material/ExploreRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
 import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from './config.js';
@@ -459,11 +458,14 @@ export default function App() {
   );
 
   const AiBar = () => (
-    <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999, border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 24px rgba(0,0,0,0.45)' }}>
+    <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999,
+      border: '1px solid', borderColor: 'rgba(255,255,255,0.18)', bgcolor: 'rgba(22,23,25,0.92)',
+      boxShadow: '0 4px 18px rgba(0,0,0,0.4)', transition: 'border-color .15s ease, box-shadow .15s ease',
+      '&:focus-within': { borderColor: 'secondary.main', boxShadow: '0 0 0 3px rgba(251,191,36,0.28), 0 4px 18px rgba(0,0,0,0.4)' } }}>
       <TextField fullWidth variant="standard" placeholder={isMobile ? 'Describe your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
         value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') aiPlan(); }}
         InputProps={{ disableUnderline: true, startAdornment: <AutoAwesomeRounded sx={{ color: 'secondary.main', ml: 0.8, mr: 1 }} />, sx: { fontSize: '0.95rem' } }} />
-      <Button variant="contained" color="primary" onClick={aiPlan} disabled={aiBusy} aria-label="Plan my day"
+      <Button variant="contained" color="secondary" onClick={aiPlan} disabled={aiBusy} aria-label="Plan my day"
         startIcon={isMobile ? undefined : (aiBusy ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRounded />)}
         sx={{ borderRadius: 999, flexShrink: 0, minWidth: isMobile ? 44 : undefined, px: isMobile ? 0 : 2 }}>
         {isMobile ? (aiBusy ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeRounded />) : (aiBusy ? 'Planning…' : 'Plan my day')}
@@ -474,14 +476,14 @@ export default function App() {
   const Controls = () => {
     const sMin = parseTime(startTime), eMin = parseTime(endTime);
     return (
-      <Stack direction={{ xs: 'row', md: 'row' }} spacing={{ xs: 1.5, md: 2 }} alignItems="center" sx={{ flexWrap: 'wrap' }} useFlexGap>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }} useFlexGap>
         <TextField select size="small" label="Start from" value={start} onChange={e => { const v = +e.target.value; setStart(v); setStops(p => p.filter(s => s.idx !== v)); }}
-          sx={{ flex: { xs: '1 1 46%', md: '0 0 auto' }, minWidth: { md: 190 } }}>
+          sx={{ flex: '1 1 0', minWidth: { xs: '46%', md: 0 } }}>
           {starts.map(({ p, i }) => <MenuItem key={i} value={i}>{p.name}</MenuItem>)}
         </TextField>
-        <Stack sx={{ flex: { xs: '1 1 46%', md: '0 0 auto' }, minWidth: { xs: 150, md: 210 } }}>
-          <Typography variant="caption" noWrap sx={{ color: 'text.secondary', fontWeight: 600 }}>
-            {isMobile ? '' : 'Day window · '}{fmtClock(sMin)} – {fmtClock(eMin)}
+        <Stack sx={{ flex: '1 1 0', minWidth: { xs: 150, md: 0 } }}>
+          <Typography variant="caption" noWrap sx={{ color: 'text.secondary', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4 }}>
+            <AccessTimeRounded sx={{ fontSize: 14 }} /> {fmtClock(sMin)} – {fmtClock(eMin)}
           </Typography>
           <Slider size="small" value={[sMin, eMin]} min={300} max={1380} step={30} disableSwap
             onChange={(_, v) => { setStartTime(toHHMM(v[0])); setEndTime(toHHMM(v[1])); }}
@@ -494,8 +496,9 @@ export default function App() {
   // ---------- layouts ----------
   const Brand = (
     <Stack direction="row" spacing={1.3} alignItems="center" sx={{ minWidth: 0 }}>
-      <Box sx={{ width: 38, height: 38, borderRadius: 2.5, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'text.primary', color: 'primary.contrastText', boxShadow: '0 0 16px rgba(45,212,191,0.35)' }}>
-        <ExploreRounded />
+      <Box sx={{ width: 40, height: 40, borderRadius: 2.5, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)', color: '#231A00', boxShadow: '0 4px 14px rgba(245,158,11,0.45)' }}>
+        <BeachAccessRounded />
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.05, letterSpacing: '-0.01em' }}>Pondicherry Planner</Typography>
@@ -546,18 +549,18 @@ export default function App() {
 
   // desktop — top search bar + two pane (rail + inset map)
   return (
-    <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden', bgcolor: 'background.default' }}>
-      {/* top bar with search — Pondicherry French-quarter vibe behind a dark scrim */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, borderBottom: '1px solid', borderColor: 'divider', flexShrink: 0,
+    <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', gap: 1.25, p: 1.25, overflow: 'hidden', bgcolor: 'background.default' }}>
+      {/* top bar card — Pondicherry French-quarter vibe behind a dark scrim */}
+      <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, flexShrink: 0, borderRadius: 3, border: '1px solid', borderColor: 'divider',
         backgroundImage: 'linear-gradient(90deg, rgba(10,10,12,0.96) 28%, rgba(10,10,12,0.72) 60%, rgba(10,10,12,0.84)), url(/images/pondy-planner-bg.avif)',
         backgroundSize: 'cover', backgroundPosition: 'center 28%', backgroundRepeat: 'no-repeat' }}>
         {Brand}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{AiBar()}</Box>
-      </Box>
+      </Paper>
       {/* body */}
-      <Box sx={{ flex: 1, minHeight: 0, display: 'flex' }}>
-        {/* left rail */}
-        <Box sx={{ width: 470, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', borderRight: '1px solid', borderColor: 'divider' }}>
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: 1.25 }}>
+        {/* left rail card */}
+        <Paper elevation={0} sx={{ width: 470, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: 3, border: '1px solid', borderColor: 'divider' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
             {Controls()}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && openView(v)} color="primary">
@@ -569,18 +572,18 @@ export default function App() {
           <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 2 }}>
             {deskTab === 'places' ? PlacesPanel() : DayPanel()}
           </Box>
-        </Box>
-        {/* right map (inset) */}
-        <Box sx={{ flex: 1, minWidth: 0, height: '100%', position: 'relative', p: 1.5 }}>
+        </Paper>
+        {/* map card */}
+        <Box sx={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
           {deskTab === 'places' && (
-            <Paper sx={{ position: 'absolute', top: 26, left: 26, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(70% - 52px)',
+            <Paper sx={{ position: 'absolute', top: 16, left: 16, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(70% - 32px)',
               bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
               {categoryChips()}
             </Paper>
           )}
           {/* floating "Your day" overview on the sea — alternate entry point while browsing */}
           {deskTab === 'places' && stops.length > 0 && (
-            <Paper sx={{ position: 'absolute', top: 26, right: 26, zIndex: 3, width: 300, maxHeight: 'calc(100% - 52px)', display: 'flex', flexDirection: 'column',
+            <Paper sx={{ position: 'absolute', top: 16, right: 16, zIndex: 3, width: 300, maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column',
               bgcolor: 'rgba(18,20,26,0.93)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: 3, boxShadow: '0 10px 34px rgba(0,0,0,0.55)' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Your day</Typography>
@@ -733,7 +736,7 @@ function GlanceRow({ color, dot, name, time, legColor, drive, last }) {
 
 // small shared bits
 function Centered({ children }) { return <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>{children}</Box>; }
-function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 0.8 }}>{children}</Box>; }
+function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0,1fr))', gap: 1 }}>{children}</Box>; }
 function CatHead({ cat }) { const Icon = CAT_ICON[cat]; return <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.6, display: 'flex', alignItems: 'center', gap: 0.5 }}><Icon sx={{ fontSize: 15 }} />{CAT_LABEL[cat]}</Typography>; }
 function Sheet({ title, onClose, children }) {
   return (
