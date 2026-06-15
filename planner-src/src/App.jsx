@@ -3,7 +3,7 @@ import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
   TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction, Drawer,
   Snackbar, CircularProgress, Divider, useMediaQuery, InputAdornment, Tooltip, Slider,
-  ToggleButton, ToggleButtonGroup, Collapse,
+  ToggleButton, ToggleButtonGroup, Collapse, Menu,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
@@ -19,6 +19,10 @@ import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
 import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
+import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import ShareRounded from '@mui/icons-material/ShareRounded';
+import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
+import WhatsApp from '@mui/icons-material/WhatsApp';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
@@ -49,7 +53,22 @@ const SUB_LABEL = {
   'south-indian': 'South Indian', 'north-indian': 'North Indian', multicuisine: 'Multi-cuisine',
   continental: 'Continental', asian: 'Asian', cafe: 'Cafés & Bakeries', dessert: 'Desserts & Ice Cream', fine: 'Fine Dining',
 };
-const DEFAULT_STAY = { Beach: 60, Food: 60, Attraction: 30, Social: 45, Shopping: 30, Stay: 0 };
+// Realistic per-place visit durations [min, ideal, max] in minutes — sub-category
+// defaults with name overrides for places that differ from their type. Drives the
+// default stay AND how curated days are spread (flexible places absorb the slack).
+const DUR_SUB = { spiritual: [20, 30, 50], nature: [60, 90, 180], heritage: [30, 45, 90], adventure: [150, 180, 300] };
+const DUR_FOOD = { 'south-indian': [30, 45, 75], 'north-indian': [30, 45, 75], multicuisine: [35, 50, 90], cafe: [30, 40, 70], continental: [40, 60, 100], fine: [60, 90, 150], dessert: [15, 25, 45], asian: [30, 40, 70] };
+const DUR_CAT = { Beach: [45, 75, 160], Social: [60, 105, 210], Shopping: [30, 50, 100], Stay: [0, 0, 0], Area: [0, 0, 0] };
+const DUR_OVERRIDE = {
+  'Chunnambar Boat House': [75, 120, 210], 'Paradise Beach': [90, 130, 190], 'Matrimandir (Auroville)': [60, 90, 180],
+  'Botanical Garden': [45, 60, 130], 'Puducherry Museum': [45, 60, 100], 'Promenade Beach': [45, 75, 130],
+  'Bharathi Park (White Town)': [25, 40, 70], 'Serenity Beach': [45, 80, 150], 'Eden Beach': [40, 60, 120],
+};
+function placeDur(p) {
+  return DUR_OVERRIDE[p.name] || (p.cat === 'Food' ? (DUR_FOOD[p.sub] || [30, 45, 70])
+    : p.cat === 'Attraction' ? (DUR_SUB[p.sub] || [30, 45, 75]) : (DUR_CAT[p.cat] || [30, 45, 60]));
+}
+const idealStay = (p) => placeDur(p)[1];
 const STAY_OPTIONS = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240];
 const fmtDur = (m) => { const h = Math.floor(m / 60), mm = m % 60; return (h ? h + 'h' : '') + (mm ? (h ? ' ' : '') + mm + 'm' : (h ? '' : '0m')); };
 
@@ -57,6 +76,34 @@ const parseTime = (s) => { const [h, m] = String(s).split(':').map(Number); retu
 const fmtClock = (t) => { t = ((Math.round(t) % 1440) + 1440) % 1440; const h = Math.floor(t / 60), m = t % 60, ap = h < 12 ? 'AM' : 'PM', hh = h % 12 || 12; return `${hh}:${String(m).padStart(2, '0')} ${ap}`; };
 const toHHMM = (m) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 const mapLink = (p) => p.map || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ', Pondicherry'));
+
+// Role tag for a timeline stop, from category + arrival time (minutes since midnight).
+function mealTag(cat, arrive) {
+  if (cat === 'Food') {
+    if (arrive < 11 * 60) return 'Breakfast';
+    if (arrive < 16 * 60) return 'Lunch';
+    if (arrive < 18.5 * 60) return 'Snack';
+    return 'Dinner';
+  }
+  if (cat === 'Social') return arrive < 18 * 60 ? 'Drinks' : 'Dinner & drinks';
+  if (cat === 'Shopping') return 'Shopping';
+  return null;
+}
+const TAG_COLOR = { Breakfast: '#F59E0B', Lunch: '#FB923C', Snack: '#FBBF24', Dinner: '#F472B6', 'Dinner & drinks': '#F472B6', Drinks: '#A78BFA', Shopping: '#A78BFA' };
+
+// Curated starter itineraries — authored by us, by place name (resolved to catalog
+// indices at load time so they survive catalog reordering). Shown when "Your day" is empty.
+// Full 9am–10pm day-outs, breakfast → lunch → dinner woven through (meals ordered by time of day).
+const CURATED = [
+  { id: 'family', name: 'Family Day Out', tag: 'Kids & easy pace', start: 'Pondicherry Bus Stand',
+    stops: ['Sri Murugan Cafe', 'Botanical Garden', 'Manakula Vinayagar Temple', 'Hotel Atithi', 'Chunnambar Boat House', 'Paradise Beach', 'Promenade Beach', 'Goubert Market', 'Copper Kitchen'] },
+  { id: 'couples', name: 'Couples Getaway', tag: 'Romantic & scenic', start: 'Pondicherry Bus Stand',
+    stops: ['Cafe des Arts', 'Bharathi Park (White Town)', 'Sri Aurobindo Ashram', 'Maison Perumal Hotel & Restaurant', 'Serenity Beach', 'Kalki', 'Promenade Beach', 'Villa Shanti Hotel Restaurant'] },
+  { id: 'bachelors', name: "Bachelors' Trip", tag: 'Beaches & nightlife', start: 'Pondicherry Bus Stand',
+    stops: ['Baker Street', 'Serenity Beach', 'Auroville Beach', 'Prawn and Crab', 'Promenade Beach', 'Casablanca', 'Catamaran Brewing Company', 'Bike & Barrel'] },
+  { id: 'solo', name: 'Solo Explorer', tag: 'Slow travel & culture', start: 'Pondicherry Bus Stand',
+    stops: ["Marc's Café", 'Matrimandir (Auroville)', 'Sri Aurobindo Ashram', 'Kasha Ki Aasha', 'Puducherry Museum', "Boutique d'Auroville", 'Promenade Beach', 'La Terrace'] },
+];
 
 // Read the shareable plan out of the URL query (?s=start &st/&et=window &p=stop-idxs &v=view).
 // Per-stop stay durations are intentionally not encoded — they fall back to the defaults.
@@ -67,7 +114,12 @@ function parseSearch() {
     start: s != null && /^\d+$/.test(s) ? +s : null,
     startTime: /^\d{1,2}:\d{2}$/.test(st || '') ? st : null,
     endTime: /^\d{1,2}:\d{2}$/.test(et || '') ? et : null,
-    stopIdxs: p ? p.split('-').map(x => +x).filter(n => Number.isInteger(n) && n >= 0) : [],
+    // each stop is "idx" (default stay) or "idx.stay" (custom stay, minutes)
+    stops: p ? p.split('-').map(seg => {
+      const [a, b] = seg.split('.');
+      const idx = +a;
+      return Number.isInteger(idx) && idx >= 0 ? { idx, stay: b != null && /^\d+$/.test(b) ? +b : null } : null;
+    }).filter(Boolean) : [],
     view: v === 'places' || v === 'day' ? v : null,
   };
 }
@@ -85,8 +137,9 @@ export default function App() {
   const [subFilter, setSubFilter] = useState('All');
   const [collapsed, setCollapsed] = useState(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
   const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  const [shareAnchor, setShareAnchor] = useState(null);
   const [mobView, setMobView] = useState('map'); // map | places | day (mobile)
-  const [deskTab, setDeskTab] = useState('places'); // places | day (desktop rail)
+  const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
   const [snack, setSnack] = useState('');
@@ -113,9 +166,12 @@ export default function App() {
     if (start != null && start !== defaultStartRef.current) q.set('s', String(start));
     if (startTime && startTime !== '09:00') q.set('st', startTime);
     if (endTime && endTime !== '19:00') q.set('et', endTime);
-    if (stops.length) q.set('p', stops.map(s => s.idx).join('-'));
-    if (view === 'day') q.set('v', 'day');
-    else if (view === 'places' && isMobile) q.set('v', 'places');   // desktop 'places' is the default, keep it clean
+    if (stops.length) q.set('p', stops.map(s => {
+      const def = data?.places?.[s.idx] ? idealStay(data.places[s.idx]) : 45;
+      return s.stay === def ? String(s.idx) : `${s.idx}.${s.stay}`;   // keep default-stay stops short
+    }).join('-'));
+    if (view === 'places') q.set('v', 'places');                    // 'day' is the default view — keep it out of the URL
+    else if (view === 'day' && isMobile) q.set('v', 'day');         // mobile day-sheet needs it for back-button history
     const qs = q.toString();
     return window.location.pathname + (qs ? '?' + qs : '');
   };
@@ -142,11 +198,11 @@ export default function App() {
       setStart(startIdx);
       if (u.startTime) setStartTime(u.startTime);
       if (u.endTime) setEndTime(u.endTime);
-      if (u.stopIdxs.length) {
+      if (u.stops.length) {
         const seen = new Set();
-        setStops(u.stopIdxs
-          .filter(i => d.places[i] && i !== startIdx && !seen.has(i) && seen.add(i))
-          .map(i => ({ idx: i, stay: DEFAULT_STAY[d.places[i].cat] ?? 45 })));
+        setStops(u.stops
+          .filter(o => d.places[o.idx] && o.idx !== startIdx && !seen.has(o.idx) && seen.add(o.idx))
+          .map(o => ({ idx: o.idx, stay: o.stay ?? idealStay(d.places[o.idx]) })));
       }
       if (u.view) { setMobView(u.view); setDeskTab(u.view); }
       hydrated.current = true;
@@ -162,7 +218,7 @@ export default function App() {
   useEffect(() => {
     const onPop = () => {
       const v = parseSearch().view;
-      if (isMobile) setMobView(v || 'map'); else setDeskTab(v === 'day' ? 'day' : 'places');
+      if (isMobile) setMobView(v || 'map'); else setDeskTab(v === 'places' ? 'places' : 'day');
       if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch(v || (isMobile ? 'map' : 'places')));
     };
     window.addEventListener('popstate', onPop);
@@ -185,7 +241,7 @@ export default function App() {
   const addToggle = (i) => {
     setStops(prev => prev.some(s => s.idx === i)
       ? prev.filter(s => s.idx !== i)
-      : [...prev, { idx: i, stay: DEFAULT_STAY[data.places[i].cat] ?? 45 }]);
+      : [...prev, { idx: i, stay: idealStay(data.places[i]) }]);
   };
   const removeStop = (i) => setStops(prev => prev.filter(s => s.idx !== i));
   const move = (n, dir) => setStops(prev => { const a = prev.slice(); const j = n + dir; if (j < 0 || j >= a.length) return prev; [a[n], a[j]] = [a[j], a[n]]; return a; });
@@ -220,7 +276,7 @@ export default function App() {
       if (typeof d.start === 'number' && data.places[d.start] && ['Area', 'Stay'].includes(data.places[d.start].cat)) nextStart = d.start;
       setStart(nextStart);
       let next = d.stops.filter(i => data.places[i] && i !== nextStart)
-        .map(i => ({ idx: i, stay: prevStay[i] ?? (DEFAULT_STAY[data.places[i].cat] ?? 45) }));
+        .map(i => ({ idx: i, stay: prevStay[i] ?? idealStay(data.places[i]) }));
       if (!hadStops && next.length >= 2) {
         const remaining = next.slice(), ordered = []; let cur = nextStart;
         while (remaining.length) { let b = 0, bm = Infinity; remaining.forEach((s, i) => { const m = driveMin(cur, s.idx); if (m < bm) { bm = m; b = i; } }); const nx = remaining.splice(b, 1)[0]; ordered.push(nx); cur = nx.idx; }
@@ -240,6 +296,55 @@ export default function App() {
     const wps = stops.map(s => pt(s.idx)).join('|');
     if (wps) u += `&waypoints=${encodeURIComponent(wps)}`;
     return u;
+  };
+
+  // load a curated starter plan (resolve names → catalog indices, then open the day view)
+  // Give every stop its realistic ideal duration, then fill the day toward ~10 PM by
+  // stretching only the FLEXIBLE places (beaches, boating, nightlife) up to their max —
+  // so quick stops (temples, museums) stay short and the long experiences soak up the slack.
+  const scheduleStays = (startIdx, ids) => {
+    const n = ids.length; if (!n) return [];
+    const D = ids.map(i => placeDur(data.places[i]));
+    const stays = D.map(x => x[1]);
+    const order = [startIdx, ...ids];
+    let drive = 0;
+    for (let k = 0; k < n; k++) drive += driveMin(order[k], order[k + 1]);
+    drive += driveMin(ids[n - 1], startIdx);
+    const target = parseTime('22:45');
+    const backBy = () => parseTime('09:00') + drive + stays.reduce((a, b) => a + b, 0);
+    let slack = target - backBy();
+    if (slack > 0) {
+      for (let pass = 0; pass < 6 && slack > 5; pass++) {
+        const head = stays.map((s, k) => D[k][2] - s), tot = head.reduce((a, b) => a + b, 0);
+        if (tot <= 0) break;
+        stays.forEach((s, k) => { stays[k] = s + Math.min(head[k], slack * head[k] / tot); });
+        slack = target - backBy();
+      }
+    } else if (slack < 0) {
+      const head = stays.map((s, k) => s - D[k][0]), tot = head.reduce((a, b) => a + b, 0);
+      if (tot > 0) stays.forEach((s, k) => { stays[k] = s - Math.min(head[k], (-slack) * head[k] / tot); });
+    }
+    return stays.map((s, k) => Math.max(D[k][0], Math.round(s / 5) * 5));
+  };
+
+  const loadCurated = (c) => {
+    const find = n => data.places.findIndex(p => p.name === n);
+    const s = find(c.start), ids = c.stops.map(find).filter(i => i >= 0);
+    const startIdx = s >= 0 ? s : start;
+    const stays = scheduleStays(startIdx, ids);
+    setStart(startIdx);
+    setStartTime('09:00'); setEndTime('23:00');
+    setStops(ids.map((i, k) => ({ idx: i, stay: stays[k] })));
+    openView('day');
+    setSnack(`✨ Loaded “${c.name}” — a full day out, tweak it your way.`);
+  };
+
+  // share the current plan (the URL already encodes it)
+  const shareWhatsApp = () => { window.open('https://wa.me/?text=' + encodeURIComponent('Check out this Pondicherry day plan ✨\n' + window.location.href), '_blank', 'noopener'); setShareAnchor(null); };
+  const copyShareLink = async () => {
+    try { await navigator.clipboard.writeText(window.location.href); setSnack('Link copied to clipboard'); }
+    catch { setSnack('Couldn’t copy — copy it from the address bar.'); }
+    setShareAnchor(null);
   };
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
@@ -364,13 +469,42 @@ export default function App() {
 
   const DayPanel = () => (
     <Box>
-      <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-        <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>
-        <Button size="small" variant="outlined" color="inherit" disabled={!stops.length} onClick={() => setStops([])}>Clear</Button>
-        <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} disabled={!stops.length} component="a" href={stops.length ? gmapsUrl() : undefined} target="_blank" rel="noopener">Open in Maps</Button>
-      </Stack>
+      {stops.length > 0 && (
+        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
+          <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>
+          <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => setShareAnchor(e.currentTarget)}>Share</Button>
+          <Button size="small" variant="outlined" color="inherit" onClick={() => setStops([])}>Clear</Button>
+          <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} component="a" href={gmapsUrl()} target="_blank" rel="noopener">Open in Maps</Button>
+          <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
+            transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
+            <MenuItem onClick={shareWhatsApp}><WhatsApp sx={{ fontSize: 18, mr: 1, color: '#25D366' }} /> Share on WhatsApp</MenuItem>
+            <MenuItem onClick={copyShareLink}><ContentCopyRounded sx={{ fontSize: 17, mr: 1 }} /> Copy link</MenuItem>
+          </Menu>
+        </Stack>
+      )}
       {!stops.length
-        ? <Typography color="text.secondary" sx={{ py: 3, textAlign: 'center', fontSize: '0.9rem' }}>Add places to build your day.</Typography>
+        ? (
+          <Box sx={{ pt: 0.5 }}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>Start from a ready-made plan</Typography>
+            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.3 }}>Tap to load a curated day, then tweak it — or add places yourself.</Typography>
+            <Stack spacing={1}>
+              {CURATED.map(c => (
+                <Card key={c.id} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.10)', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'secondary.main', boxShadow: '0 6px 18px rgba(0,0,0,0.4)' } }}>
+                  <CardActionArea onClick={() => loadCurated(c)} sx={{ p: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                    <Box sx={{ width: 38, height: 38, borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(251,191,36,0.16)', color: 'secondary.main' }}>
+                      <RouteRounded sx={{ fontSize: 20 }} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: '0.88rem' }}>{c.name}</Typography>
+                      <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary' }}>{c.tag} · {c.stops.length} stops</Typography>
+                    </Box>
+                    <ChevronRightRounded sx={{ fontSize: 20, color: 'text.secondary', flexShrink: 0 }} />
+                  </CardActionArea>
+                </Card>
+              ))}
+            </Stack>
+          </Box>
+        )
         : (<>
             <Stack direction="row" spacing={2} sx={{ mb: 1.5, fontSize: '0.82rem', flexWrap: 'wrap' }} useFlexGap>
               <span><b>{stops.length}</b> stops</span>
@@ -387,6 +521,7 @@ export default function App() {
               const lastStop = t.n === stops.length - 1;
               return <Fragment key={t.n}>{Node({
                 idx: t.idx, dot: t.n + 1, title: data.places[t.idx].name, cat: data.places[t.idx].cat,
+                tag: mealTag(data.places[t.idx].cat, t.arrive),
                 sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, n: t.n,
                 legColor: lastStop ? '#64748B' : LEG_COLORS[(t.n + 1) % LEG_COLORS.length],
                 drive: lastStop ? `${rMin} min · ${rKm} km · back to start` : `${timeline[t.n + 1].dm} min · ${timeline[t.n + 1].dk} km`,
@@ -399,7 +534,7 @@ export default function App() {
 
   // connected timeline row: coloured dot + a leg-coloured line to the next dot,
   // the place card, and the drive label sitting on the connector.
-  function Node({ icon, idx, cat, dot, title, sub, stay, n, last, legColor, drive }) {
+  function Node({ icon, idx, cat, dot, title, sub, stay, n, last, legColor, drive, tag }) {
     const Icon = icon || (cat && CAT_ICON[cat]);
     const catColor = cat ? (CAT_HEX[cat] || '#94A3B8') : '#F59E0B';   // match the map markers
     return (
@@ -414,6 +549,7 @@ export default function App() {
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
               <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
                 {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
               </Typography>
               {typeof n === 'number' && (
                 <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
@@ -542,7 +678,7 @@ export default function App() {
             on first add; from then on it's the body and "Add places" opens as a sheet. */}
         <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1, display: 'flex', flexDirection: 'column' }}>
           {mapActive ? MapView() : (
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{PlacesPanel()}</Box>
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{DayPanel()}</Box>
           )}
         </Box>
         <Drawer anchor="bottom" open={mobView === 'places'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
@@ -552,10 +688,10 @@ export default function App() {
           <Sheet title="Your day" onClose={closeView}>{DayPanel()}</Sheet>
         </Drawer>
         <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
-          <BottomNavigation showLabels value={mobView !== 'map' ? mobView : (mapActive ? false : 'places')}
+          <BottomNavigation showLabels value={mobView !== 'map' ? mobView : (mapActive ? false : 'day')}
             onChange={(_, v) => {
               if (mobView === v) { closeView(); return; }            // tapping the open sheet closes it
-              if (v === 'places' && !mapActive) { closeView(); return; } // landing: places is already inline
+              if (v === 'day' && !mapActive) { closeView(); return; } // landing: Your day is already inline
               openView(v);
             }} sx={{ bgcolor: 'transparent' }}>
             <BottomNavigationAction value="places" label="Add places" icon={<PlaceRounded />} />
