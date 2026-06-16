@@ -20,6 +20,7 @@ import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
 import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import ShareRounded from '@mui/icons-material/ShareRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import WhatsApp from '@mui/icons-material/WhatsApp';
@@ -165,6 +166,8 @@ export default function App() {
   const [pendingCurated, setPendingCurated] = useState(null); // ?itinerary=<id> to load once data is ready
   const [filter, setFilter] = useState('All');
   const [subFilter, setSubFilter] = useState('All');
+  const [planFilter, setPlanFilter] = useState('all'); // ready-made plans: 'all' | 1 | 2 days
+  const [browsing, setBrowsing] = useState(false); // viewing the plan list while a plan is loaded
   const [collapsed, setCollapsed] = useState(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
   const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
   const [shareAnchor, setShareAnchor] = useState(null);
@@ -402,6 +405,7 @@ export default function App() {
     setActiveDay(1);
     setStops(all);
     setLoadedId(c.id);                                 // pristine curated → readable ?itinerary= URL
+    setBrowsing(false);
     if (!silent) {
       openView('day');
       setSnack(`✨ Loaded “${c.cohort}” — ${c.plan.length > 1 ? `${c.plan.length}-day trip` : 'a full day out'}, tweak it freely.`);
@@ -452,6 +456,15 @@ export default function App() {
             onClick={() => { setFilter(key); setSubFilter('All'); }} sx={{ fontWeight: 600 }} />
         );
       })}
+    </Stack>
+  );
+  const planChips = () => (
+    <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
+      {[['all', 'All'], [1, '1 Day Itinerary'], [2, '2 Day Itinerary']].map(([key, label]) => (
+        <Chip key={key} label={label} size="small"
+          color={planFilter === key ? 'primary' : 'default'} variant={planFilter === key ? 'filled' : 'outlined'}
+          onClick={() => setPlanFilter(key)} sx={{ fontWeight: 600 }} />
+      ))}
     </Stack>
   );
   const subChips = () => {
@@ -544,13 +557,16 @@ export default function App() {
     );
   };
 
-  const DayPanel = () => (
+  const DayPanel = () => {
+    const showList = !stops.length || browsing;          // browse the ready-made list (current plan kept)
+    return (
     <Box>
-      {stops.length > 0 && (
+      {!showList && (<>
+        <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(true)} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>
         <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
           <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>
           <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => setShareAnchor(e.currentTarget)}>Share</Button>
-          <Button size="small" variant="outlined" color="inherit" onClick={() => { setStops([]); setActiveDay(1); setLoadedId(null); }}>Clear</Button>
+          <Button size="small" variant="outlined" color="inherit" onClick={() => { setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); }}>Clear</Button>
           <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} component="a" href={gmapsUrl()} target="_blank" rel="noopener">Open in Maps</Button>
           <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
@@ -558,15 +574,19 @@ export default function App() {
             <MenuItem onClick={copyShareLink}><ContentCopyRounded sx={{ fontSize: 17, mr: 1 }} /> Copy link</MenuItem>
           </Menu>
         </Stack>
-      )}
-      {!stops.length
+      </>)}
+      {showList
         ? (
           <Box sx={{ pt: 0.5 }}>
+            {browsing && stops.length > 0 && (
+              <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(false)} sx={{ mb: 1, px: 0.6 }}>Back to your itinerary</Button>
+            )}
             <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>Start from a ready-made plan</Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.3 }}>Pick a trip — tap to load, then tweak it your way.</Typography>
-            {[[1, '1-Day Itineraries'], [2, '2-Day Itineraries']].map(([len, label]) => (
+            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.1 }}>Pick a trip — tap to load, then tweak it your way.</Typography>
+            {isMobile && <Box sx={{ mb: 1.4 }}>{planChips()}</Box>}
+            {[[1, '1-Day Itineraries'], [2, '2-Day Itineraries']].filter(([len]) => planFilter === 'all' || planFilter === len).map(([len, label]) => (
               <Box key={len} sx={{ mb: 1.5 }}>
-                <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.7 }}>{label}</Typography>
+                {planFilter === 'all' && <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.7 }}>{label}</Typography>}
                 <Stack spacing={1}>
                   {CURATED.filter(c => c.plan.length === len).map(c => {
                     const count = c.plan.reduce((a, d) => a + d.length, 0);
@@ -633,7 +653,8 @@ export default function App() {
             </>);
           })()}
     </Box>
-  );
+    );
+  };
 
   // connected timeline row: coloured dot + a leg-coloured line to the next dot,
   // the place card, and the drive label sitting on the connector.
@@ -840,6 +861,13 @@ export default function App() {
             <Paper sx={{ position: 'absolute', top: 16, left: 16, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(70% - 32px)',
               bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
               {categoryChips()}
+            </Paper>
+          )}
+          {/* itinerary length filter floats over the map while picking a ready-made plan */}
+          {deskTab === 'day' && (!stops.length || browsing) && (
+            <Paper sx={{ position: 'absolute', top: 16, left: 16, zIndex: 3, p: 0.7, borderRadius: 999,
+              bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
+              {planChips()}
             </Paper>
           )}
           {/* floating "Your day" overview on the sea — alternate entry point while browsing */}
