@@ -569,6 +569,174 @@
       "sub": "",
       "desc": "",
       "map": "https://www.google.com/maps/search/?api=1&query=Kalki+Pondicherry"
+    },
+    {
+      "name": "Jallikattu Restaurant",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Seafood-forward sit-down restaurant directly opposite the Chunnambar Boat House serving prawns, fried fish and biryani.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Jallikattu%20Restaurant%20Chunnambar%20Ariyankuppam%20Pondicherry"
+    },
+    {
+      "name": "Le Pondy",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Open-air multicuisine restaurant at the riverside Le Pondy resort with a weekend buffet lunch by the Chunnambar estuary.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Le%20Pondy%20resort%20restaurant%20Nallavadu%20Pondicherry"
+    },
+    {
+      "name": "Finz - Seafood & Barbeque",
+      "cat": "Food",
+      "sub": "multicuisine",
+      "desc": "Sea-facing seafood and barbecue restaurant at Club Mahindra resort, open to day guests for lunch.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Finz%20Seafood%20Barbeque%20Club%20Mahindra%20Pillayarkuppam%20Pondicherry"
+    },
+    {
+      "name": "Aayi Mandapam",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "White Greco-Roman water monument from Napoleon III's era at the centre of Bharathi Park.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Aayi%20Mandapam%20Bharathi%20Park%20Pondicherry"
+    },
+    {
+      "name": "Our Lady of Angels Church",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "Baby-pink Greco-Roman church on Rue Dumas in White Town, one of Pondicherry's oldest.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Notre%20Dame%20des%20Anges%20Church%20Rue%20Dumas%20Pondicherry"
+    },
+    {
+      "name": "Immaculate Conception Cathedral",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "White-and-blue 18th-century cathedral, mother church of the Pondicherry-Cuddalore archdiocese.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Immaculate%20Conception%20Cathedral%20Mission%20Street%20Pondicherry"
+    },
+    {
+      "name": "Old Lighthouse",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Decommissioned 1836 French-era lighthouse tower on the seafront promenade near the Gandhi statue.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Old%20Lighthouse%20Goubert%20Avenue%20Pondicherry"
+    },
+    {
+      "name": "Bay of Buddha",
+      "cat": "Food",
+      "sub": "asian",
+      "desc": "Rooftop pan-Asian restaurant atop The Promenade Hotel with sweeping sea-promenade and lighthouse views at sunset.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Bay%20of%20Buddha%20The%20Promenade%20Hotel%20Pondicherry"
+    },
+    {
+      "name": "Le Dupleix",
+      "cat": "Food",
+      "sub": "fine",
+      "desc": "Heritage hotel restaurant in an 18th-century mansion serving French and Creole seafood with candle-lit courtyard dining.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Le%20Dupleix%20hotel%20restaurant%20Caserne%20Street%20White%20Town%20Pondicherry"
+    },
+    {
+      "name": "Aurodhan Art Gallery",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Long-running gallery in a heritage building showing contemporary, tribal and folk art plus cultural events.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Aurodhan%20Art%20Gallery%20Francois%20Martin%20Street%20Pondicherry"
+    },
+    {
+      "name": "Cluny Embroidery Centre",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "Embroidery centre run by Cluny nuns since 1829 in an 18th-century bungalow, selling hand-embroidered linens.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Cluny%20Embroidery%20Centre%20Romain%20Rolland%20Street%20Pondicherry"
+    },
+    {
+      "name": "Romain Rolland Library",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Public library founded in 1827, one of India's oldest, holding rare French manuscripts in White Town.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Romain%20Rolland%20Library%20Pondicherry"
+    },
+    {
+      "name": "Upasana Design Studio",
+      "cat": "Shopping",
+      "sub": "",
+      "desc": "Auroville slow-fashion textile studio and shop offering handloom khadi and natural-dyed sustainable apparel.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Upasana%20Design%20Studio%20Auroshilpam%20Auroville"
+    },
+    {
+      "name": "Puducherry Science Centre & Planetarium",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "NCSM science centre with a digital planetarium, fun-science galleries and a kids' corner.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Dr%20A.P.J.%20Abdul%20Kalam%20Puducherry%20Science%20Centre%20and%20Planetarium%20Lawspet%20Puducherry"
+    },
+    {
+      "name": "Jawahar Toy Museum",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Small free museum on the promenade displaying 120+ costume dolls from across Indian states.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Jawahar%20Toy%20Museum%20Goubert%20Avenue%20Pondicherry"
+    },
+    {
+      "name": "Pogo Land",
+      "cat": "Attraction",
+      "sub": "adventure",
+      "desc": "Water park and amusement park with slides, pools and rides on Vazhudavoor Road near Ousteri Lake.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Pogo%20Land%20Sampoorna%20Amusement%20Park%20Vazhudavoor%20Road%20Pondicherry"
+    },
+    {
+      "name": "Pondy Ocean Park",
+      "cat": "Attraction",
+      "sub": "adventure",
+      "desc": "Adventure park near Paradise Beach with land and water activities, a funzone and mangrove boating.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Pondy%20Ocean%20Park%20Paradise%20Beach%20Pondicherry"
+    },
+    {
+      "name": "Savitri Bhavan",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "Auroville study-and-art centre on Sri Aurobindo's epic Savitri, with a picture gallery and quiet amphitheatre.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Savitri%20Bhavan%20Auroville"
+    },
+    {
+      "name": "Auroville Visitor Centre",
+      "cat": "Attraction",
+      "sub": "heritage",
+      "desc": "Main arrival hub for Auroville with exhibitions, a Matrimandir model, boutiques and cafes; issues Matrimandir passes.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Auroville%20Visitor%20Centre"
+    },
+    {
+      "name": "Sadhana Forest",
+      "cat": "Attraction",
+      "sub": "nature",
+      "desc": "Volunteer-run reforestation and vegan eco-community offering free walk-in tours of its restored forest.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Sadhana%20Forest%20Auroville"
+    },
+    {
+      "name": "Bharat Nivas (Auroville)",
+      "cat": "Attraction",
+      "sub": "spiritual",
+      "desc": "Auroville's Pavilion of Indian culture, housing the SAWCHU hall and Kala Kendra art centre.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Bharat%20Nivas%20Pavilion%20of%20India%20Auroville"
+    },
+    {
+      "name": "Kallialay Surf School",
+      "cat": "Attraction",
+      "sub": "adventure",
+      "desc": "Long-running surf school at Serenity Beach offering lessons, board rentals and SUP for all levels.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Kallialay%20Surf%20School%20Serenity%20Beach%20Pondicherry"
+    },
+    {
+      "name": "L'Aqua",
+      "cat": "Social",
+      "sub": "",
+      "desc": "Rooftop lounge bar with a pool atop Ajanta Sea View Hotel on Beach Road, serving cocktails overlooking the rock beach.",
+      "map": "https://www.google.com/maps/search/?api=1&query=L'Aqua%20rooftop%20bar%20Ajanta%20Sea%20View%20Hotel%20Beach%20Road%20Pondicherry"
+    },
+    {
+      "name": "Le Café",
+      "cat": "Food",
+      "sub": "cafe",
+      "desc": "Iconic 24-hour seafront heritage cafe on the Promenade rock beach, a popular late-night hangout.",
+      "map": "https://www.google.com/maps/search/?api=1&query=Le%20Cafe%20Goubert%20Avenue%20Promenade%20Pondicherry"
     }
   ]
 }
