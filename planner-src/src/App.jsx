@@ -147,6 +147,10 @@ const CURATED = [
 ];
 const DAY_COLORS = ['#2563EB', '#EA580C'];   // route colour per trip day (Day 1 blue, Day 2 orange)
 
+// Fire a GA4 custom event (gtag is loaded in index.html). No-op if gtag is
+// blocked/absent, so analytics never affects the planner's behaviour.
+const track = (event, params) => { try { window.gtag && window.gtag('event', event, params || {}); } catch (e) {} };
+
 // Read the shareable plan out of the URL query (?s=start &st/&et=window &p=stop-idxs &v=view).
 // Per-stop stay durations are intentionally not encoded — they fall back to the defaults.
 function parseSearch() {
@@ -317,18 +321,20 @@ export default function App() {
   const touched = () => setLoadedId(null);   // any manual edit drops the readable ?itinerary= URL
   const addToggle = (i) => {
     touched();
+    track('plan_edit', { kind: stops.some(s => s.idx === i) ? 'remove_place' : 'add_place' });
     setStops(prev => prev.some(s => s.idx === i)
       ? prev.filter(s => s.idx !== i)
       : sortByDay([...prev, { idx: i, stay: idealStay(data.places[i]), day: activeDay }]));   // add to the day you're viewing
   };
-  const removeStop = (i) => { touched(); setStops(prev => prev.filter(s => s.idx !== i)); };
-  const removeAt = (gi) => { touched(); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
-  const addBreak = () => { touched(); setStops(prev => sortByDay([...prev, { brk: true, stay: 60, day: activeDay }])); };
-  const move = (gi, dir) => { touched(); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
+  const removeStop = (i) => { touched(); track('plan_edit', { kind: 'remove_place' }); setStops(prev => prev.filter(s => s.idx !== i)); };
+  const removeAt = (gi) => { touched(); track('plan_edit', { kind: 'remove' }); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
+  const addBreak = () => { touched(); track('plan_edit', { kind: 'add_break' }); setStops(prev => sortByDay([...prev, { brk: true, stay: 60, day: activeDay }])); };
+  const move = (gi, dir) => { touched(); track('plan_edit', { kind: 'reorder' }); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
   const setStay = (gi, v) => { touched(); setStops(prev => prev.map((s, k) => k === gi ? { ...s, stay: Math.max(0, +v || 0) } : s)); };
 
   function optimize() {
     touched();
+    track('plan_optimize', { stops: stops.length });
     setStops(prev => {
       if (prev.length < 2) return prev;
       const days = [...new Set(prev.map(s => s.day || 1))].sort((a, b) => a - b);
@@ -349,6 +355,7 @@ export default function App() {
     const q = aiQuery.trim(); if (!q || aiBusy) return;
     setAiBusy(true);
     const hadStops = stops.length > 0;
+    track('plan_ai_request', { has_stops: hadStops, query_len: q.length });
     const prevStay = {}; stops.forEach(s => { prevStay[s.idx] = s.stay; });
     try {
       const res = await fetch('/api/plan', {
@@ -370,9 +377,11 @@ export default function App() {
       setActiveDay(1);
       setLoadedId(null);
       setStops(next);
+      track('plan_ai_result', { ok: true, stops: next.length });
       openView('day');
       setSnack(d.note ? '✨ ' + d.note : '✨ Here’s a suggested day — tweak it freely.');
     } catch {
+      track('plan_ai_result', { ok: false });
       setSnack('Couldn’t auto-plan just now — add places manually, or try rephrasing.');
     } finally { setAiBusy(false); }
   }
@@ -432,14 +441,16 @@ export default function App() {
     setLoadedId(c.id);                                 // pristine curated → readable ?itinerary= URL
     setBrowsing(false);
     if (!silent) {
+      track('itinerary_open', { itinerary_id: c.id, cohort: c.cohort, days: c.plan.length });
       openView('day');
       setSnack(`✨ Loaded “${c.cohort}” — ${c.plan.length > 1 ? `${c.plan.length}-day trip` : 'a full day out'}, tweak it freely.`);
     }
   };
 
   // share the current plan (the URL already encodes it)
-  const shareWhatsApp = () => { window.open('https://wa.me/?text=' + encodeURIComponent('Check out this Pondicherry day plan ✨\n' + window.location.href), '_blank', 'noopener'); setShareAnchor(null); };
+  const shareWhatsApp = () => { track('plan_share', { method: 'whatsapp' }); window.open('https://wa.me/?text=' + encodeURIComponent('Check out this Pondicherry day plan ✨\n' + window.location.href), '_blank', 'noopener'); setShareAnchor(null); };
   const copyShareLink = async () => {
+    track('plan_share', { method: 'copy' });
     try { await navigator.clipboard.writeText(window.location.href); setSnack('Link copied to clipboard'); }
     catch { setSnack('Couldn’t copy — copy it from the address bar.'); }
     setShareAnchor(null);
@@ -593,13 +604,13 @@ export default function App() {
     return (
     <Box>
       {!showList && (<>
-        <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(true)} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>
+        <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>
         <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
           <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>
           <Button size="small" variant="outlined" startIcon={<SelfImprovementRounded />} onClick={addBreak}>Free time</Button>
           <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => setShareAnchor(e.currentTarget)}>Share</Button>
-          <Button size="small" variant="outlined" color="inherit" onClick={() => { setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); }}>Clear</Button>
-          <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} component="a" href={gmapsUrl()} target="_blank" rel="noopener">Open in Maps</Button>
+          <Button size="small" variant="outlined" color="inherit" onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); }}>Clear</Button>
+          <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} component="a" href={gmapsUrl()} target="_blank" rel="noopener" onClick={() => track('plan_open_maps', { stops: stops.filter(s => !isPseudo(s)).length })}>Open in Maps</Button>
           <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
             <MenuItem onClick={shareWhatsApp}><WhatsApp sx={{ fontSize: 18, mr: 1, color: '#25D366' }} /> Share on WhatsApp</MenuItem>
@@ -659,7 +670,7 @@ export default function App() {
                 <span><DirectionsCarRounded sx={{ fontSize: 15, verticalAlign: '-3px' }} /> <b>{tripDrive} min</b> · {tripKm.toFixed(1)} km</span>
               </Stack>
               {tripDays.length > 1 && (
-                <ToggleButtonGroup exclusive fullWidth size="small" value={curDay} onChange={(_, v) => v && setActiveDay(v)} sx={{ mb: 1.25 }}>
+                <ToggleButtonGroup exclusive fullWidth size="small" value={curDay} onChange={(_, v) => { if (v) { setActiveDay(v); track('day_switch', { day: v }); } }} sx={{ mb: 1.25 }}>
                   {tripDays.map(dn => (
                     <ToggleButton key={dn} value={dn} sx={{ fontWeight: 700, py: 0.55 }}>
                       <Box component="span" sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: DAY_COLORS[(dn - 1) % DAY_COLORS.length], mr: 0.8 }} /> Day {dn}
