@@ -105,43 +105,44 @@ const TAG_COLOR = { Breakfast: '#F59E0B', Lunch: '#FB923C', Snack: '#FBBF24', Di
 // `plan` is an array of days; each day is an ordered list of place names. 1-day plans
 // have one day, 2-day plans two. Each day is its own loop from the start (you return to base).
 const CURATED = [
-  // ---------- 1-day ---------- (orders are opening-hours-aware + grouped by area; see `why`)
-  { id: 'family-1d', cohort: 'Family Day Out', tag: 'Boat, beaches & market', start: 'Pondicherry Bus Stand',
-    why: 'The Chunnambar backwater cruise first thing, a beachside lunch and Paradise Beach (well before the last ferry), momos for an afternoon snack, then the temple after 4 (it reopens then), the market and a Promenade sunset — with some free time before dinner.',
-    plan: [['Sri Murugan Cafe', 'Chunnambar Boat House', 'Lunch', 'Paradise Beach', 'Daddy Amma Momo Shop', 'Manakula Vinayagar Temple', 'Goubert Market', 'Promenade Beach', 'Break', 'Copper Kitchen']] },
-  { id: 'couples-1d', cohort: 'Couples Getaway', tag: 'White Town & Serenity Beach', start: 'Pondicherry Bus Stand',
-    why: 'White Town in the cool morning while the Ashram is open (it closes 12–2), the scenic Serenity Beach after lunch, a boutique stop, then a Promenade sunset and fine dining — kept to one side of town, barely an hour of driving.',
-    plan: [['Cafe des Arts', 'Sri Aurobindo Ashram', 'Bharathi Park (White Town)', 'Maison Perumal Hotel & Restaurant', 'Serenity Beach', 'Kalki', 'Promenade Beach', 'Villa Shanti Hotel Restaurant']] },
-  { id: 'bachelors-1d', cohort: "Bachelors' Trip", tag: 'Surf beaches & nightlife', start: 'Pondicherry Bus Stand',
-    why: 'Surf beaches up north through the day, seafood for lunch, some free time, then a town brewery for the evening — the nightlife is sequenced last because it only gets going after 5pm.',
-    plan: [['Baker Street', 'Serenity Beach', 'Auroville Beach', 'Prawn and Crab', 'Casablanca', 'Promenade Beach', 'Break', 'Catamaran Brewing Company']] },
-  { id: 'solo-1d', cohort: 'Solo Explorer', tag: 'Slow town culture', start: 'Pondicherry Bus Stand',
-    why: 'A slow town day: the Ashram before its midday closure, a heritage stop and Bharathi Park, café and boutique browsing, then a Promenade sunset and a relaxed dinner — everything walkable, almost no driving.',
-    plan: [['Cafe des Arts', 'Sri Aurobindo Ashram', 'Mahakavi Bharathiyar Memorial Centre', 'Bharathi Park (White Town)', 'Kasha Ki Aasha', 'Kalki', 'Promenade Beach', 'La Terrace']] },
+  // orders are opening-hours-aware + grouped by area; see `why`. Re-authored against the expanded catalog.
+  // ---------- 1-day ----------
+  { id: "family-1d", cohort: "Family Day Out", tag: "Boat, beaches & market", start: "Pondicherry Bus Stand",
+    why: "Start with a quick south-Indian breakfast, then drive south for the Chunnambar backwater boat to Paradise Beach. A real sit-down lunch at Jallikattu (opposite the boat house) fuels the crossing; kids snack on momos at Daddy Amma after the beach. Back in town for the evening: Manakula temple (reopens 4pm), Goubert Market, a sunset stroll on Promenade Beach, free time, then dinner at Copper Kitchen.",
+    plan: [["Sri Murugan Cafe", "Chunnambar Boat House", "Jallikattu Restaurant", "Paradise Beach", "Daddy Amma Momo Shop", "Manakula Vinayagar Temple", "Goubert Market", "Promenade Beach", "Break", "Copper Kitchen"]] },
+  { id: "couples-1d", cohort: "Couples Getaway", tag: "White Town & Serenity Beach", start: "Pondicherry Bus Stand",
+    why: "A slow-romance White Town morning: a courtyard breakfast, the Ashram's calm, then the blush-pink Our Lady of Angels church and a leafy stroll through Bharathi Park. Heritage lunch at Maison Perumal, then scenic Serenity Beach to unwind. Back for a shared Zuka dessert, golden hour by the Old Lighthouse and Promenade Beach, and a rooftop dinner under the stars at Bay of Buddha.",
+    plan: [["Cafe des Arts", "Sri Aurobindo Ashram", "Our Lady of Angels Church", "Bharathi Park (White Town)", "Maison Perumal Hotel & Restaurant", "Serenity Beach", "Zuka", "Old Lighthouse", "Promenade Beach", "Bay of Buddha"]] },
+  { id: "bachelors-1d", cohort: "Bachelors' Trip", tag: "Surf beaches & nightlife", start: "Pondicherry Bus Stand",
+    why: "Fuel up at Baker Street, then hit the north surf belt while you're fresh: a morning lesson at Kallialay Surf School on Serenity, beach time, a well-earned lunch at Terrassen, and a second dip at Auroville Beach. Roll back into White Town for shopping at Casablanca and sunset on Promenade, then close the night with craft beers at Catamaran Brewing Company.",
+    plan: [["Baker Street", "Kallialay Surf School", "Serenity Beach", "Terrassen Cafe", "Auroville Beach", "Casablanca", "Promenade Beach", "Catamaran Brewing Company"]] },
+  { id: "solo-1d", cohort: "Solo Explorer", tag: "Slow town culture", start: "Pondicherry Bus Stand",
+    why: "A slow, walkable White Town arc for one. Coffee at Cafe des Arts, the hush of the Ashram, then two new gems: Aurodhan's contemporary art and the 1827 Romain Rolland Library. Lunch at Kasha Ki Aasha, the pink Our Lady of Angels church, Aayi Mandapam's white monument, a promenade coffee at Le Café, golden-hour Promenade Beach, dinner at La Terrace.",
+    plan: [["Cafe des Arts", "Sri Aurobindo Ashram", "Aurodhan Art Gallery", "Romain Rolland Library", "Kasha Ki Aasha", "Our Lady of Angels Church", "Aayi Mandapam", "Le Café", "Promenade Beach", "La Terrace"]] },
   // ---------- 2-day ----------
-  { id: 'family-2d', cohort: 'Family Day Out', tag: 'Town day + a boat-&-beach day', start: 'Pondicherry Bus Stand',
-    why: 'Day 1 stays in town — temple before noon, the garden, market and a Promenade evening. Day 2 is the southern boat-and-beach day: the Chunnambar boat in the late morning so Paradise comes before the last ferry, then Eden Beach and back to town for the evening. North and south are kept on separate days so you never cross the city.',
+  { id: "family-2d", cohort: "Family Day Out", tag: "Town day + a boat-&-beach day", start: "Pondicherry Bus Stand",
+    why: "Day 1 is a relaxed town loop the kids will love: tiffin breakfast, the basilica, lunch, then Botanical Garden and the free Jawahar Toy Museum, sunset on the Promenade, the lamp-lit Manakula temple (after its 4pm reopening), and a heritage-courtyard dinner at Le Dupleix. Day 2 heads south: backwater boat house, a proper sit-down lunch at Jallikattu opposite the jetty, the boat to Paradise (before the 2:30 last boat), Eden Beach, momos as a snack, then back to town for the promenade and dinner.",
     plan: [
-      ['Sri Murugan Cafe', 'Sacred Heart Basilica', 'Manakula Vinayagar Temple', 'Hotel Atithi', 'Botanical Garden', 'Promenade Beach', 'Goubert Market', 'Copper Kitchen'],
-      ['Hot Breads', 'Chunnambar Boat House', 'Daddy Amma Momo Shop', 'Paradise Beach', 'Eden Beach', 'Break', 'Goubert Market', 'Promenade Beach', 'Copper Kitchen'],
+      ["Sri Murugan Cafe", "Sacred Heart Basilica", "Hotel Atithi", "Botanical Garden", "Jawahar Toy Museum", "Promenade Beach", "Manakula Vinayagar Temple", "Le Dupleix"],
+      ["Hot Breads", "Chunnambar Boat House", "Jallikattu Restaurant", "Paradise Beach", "Eden Beach", "Daddy Amma Momo Shop", "Promenade Beach", "Copper Kitchen"]
     ] },
-  { id: 'couples-2d', cohort: 'Couples Getaway', tag: 'White Town, then Auroville', start: 'Pondicherry Bus Stand',
-    why: 'Day 1 is White-Town romance — the Ashram before midday, Bharathi Park, a boutique and fine dining. Day 2 is a single northern loop to Auroville, with Matrimandir in the morning (it closes by 4:30) followed by the beach and cafés — one direction the whole day to cut driving.',
+  { id: "couples-2d", cohort: "Couples Getaway", tag: "White Town, then Auroville", start: "Pondicherry Bus Stand",
+    why: "Day 1 is a slow White Town romance: the Ashram, a leafy Bharathi Park stroll, lunch at Maison Perumal, the pink Our Lady of Angels church and Sacred Heart Basilica, a shared Zuka dessert, a Promenade sunset, then a candlelit dinner in Le Dupleix's heritage courtyard. Day 2 loops Auroville: collect your Matrimandir pass at the Visitor Centre first, view the gold dome, shop the Boutique, lunch at The Groves, then the beach, bakery and a relaxed dinner at Terrassen.",
     plan: [
-      ['Cafe des Arts', 'Sri Aurobindo Ashram', 'Bharathi Park (White Town)', 'Maison Perumal Hotel & Restaurant', 'Sacred Heart Basilica', 'Kalki', 'Promenade Beach', 'Villa Shanti Hotel Restaurant'],
-      ["Marc's Café", 'Matrimandir (Auroville)', 'The Groves', "Boutique d'Auroville", 'Auroville Beach', 'Auroville Bakery', 'Break', 'Terrassen Cafe'],
+      ["Cafe des Arts", "Sri Aurobindo Ashram", "Bharathi Park (White Town)", "Maison Perumal Hotel & Restaurant", "Our Lady of Angels Church", "Sacred Heart Basilica", "Kalki", "Zuka", "Promenade Beach", "Le Dupleix"],
+      ["Marc's Café", "Auroville Visitor Centre", "Matrimandir (Auroville)", "Boutique d'Auroville", "The Groves", "Auroville Beach", "Auroville Bakery", "Break", "Terrassen Cafe"]
     ] },
-  { id: 'bachelors-2d', cohort: "Bachelors' Trip", tag: 'Surf day, then a boat day', start: 'Pondicherry Bus Stand',
-    why: 'Day 1 hits the northern surf beaches, ending at a town brewery. Day 2 is the southern boat beaches — Chunnambar to Paradise before the last ferry, then Eden — winding up at a social house. The two beach directions are split across days so you are not crossing town, and the night spot always lands in the evening.',
+  { id: "bachelors-2d", cohort: "Bachelors' Trip", tag: "Surf day, then a boat day", start: "Pondicherry Bus Stand",
+    why: "Day 1 is your north surf day: coffee at Baker Street, then a proper surf lesson at Kallialay (Serenity Beach), chill on the same sand, Auroville lunch and beaches, then promenade sunset and craft beer at Bike & Barrel. Day 2 heads south for the boat: a real sit-down lunch at Jallikattu right by the jetty, the boat to Paradise, Eden Beach, momos as a snack, then drinks at Cantos.",
     plan: [
-      ['Baker Street', 'Serenity Beach', 'Auroville Beach', 'Terrassen Cafe', "Boutique d'Auroville", 'Promenade Beach', 'Break', 'Bike & Barrel'],
-      ['Hot Breads', 'Chunnambar Boat House', 'Daddy Amma Momo Shop', 'Paradise Beach', 'Eden Beach', 'Break', 'Cantos Social House'],
+      ["Baker Street", "Kallialay Surf School", "Serenity Beach", "Terrassen Cafe", "Auroville Beach", "Boutique d'Auroville", "Promenade Beach", "Break", "Bike & Barrel"],
+      ["Hot Breads", "Chunnambar Boat House", "Jallikattu Restaurant", "Paradise Beach", "Eden Beach", "Daddy Amma Momo Shop", "Break", "Cantos Social House"]
     ] },
-  { id: 'solo-2d', cohort: 'Solo Explorer', tag: 'Town culture, then Auroville', start: 'Pondicherry Bus Stand',
-    why: 'Day 1 explores town culture — the Ashram before its midday close, a heritage stop, Bharathi Park and a Promenade sunset. Day 2 is one calm northern loop through Auroville: Matrimandir in the morning (closes 4:30), then the beach and cafés. Each day stays in a single area.',
+  { id: "solo-2d", cohort: "Solo Explorer", tag: "Town culture, then Auroville", start: "Pondicherry Bus Stand",
+    why: "Day 1 is a slow town-culture arc: the Ashram before its midday close, the Bharathiyar memorial and Aurodhan's contemporary art, lunch at Kasha Ki Aasha, a Bharathi Park pause, a boutique browse and a Promenade sunset before dinner at La Terrace. Day 2 is one calm Auroville loop: collect the Matrimandir pass at the Visitor Centre, lunch at Conscious Cafe, then the gold dome, the reflective Savitri Bhavan, a boutique stop, Auroville Beach and an easy dinner at Terrassen.",
     plan: [
-      ['Coromandel Café', 'Sri Aurobindo Ashram', 'Mahakavi Bharathiyar Memorial Centre', 'Kasha Ki Aasha', 'Bharathi Park (White Town)', 'Kalki', 'Promenade Beach', 'La Terrace'],
-      ['Auroville Bakery', 'Matrimandir (Auroville)', 'Conscious Cafe', "Boutique d'Auroville", 'Auroville Beach', 'Serenity Beach', 'Terrassen Cafe'],
+      ["Coromandel Café", "Sri Aurobindo Ashram", "Mahakavi Bharathiyar Memorial Centre", "Aurodhan Art Gallery", "Kasha Ki Aasha", "Bharathi Park (White Town)", "Kalki", "Promenade Beach", "La Terrace"],
+      ["Auroville Bakery", "Auroville Visitor Centre", "Conscious Cafe", "Matrimandir (Auroville)", "Savitri Bhavan", "Boutique d'Auroville", "Auroville Beach", "Terrassen Cafe"]
     ] },
 ];
 const DAY_COLORS = ['#2563EB', '#EA580C'];   // route colour per trip day (Day 1 blue, Day 2 orange)
