@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
-  TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction, Drawer,
+  TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction,
   Snackbar, CircularProgress, Divider, useMediaQuery, InputAdornment, Tooltip, Slider,
   ToggleButton, ToggleButtonGroup, Collapse, Menu,
 } from '@mui/material';
@@ -27,13 +27,14 @@ import ShareRounded from '@mui/icons-material/ShareRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import WhatsApp from '@mui/icons-material/WhatsApp';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
-import CloseRounded from '@mui/icons-material/CloseRounded';
 import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
+import TuneRounded from '@mui/icons-material/TuneRounded';
+import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from './config.js';
 
@@ -194,7 +195,9 @@ export default function App() {
   const [collapsed, setCollapsed] = useState(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
   const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
   const [shareAnchor, setShareAnchor] = useState(null);
-  const [mobView, setMobView] = useState('map'); // map | places | day (mobile)
+  const [moreAnchor, setMoreAnchor] = useState(null);
+  const [mobView, setMobView] = useState('itinerary'); // itinerary | places (mobile bottom tabs)
+  const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
   const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
@@ -212,7 +215,8 @@ export default function App() {
   if (initialUrl.current === null) initialUrl.current = parseSearch();
   const stateRef = useRef(null);                  // latest itinerary, readable from history callbacks
   stateRef.current = { start, startTime, endTime, stops, loadedId };
-  const viewRef = useRef('map');
+  const touchStartX = useRef(null);               // mobile swipe-between-days
+  const viewRef = useRef('itinerary');
   viewRef.current = isMobile ? mobView : deskTab;
 
   const buildSearch = (viewOverride) => {
@@ -233,22 +237,20 @@ export default function App() {
           : stops.map(enc).join('-'));
       }
     }
-    if (view === 'places') q.set('v', 'places');                    // 'day' is the default view — keep it out of the URL
-    else if (view === 'day' && isMobile) q.set('v', 'day');         // mobile day-sheet needs it for back-button history
+    if (view === 'places') q.set('v', 'places');                    // itinerary/day is the default view — keep it out of the URL
     const qs = q.toString();
     return window.location.pathname + (qs ? '?' + qs : '');
   };
 
-  // Open a panel ("Add places" / "Your day"). On mobile, opening from the map pushes a
-  // history entry so the phone back button closes the panel instead of leaving the app.
+  // Switch the active panel. Mobile: 'day' → the Itinerary tab (timeline), 'places' → Places tab.
   const openView = (v) => {
-    const wasPanelOpen = isMobile ? mobView !== 'map' : true;
-    setMobView(v); setDeskTab(v === 'day' ? 'day' : 'places');
-    const url = buildSearch(v);
-    if (isMobile && !wasPanelOpen) window.history.pushState({ planner: true }, '', url);
-    else window.history.replaceState(window.history.state, '', url);
+    setDeskTab(v === 'day' ? 'day' : 'places');
+    if (isMobile) {
+      if (v === 'places') setMobView('places');
+      else { setMobView('itinerary'); setItinView('timeline'); }
+    }
+    window.history.replaceState(window.history.state, '', buildSearch(v));
   };
-  const closeView = () => { if (isMobile && mobView !== 'map') window.history.back(); };
 
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then(d => {
@@ -274,7 +276,8 @@ export default function App() {
               : { idx: o.idx, stay: o.stay ?? idealStay(d.places[o.idx]), day: o.day || 1 }));
         }
       }
-      if (u.view) { setMobView(u.view); setDeskTab(u.view); }
+      if (u.view === 'places') { setMobView('places'); setDeskTab('places'); }
+      else if (u.view === 'day') setDeskTab('day');
       hydrated.current = true;
     }).catch(() => setErr(true));
   }, []);
@@ -297,8 +300,8 @@ export default function App() {
   useEffect(() => {
     const onPop = () => {
       const v = parseSearch().view;
-      if (isMobile) setMobView(v || 'map'); else setDeskTab(v === 'places' ? 'places' : 'day');
-      if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch(v || (isMobile ? 'map' : 'places')));
+      if (isMobile) setMobView(v === 'places' ? 'places' : 'itinerary'); else setDeskTab(v === 'places' ? 'places' : 'day');
+      if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch(v || (isMobile ? 'day' : 'places')));
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -598,23 +601,30 @@ export default function App() {
     );
   };
 
-  const DayPanel = () => {
+  const DayPanel = ({ hideBack } = {}) => {
     const showList = !stops.length || browsing;          // browse the ready-made list (current plan kept)
     const loadedC = CURATED.find(c => c.id === loadedId);
     return (
     <Box>
       {!showList && (<>
-        <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>
+        {!hideBack && <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>}
         <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-          <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>
+          {!loadedId && <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>}
           <Button size="small" variant="outlined" startIcon={<SelfImprovementRounded />} onClick={addBreak}>Free time</Button>
-          <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => setShareAnchor(e.currentTarget)}>Share</Button>
-          <Button size="small" variant="outlined" color="inherit" onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); }}>Clear</Button>
-          <Button size="small" variant="contained" color="secondary" startIcon={<OpenInNewRounded />} component="a" href={gmapsUrl()} target="_blank" rel="noopener" onClick={() => track('plan_open_maps', { stops: stops.filter(s => !isPseudo(s)).length })}>Open in Maps</Button>
+          <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => {
+            if (isMobile && navigator.share) { navigator.share({ title: 'Pondicherry day plan', text: 'Check out this Pondicherry day plan ✨', url: window.location.href }).then(() => track('plan_share', { method: 'native' })).catch(() => {}); }
+            else setShareAnchor(e.currentTarget);
+          }}>Share</Button>
+          <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)}>More</Button>
           <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
             <MenuItem onClick={shareWhatsApp}><WhatsApp sx={{ fontSize: 18, mr: 1, color: '#25D366' }} /> Share on WhatsApp</MenuItem>
             <MenuItem onClick={copyShareLink}><ContentCopyRounded sx={{ fontSize: 17, mr: 1 }} /> Copy link</MenuItem>
+          </Menu>
+          <Menu anchorEl={moreAnchor} open={!!moreAnchor} onClose={() => setMoreAnchor(null)}
+            transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
+            <MenuItem component="a" href={gmapsUrl()} target="_blank" rel="noopener" onClick={() => { track('plan_open_maps', { stops: stops.filter(s => !isPseudo(s)).length }); setMoreAnchor(null); }}><OpenInNewRounded sx={{ fontSize: 17, mr: 1 }} /> Open in Google Maps</MenuItem>
+            <MenuItem onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); setMoreAnchor(null); }}><DeleteOutlineRounded sx={{ fontSize: 17, mr: 1 }} /> Clear itinerary</MenuItem>
           </Menu>
         </Stack>
         {loadedC?.why && (
@@ -885,35 +895,56 @@ export default function App() {
   );
 
   if (isMobile) {
+    const loadedC = CURATED.find(c => c.id === loadedId);
+    const showList = !stops.length || browsing;          // browsing the ready-made list
+    const planView = mobView === 'itinerary' && !showList; // a loaded plan is on screen
+    const swipeDays = (e) => {                            // swipe left/right between Day 1 / Day 2
+      const x0 = touchStartX.current; touchStartX.current = null;
+      if (x0 == null || tripDays.length < 2) return;
+      const dx = e.changedTouches[0].clientX - x0;
+      if (Math.abs(dx) < 60) return;
+      const i = tripDays.indexOf(curDay);
+      const ni = dx < 0 ? Math.min(tripDays.length - 1, i + 1) : Math.max(0, i - 1);
+      if (ni !== i) { setActiveDay(tripDays[ni]); track('day_switch', { day: tripDays[ni] }); }
+    };
     return (
       <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-        <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)' }}>
-          <Box sx={{ mb: 1 }}>{Brand}</Box>
-          <Box sx={{ mb: 1 }}>{AiBar()}</Box>
-          {Controls()}
-        </Box>
-        {/* Landing = browse places inline (search stays pinned above). The map mounts
-            on first add; from then on it's the body and "Add places" opens as a sheet. */}
-        <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1, display: 'flex', flexDirection: 'column' }}>
-          {mapActive ? MapView() : (
-            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>{DayPanel()}</Box>
+        {planView ? (
+          // ---- sticky plan header: back + customize + name + Timeline/Map toggle ----
+          <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', pb: 1, flexShrink: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', minHeight: 40 }}>
+              <IconButton onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ ml: -1, color: 'text.primary' }} aria-label="Back to itineraries"><ArrowBackRounded /></IconButton>
+              <Typography sx={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', maxWidth: '54%', textAlign: 'center', fontWeight: 700, fontSize: '0.98rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{loadedC ? loadedC.cohort : 'Your itinerary'}</Typography>
+              <Button size="small" startIcon={<TuneRounded />} onClick={() => openView('places')} sx={{ ml: 'auto', px: 0.6 }}>Customize</Button>
+            </Box>
+            <ToggleButtonGroup exclusive fullWidth size="small" value={itinView} onChange={(_, v) => { if (v) { setItinView(v); if (v === 'map') setMapActive(true); } }} sx={{ mt: 0.8 }}>
+              <ToggleButton value="timeline" sx={{ fontWeight: 700, py: 0.4 }}><CalendarMonthRounded sx={{ fontSize: 17, mr: 0.6 }} /> Timeline</ToggleButton>
+              <ToggleButton value="map" sx={{ fontWeight: 700, py: 0.4 }}><MapRounded sx={{ fontSize: 17, mr: 0.6 }} /> Map</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
+        ) : (
+          // ---- itinerary list / places: brand + AI prompt (+ start/window only on Places) ----
+          <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
+            <Box sx={{ mb: 1 }}>{Brand}</Box>
+            <Box sx={{ mb: 1 }}>{AiBar()}</Box>
+            {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{Controls()}</Box>}
+          </Box>
+        )}
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          {mobView === 'places' ? (
+            <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{PlacesPanel()}</Box>
+          ) : planView && itinView === 'map' ? (
+            <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1 }}>{MapView()}</Box>
+          ) : (
+            <Box onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }} onTouchEnd={swipeDays}
+              sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{DayPanel({ hideBack: true })}</Box>
           )}
         </Box>
-        <Drawer anchor="bottom" open={mobView === 'places'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-          <Sheet title="Add places" onClose={closeView}>{PlacesPanel()}</Sheet>
-        </Drawer>
-        <Drawer anchor="bottom" open={mobView === 'day'} onClose={closeView} PaperProps={{ sx: { height: 'calc(100dvh - 56px)', borderTopLeftRadius: 16, borderTopRightRadius: 16 } }}>
-          <Sheet title="Your day" onClose={closeView}>{DayPanel()}</Sheet>
-        </Drawer>
         <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
-          <BottomNavigation showLabels value={mobView !== 'map' ? mobView : (mapActive ? false : 'day')}
-            onChange={(_, v) => {
-              if (mobView === v) { closeView(); return; }            // tapping the open sheet closes it
-              if (v === 'day' && !mapActive) { closeView(); return; } // landing: Your day is already inline
-              openView(v);
-            }} sx={{ bgcolor: 'transparent' }}>
-            <BottomNavigationAction value="places" label="Add places" icon={<PlaceRounded />} />
-            <BottomNavigationAction value="day" label={`Your day${stops.length ? ` (${stops.length})` : ''}`} icon={<CalendarMonthRounded />} />
+          <BottomNavigation showLabels value={mobView}
+            onChange={(_, v) => { if (!v) return; if (v === 'itinerary') { setBrowsing(false); openView('day'); } else openView('places'); }} sx={{ bgcolor: 'transparent' }}>
+            <BottomNavigationAction value="itinerary" label={`Itinerary${stops.length ? ` (${stops.filter(s => !isPseudo(s)).length})` : ''}`} icon={<CalendarMonthRounded />} />
+            <BottomNavigationAction value="places" label="Places" icon={<PlaceRounded />} />
           </BottomNavigation>
         </Box>
         <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ mb: 7 }} />
@@ -940,7 +971,7 @@ export default function App() {
             {Controls()}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && openView(v)} color="primary">
               <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
-              <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Your day{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
+              <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Itinerary{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
             </ToggleButtonGroup>
             {deskTab === 'places' && SUB_ORDER[filter] && subChips()}
           </Box>
@@ -968,7 +999,7 @@ export default function App() {
             <Paper sx={{ position: 'absolute', top: 16, right: 16, zIndex: 3, width: 300, maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column',
               bgcolor: 'rgba(18,20,26,0.93)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: '14px', boxShadow: '0 10px 34px rgba(0,0,0,0.55)' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-                <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Your day</Typography>
+                <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Itinerary</Typography>
                 <Button size="small" variant="outlined" onClick={() => openView('day')} sx={{ py: 0.2 }}>Edit</Button>
               </Stack>
               <Stack direction="row" sx={{ px: 1.5, py: 0.8, gap: '2px 12px', flexWrap: 'wrap', fontSize: '0.76rem', color: 'text.secondary' }}>
@@ -1150,17 +1181,6 @@ function CatHead({ cat, count, collapsed, onToggle }) {
       <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', flex: 1 }}>{CAT_LABEL[cat]}</Typography>
       <Typography component="span" sx={{ fontSize: '0.72rem', fontWeight: 700 }}>{count}</Typography>
       <ExpandMoreRounded sx={{ fontSize: 18, transition: 'transform .2s ease', transform: collapsed ? 'rotate(-90deg)' : 'none' }} />
-    </Box>
-  );
-}
-function Sheet({ title, onClose, children }) {
-  return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <Box sx={{ position: 'sticky', top: 0, zIndex: 1, bgcolor: 'background.paper', px: 2, py: 1.2, borderBottom: '1px solid', borderColor: 'divider', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>{title}</Typography>
-        <Button size="small" onClick={onClose} endIcon={<CloseRounded />}>Done</Button>
-      </Box>
-      <Box sx={{ flex: 1, overflowY: 'auto', p: 2 }}>{children}</Box>
     </Box>
   );
 }
