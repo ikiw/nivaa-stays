@@ -7,19 +7,28 @@
   --brand-cream: #FAF6EC;
   --brand-ink: #14201E;
   --brand-muted: #5B6B68;
+  --brand-ochre: #C56B3E;       /* Pondicherry French-Quarter warmth — used sparingly */
+  --brand-ochre-soft: #E08B57;
 }
 
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
   color: var(--brand-ink);
   background: #ffffff;
   -webkit-font-smoothing: antialiased;
 }
+/* Faint film grain — tactile, heritage warmth (sits above content, ignores pointer) */
+body::after {
+  content: '';
+  position: fixed; inset: 0; pointer-events: none; z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='ngrain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23ngrain)'/%3E%3C/svg%3E");
+  opacity: 0.022;
+}
 
 h1, h2, h3, h4, .serif {
-  font-family: 'Playfair Display', 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Fraunces', 'Cormorant Garamond', Georgia, serif;
   letter-spacing: -0.01em;
 }
 
@@ -122,6 +131,17 @@ h1, h2, h3, h4, .serif {
 }
 .hero > * { position: relative; z-index: 2; }
 
+/* Orchestrated hero entrance (homepage) — staggered rise on load */
+.hero .max-w-3xl > * { opacity: 0; animation: heroRise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+.hero .max-w-3xl > *:nth-child(1) { animation-delay: 0.06s; }
+.hero .max-w-3xl > *:nth-child(2) { animation-delay: 0.15s; }
+.hero .max-w-3xl > *:nth-child(3) { animation-delay: 0.24s; }
+.hero .max-w-3xl > *:nth-child(4) { animation-delay: 0.33s; }
+.hero .max-w-3xl > *:nth-child(5) { animation-delay: 0.43s; }
+.hero .max-w-3xl > *:nth-child(6) { animation-delay: 0.53s; }
+@keyframes heroRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .hero .max-w-3xl > * { opacity: 1; animation: none; } }
+
 .section { padding: 5rem 0; }
 @media (max-width: 768px) { .section { padding: 3.5rem 0; } }
 
@@ -130,7 +150,7 @@ h1, h2, h3, h4, .serif {
   letter-spacing: 0.22em;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--brand-gold);
+  color: var(--brand-ochre);
 }
 
 .divider-gold {
@@ -146,14 +166,14 @@ h1, h2, h3, h4, .serif {
 /* Article body styling for /guides/*.html */
 .prose-guide { color: var(--brand-ink); font-size: 1.0625rem; line-height: 1.75; }
 .prose-guide h2 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   color: var(--brand-teal);
   font-size: 1.75rem;
   font-weight: 600;
   margin: 2.5rem 0 1rem;
 }
 .prose-guide h3 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   color: var(--brand-teal);
   font-size: 1.3rem;
   font-weight: 600;
@@ -194,7 +214,7 @@ h1, h2, h3, h4, .serif {
 .prose-guide thead th {
   background: var(--brand-cream);
   color: var(--brand-teal);
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-weight: 600;
   text-align: left;
   padding: 0.85rem 1rem;
@@ -224,7 +244,7 @@ h1, h2, h3, h4, .serif {
     0 4px 12px -4px rgba(14, 59, 53, 0.12);
   padding: 1.15rem 1.25rem 1.25rem;
   z-index: 9999;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Hanken Grotesk', system-ui, sans-serif;
   opacity: 0;
   transform: translateY(24px) scale(0.98);
   transition:
@@ -269,7 +289,7 @@ h1, h2, h3, h4, .serif {
   font-weight: 400;
 }
 .greeting-msg strong {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   color: var(--brand-teal, #0E3B35);
   font-weight: 600;
   font-size: 1.02rem;
@@ -489,7 +509,7 @@ header.sticky-nav {
   justify-content: space-between;
 }
 .coupon-code {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.6rem;
   color: var(--brand-gold);
   letter-spacing: 0.12em;
@@ -558,7 +578,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 .polaroid-caption {
   display: block;
   text-align: center;
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: 'Fraunces', Georgia, serif;
   font-style: italic;
   font-size: 1rem;
   color: var(--brand-teal);
@@ -819,7 +839,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 
 .rp-month-title {
   text-align: center;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.05rem;
   color: var(--brand-teal);
   margin-bottom: 0.5rem;
@@ -1144,13 +1164,13 @@ footer a:hover { color: var(--brand-gold-soft); }
     padding: 0 !important;
     margin: 0 !important;
     color: #14201E;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Hanken Grotesk', sans-serif;
   }
   @page { size: A4; margin: 14mm 16mm; }
 
   .pq { font-size: 11pt; line-height: 1.5; color: #14201E; }
   .pq h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 13pt;
     color: #0E3B35;
     margin: 18pt 0 6pt;
@@ -1166,7 +1186,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     margin-bottom: 14pt;
   }
   .pq-brand-name {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 22pt;
     color: #0E3B35;
     letter-spacing: 0.05em;
@@ -1242,7 +1262,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   .pq-rate-tbl tfoot { display: table-row-group; break-inside: avoid; }
   .pq-rate-tbl .total-row td {
     padding: 9pt 4pt;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 14pt;
     color: #082623;
     border-top: 2pt solid #0E3B35;
@@ -1311,7 +1331,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     line-height: 1.2;
   }
   .rp-sticky-amt {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 1.15rem;
     color: var(--brand-teal-dark);
     font-weight: 700;
@@ -1352,7 +1372,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   color: var(--brand-gold);
 }
 .hub-greeting {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 2rem;
   color: var(--brand-teal);
   margin: 0.4rem 0 1.25rem;
@@ -1377,14 +1397,14 @@ footer a:hover { color: var(--brand-gold-soft); }
   font-weight: 600;
 }
 .hub-value {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1rem;
   color: var(--brand-teal-dark);
   margin-top: 0.2rem;
 }
 
 .hub-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.25rem;
   color: var(--brand-teal);
   margin-bottom: 0.85rem;
@@ -1426,14 +1446,14 @@ footer a:hover { color: var(--brand-gold-soft); }
   border-top: 2px solid var(--brand-teal);
   margin-top: 0.5rem;
   padding-top: 0.7rem;
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.15rem;
   color: var(--brand-teal-dark);
   font-weight: 700;
 }
 .hub-row-paid { color: #1a7a4a; }
 .hub-row-balance {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.05rem;
   color: var(--brand-gold);
   font-weight: 700;
@@ -1476,7 +1496,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   .hub-skeleton .sk { animation: none; }
 }
 .hub-empty-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.15rem;
   color: var(--brand-teal);
   margin-bottom: 0.4rem;
@@ -1591,7 +1611,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 }
 .adm-loading-msg.fade-out { opacity: 0; }
 .adm-loading-msg.als-warm {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.3rem;
   color: var(--brand-teal);
 }
@@ -1602,22 +1622,22 @@ footer a:hover { color: var(--brand-gold-soft); }
   padding: 0.55rem 1.2rem;
   font-size: 0.95rem;
   color: var(--brand-teal-dark);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
 }
 .adm-loading-msg.als-reminder {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-style: italic;
   font-size: 1.15rem;
   color: var(--brand-gold);
 }
 .adm-loading-msg.als-soft {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   font-style: italic;
   font-size: 1rem;
   color: var(--brand-muted);
 }
 .adm-loading-msg.als-uppercase {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   font-weight: 700;
   font-size: 0.88rem;
   text-transform: uppercase;
@@ -1639,7 +1659,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   text-align: center;
 }
 .adm-stat-num {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 2rem;
   color: var(--brand-teal);
   line-height: 1;
@@ -1655,7 +1675,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 
 .adm-section { margin-bottom: 2rem; }
 .adm-section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.4rem;
   color: var(--brand-teal);
   margin-bottom: 0.75rem;
@@ -1670,7 +1690,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 .adm-section-title.adm-accent-teal { border-left-color: var(--brand-teal); }
 .adm-section-title.adm-accent-mute { border-left-color: #d8dedb; }
 .adm-count {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   font-size: 0.78rem;
   color: var(--brand-muted);
   background: var(--brand-cream);
@@ -1698,13 +1718,13 @@ footer a:hover { color: var(--brand-gold-soft); }
 }
 .adm-row-main { flex: 1; min-width: 0; }
 .adm-name {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.1rem;
   color: var(--brand-teal-dark);
   margin-bottom: 0.2rem;
 }
 .adm-room {
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   font-size: 0.74rem;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -1765,11 +1785,11 @@ footer a:hover { color: var(--brand-gold-soft); }
 @media print {
   body > * { display: none !important; }
   #hub-print-invoice { display: block !important; }
-  body { background: #fff !important; padding: 0 !important; margin: 0 !important; color: #14201E; font-family: 'Inter', sans-serif; }
+  body { background: #fff !important; padding: 0 !important; margin: 0 !important; color: #14201E; font-family: 'Hanken Grotesk', sans-serif; }
   @page { size: A4; margin: 14mm 16mm; }
   .hi { font-size: 11pt; line-height: 1.5; color: #14201E; }
   .hi h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 13pt;
     color: #0E3B35;
     margin: 18pt 0 6pt;
@@ -1781,7 +1801,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     border-bottom: 2pt solid #0E3B35;
     padding-bottom: 10pt; margin-bottom: 14pt;
   }
-  .hi-brand { font-family: 'Playfair Display', serif; font-size: 22pt; color: #0E3B35; letter-spacing: 0.05em; line-height: 1; }
+  .hi-brand { font-family: 'Fraunces', serif; font-size: 22pt; color: #0E3B35; letter-spacing: 0.05em; line-height: 1; }
   .hi-tag { color: #C9A227; font-size: 9pt; letter-spacing: 0.18em; text-transform: uppercase; margin-top: 4pt; }
   .hi-meta { text-align: right; font-size: 10pt; color: #5B6B68; line-height: 1.6; }
   .hi-meta strong { color: #0E3B35; font-size: 12pt; display: block; margin-bottom: 4pt; }
@@ -1818,7 +1838,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   }
   .hi-charges-tbl .hi-total td {
     padding: 9pt 4pt;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 14pt;
     color: #082623;
     border-top: 2pt solid #0E3B35;
@@ -1827,7 +1847,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   .hi-charges-tbl .hi-paid td { padding: 5pt 4pt; color: #1a7a4a; font-weight: 600; }
   .hi-charges-tbl .hi-balance td {
     padding: 7pt 4pt;
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 12pt;
     color: #C9A227;
     border-top: 1pt dashed #C9A227;
@@ -1852,7 +1872,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   margin-bottom: 1.5rem;
 }
 .bc-admin-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.25rem;
   color: var(--brand-teal);
   margin-bottom: 1.25rem;
@@ -1884,7 +1904,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   border-radius: 0.5rem;
   padding: 0.45rem 0.6rem;
   font-size: 0.85rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   color: var(--brand-ink);
   background: #fff;
 }
@@ -1903,7 +1923,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 .bc-toggle-btn {
   padding: 0.4rem 0.75rem;
   font-size: 0.8rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Hanken Grotesk', sans-serif;
   border: none;
   background: #fff;
   color: var(--brand-muted);
@@ -2056,14 +2076,14 @@ footer a:hover { color: var(--brand-gold-soft); }
   font-size: 0.9rem;
 }
 .bc-payment-total {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.15rem;
   color: var(--brand-teal-dark);
   font-weight: 700;
 }
 .bc-payment-paid { color: #1a7a4a; font-weight: 600; }
 .bc-payment-balance {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1rem;
   color: var(--brand-gold);
   font-weight: 700;
@@ -2082,7 +2102,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 .bc-notes-text { font-size: 0.85rem; color: var(--brand-ink); font-style: italic; }
 .bc-info { padding: 1rem 1.5rem; background: var(--brand-cream); }
 .bc-info-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1rem;
   color: var(--brand-teal);
   margin-bottom: 0.5rem;
@@ -2115,7 +2135,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   text-align: center;
 }
 .bc-empty-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Fraunces', serif;
   font-size: 1.25rem;
   color: var(--brand-teal);
   margin-bottom: 0.5rem;
@@ -2141,7 +2161,7 @@ footer a:hover { color: var(--brand-gold-soft); }
 
   .br { font-size: 11pt; line-height: 1.5; color: #14201E; }
   .br h3 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
     font-size: 13pt; color: #0E3B35;
     margin: 18pt 0 6pt; padding-bottom: 3pt;
     border-bottom: 1pt solid #C9A227;
@@ -2152,7 +2172,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     padding-bottom: 10pt; margin-bottom: 14pt;
   }
   .br-brand-name {
-    font-family: 'Playfair Display', serif; font-size: 22pt;
+    font-family: 'Fraunces', serif; font-size: 22pt;
     color: #0E3B35; letter-spacing: 0.05em; line-height: 1;
   }
   .br-brand-tag {
@@ -2197,7 +2217,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   .br-rate-tbl tfoot { display: table-row-group; break-inside: avoid; }
   .br-rate-tbl .total-row td {
     padding: 9pt 4pt;
-    font-family: 'Playfair Display', serif; font-size: 14pt;
+    font-family: 'Fraunces', serif; font-size: 14pt;
     color: #082623; border-top: 2pt solid #0E3B35; font-weight: 700;
   }
   .br-rate-tbl .advance-row td {
@@ -2205,7 +2225,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   }
   .br-rate-tbl .balance-row td {
     padding: 7pt 4pt;
-    font-family: 'Playfair Display', serif; font-size: 12pt;
+    font-family: 'Fraunces', serif; font-size: 12pt;
     color: #C9A227; border-top: 1pt dashed #C9A227; font-weight: 700;
   }
   .br-notes p { font-size: 10pt; color: #5B6B68; font-style: italic; }
