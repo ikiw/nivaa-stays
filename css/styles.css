@@ -40,10 +40,12 @@ h1, h2, h3, h4, .serif {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid var(--brand-gold);
+  box-shadow: 0 4px 14px -5px rgba(201, 162, 39, 0.55);
 }
-.btn-gold:hover { background: var(--brand-gold-soft); transform: translateY(-1px); }
+.btn-gold:hover { background: var(--brand-gold-soft); transform: translateY(-1px); box-shadow: 0 9px 22px -6px rgba(201, 162, 39, 0.6); }
+.btn-gold:active { transform: translateY(0); }
 
 .btn-ghost {
   background: transparent;
@@ -82,9 +84,18 @@ h1, h2, h3, h4, .serif {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 14px -5px rgba(37, 211, 102, 0.5);
 }
-.btn-whatsapp:hover { background: #1ebe5a; }
+.btn-whatsapp:hover { background: #1ebe5a; transform: translateY(-1px); box-shadow: 0 9px 22px -6px rgba(37, 211, 102, 0.55); }
+.btn-whatsapp:active { transform: translateY(0); }
+
+/* Accessible, on-brand focus rings for the primary interactive elements */
+.btn-gold:focus-visible, .btn-ghost:focus-visible, .btn-outline-teal:focus-visible,
+.btn-whatsapp:focus-visible, .nav-link:focus-visible {
+  outline: 2px solid var(--brand-gold-soft);
+  outline-offset: 3px;
+}
 
 .hero {
   position: relative;
@@ -129,8 +140,8 @@ h1, h2, h3, h4, .serif {
 }
 .divider-center { margin-left: auto; margin-right: auto; }
 
-.card-shadow { box-shadow: 0 10px 30px -12px rgba(14,59,53,0.18); }
-.card-shadow:hover { box-shadow: 0 18px 40px -14px rgba(14,59,53,0.28); }
+.card-shadow { box-shadow: 0 10px 30px -12px rgba(14,59,53,0.18); transition: box-shadow 0.22s ease, transform 0.22s ease; }
+.card-shadow:hover { box-shadow: 0 18px 42px -14px rgba(14,59,53,0.30); transform: translateY(-3px); }
 
 /* Article body styling for /guides/*.html */
 .prose-guide { color: var(--brand-ink); font-size: 1.0625rem; line-height: 1.75; }
@@ -397,9 +408,22 @@ h1, h2, h3, h4, .serif {
   font-weight: 500;
   font-size: 0.92rem;
   padding: 0.5rem 0.9rem;
-  transition: color 0.2s;
+  transition: color 0.2s ease;
+  position: relative;
+}
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0.9rem; right: 0.9rem; bottom: 0.3rem;
+  height: 2px; border-radius: 2px;
+  background: var(--brand-gold);
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.25s ease;
 }
 .nav-link:hover { color: var(--brand-gold-soft); }
+.nav-link:hover::after,
+.nav-link:focus-visible::after { transform: scaleX(1); }
 
 header.sticky-nav {
   position: fixed; top: 0; left: 0; right: 0;
@@ -490,7 +514,16 @@ header.sticky-nav {
 .whatsapp-float:hover { transform: scale(1.08); }
 
 .mobile-menu { display: none; }
-.mobile-menu.open { display: block; }
+.mobile-menu.open {
+  display: block;
+  min-height: calc(100vh - 3.25rem);
+  min-height: calc(100dvh - 3.25rem);   /* fill the screen below the bar so the hero is fully covered */
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  animation: navMenuDown 0.24s ease;
+}
+@keyframes navMenuDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+body.menu-locked { overflow: hidden; }
 
 @media (max-width: 900px) {
   .nav-desktop { display: none; }
