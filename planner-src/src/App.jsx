@@ -49,6 +49,8 @@ const CAT_ICON = { Beach: BeachAccessRounded, Attraction: AccountBalanceRounded,
 const CAT_HEX = { Stay: '#F59E0B', Area: '#F59E0B', Beach: '#38BDF8', Attraction: '#2DD4BF', Food: '#FB923C', Social: '#F472B6', Shopping: '#A78BFA' };
 // Distinct colour per route leg (start→1, 1→2, …) — cycles if there are more legs.
 const LEG_COLORS = ['#2563EB', '#EA580C', '#059669', '#DB2777', '#7C3AED', '#D97706', '#0891B2', '#DC2626', '#65A30D', '#0D9488'];
+// top-down car (points north at 0°); rotated to the travel heading as it runs the route
+const CAR_SVG = '<svg width="22" height="22" viewBox="0 0 22 22" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))"><rect x="6" y="2.5" width="10" height="17" rx="3.6" fill="#FBBF24" stroke="#1A1300" stroke-width="1.2"/><rect x="7.6" y="4.2" width="6.8" height="3.4" rx="1.3" fill="#0B1020" opacity="0.82"/><rect x="7.6" y="13.8" width="6.8" height="3" rx="1.3" fill="#0B1020" opacity="0.6"/></svg>';
 const CAT_LABEL = { Beach: 'Beaches', Attraction: 'Things to See', Food: 'Food & Drink', Social: 'Bars & Nightlife', Shopping: 'Shopping' };
 const PICK_ORDER = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
 const SUB_ORDER = {
@@ -1108,7 +1110,7 @@ function RouteLayer({ data, start, stops, selected, onSelect }) {
           </AdvancedMarker>
         );
       })}
-      <DirectionsRoute data={data} start={start} stops={stops} />
+      <DirectionsRoute data={data} start={start} stops={stops} selected={selected} />
     </>
   );
 }
@@ -1192,44 +1194,116 @@ function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }) {
 
 // Real driving route along roads (one Directions request), drawn as per-leg
 // polylines coloured by each leg's destination category — so segments stay distinct.
-function DirectionsRoute({ data, start, stops }) {
+// Draws the day's driving route as per-leg polylines, runs a car along it, and
+// spotlights one leg when a stop is selected (dims the rest) — so an 8-stop tangle
+// becomes readable. `stops` is a single day's ordered stops (leg k arrives at stop k).
+function DirectionsRoute({ data, start, stops, selected }) {
   const map = useMap();
   const routesLib = useMapsLibrary('routes');
-  const linesRef = useRef([]);
+  const geometryLib = useMapsLibrary('geometry');
+  const markerLib = useMapsLibrary('marker');
+  const linesRef = useRef([]);          // [{ line, leg }]
+  const carRef = useRef(null);
+  const carElRef = useRef(null);
+  const rotRef = useRef(null);
+  const rafRef = useRef(null);
+  const pathRef = useRef(null);         // { pts, segLen, total, legOf }
+  const lastLegRef = useRef(-2);        // last leg the car lit up (car mode)
+
+  const activeLeg = selected != null ? stops.findIndex(s => s.idx === selected) : -1;  // leg arriving at the tapped stop
+  const activeLegRef = useRef(-1);
+  activeLegRef.current = activeLeg;
+
+  // car mode (no selection): ONLY the leg the car is on is lit; the rest ghost to a faint grey
+  const ghostLeg = (focus) => {
+    linesRef.current.forEach(({ line, leg }) => {
+      if (leg === focus) line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 1, strokeWeight: 6, zIndex: 20 });
+      else line.setOptions({ strokeColor: '#64748B', strokeOpacity: 0.18, strokeWeight: 3, zIndex: 1 });
+    });
+  };
+  // tap mode: spotlight the selected leg, dim the rest (car hidden)
+  const selectLeg = (al) => {
+    linesRef.current.forEach(({ line, leg }) => {
+      if (leg === al) line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 1, strokeWeight: 8, zIndex: 30 });
+      else line.setOptions({ strokeColor: '#64748B', strokeOpacity: 0.16, strokeWeight: 3, zIndex: 1 });
+    });
+  };
+  const fullRoute = () => linesRef.current.forEach(({ line, leg }) => line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 }));
+
   useEffect(() => {
-    if (!map || !routesLib) return;
-    const clear = () => { linesRef.current.forEach(l => l.setMap(null)); linesRef.current = []; };
+    if (!map || !routesLib || !geometryLib || !markerLib) return;
+    let cancelled = false;
+    const clear = () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      linesRef.current.forEach(o => o.line.setMap(null)); linesRef.current = [];
+      if (carRef.current) { carRef.current.map = null; carRef.current = null; }
+      carElRef.current = null; pathRef.current = null;
+    };
     clear();
     if (!stops.length || !data.places[start]) return;
     const g = window.google.maps;
     const pt = i => ({ lat: data.places[i].lat, lng: data.places[i].lng });
-    const days = [...new Set(stops.map(s => s.day || 1))].sort((a, b) => a - b);
-    const multi = days.length > 1;
+    const idxs = stops.map(s => s.idx);
     const bounds = new g.LatLngBounds();
-    let pending = days.length;
-    const done = () => { if (--pending <= 0 && !bounds.isEmpty()) map.fitBounds(bounds, 60); };
-    days.forEach(dn => {                                  // one Directions request per day (each loops from start)
-      const idxs = stops.filter(s => (s.day || 1) === dn).map(s => s.idx);
-      if (!idxs.length) { done(); return; }
-      const last = idxs[idxs.length - 1];
-      new routesLib.DirectionsService().route({
-        origin: pt(start), destination: pt(last),
-        waypoints: idxs.slice(0, -1).map(idx => ({ location: pt(idx), stopover: true })),
-        travelMode: g.TravelMode.DRIVING, optimizeWaypoints: false,
-      }, (res, status) => {
-        if (status === 'OK' && res.routes[0]) {
-          res.routes[0].legs.forEach((leg, li) => {
-            const path = [];
-            leg.steps.forEach(st => (st.path || []).forEach(q => { path.push(q); bounds.extend(q); }));
-            const color = multi ? DAY_COLORS[(dn - 1) % DAY_COLORS.length] : LEG_COLORS[li % LEG_COLORS.length];
-            linesRef.current.push(new g.Polyline({ path, map, strokeColor: color, strokeOpacity: 0.92, strokeWeight: 5 }));
-          });
-        }
-        done();
+    new routesLib.DirectionsService().route({
+      origin: pt(start), destination: pt(idxs[idxs.length - 1]),
+      waypoints: idxs.slice(0, -1).map(idx => ({ location: pt(idx), stopover: true })),
+      travelMode: g.TravelMode.DRIVING, optimizeWaypoints: false,
+    }, (res, status) => {
+      if (cancelled || status !== 'OK' || !res.routes[0]) return;
+      const full = [], legOf = [];
+      res.routes[0].legs.forEach((leg, li) => {
+        const path = [];
+        leg.steps.forEach(st => (st.path || []).forEach(q => { path.push(q); bounds.extend(q); full.push(q); legOf.push(li); }));
+        const line = new g.Polyline({ path, map, strokeColor: LEG_COLORS[li % LEG_COLORS.length], strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 });
+        linesRef.current.push({ line, leg: li });
       });
+      if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
+      const canRun = full.length > 1;
+      if (activeLegRef.current >= 0) selectLeg(activeLegRef.current);
+      else if (canRun) ghostLeg(legOf[0]);
+      else fullRoute();
+
+      // ---- animated car; only its current leg stays lit ----
+      if (canRun) {
+        const segLen = []; let total = 0;
+        for (let i = 1; i < full.length; i++) { const d = geometryLib.spherical.computeDistanceBetween(full[i - 1], full[i]); segLen.push(d); total += d; }
+        pathRef.current = { pts: full, segLen, total, legOf };
+        const el = document.createElement('div');
+        el.style.cssText = 'width:24px;height:24px;';
+        el.innerHTML = `<div style="width:24px;height:24px;transform:translateY(50%);"><div style="width:24px;height:24px;transform-origin:center center;">${CAR_SVG}</div></div>`;
+        carElRef.current = el; rotRef.current = el.firstElementChild.firstElementChild;
+        if (activeLegRef.current >= 0) el.style.opacity = '0';
+        carRef.current = new markerLib.AdvancedMarkerElement({ map, position: full[0], content: el, zIndex: 9998 });
+        const DURATION = Math.min(18000, Math.max(8000, total / 2));
+        let startTs = 0;
+        const tick = (ts) => {
+          const pd = pathRef.current; if (!pd || pd.total <= 0 || !carRef.current) return;
+          if (!startTs) startTs = ts;
+          const target = (((ts - startTs) % DURATION) / DURATION) * pd.total;
+          let acc = 0, i = 1;
+          while (i < pd.pts.length && acc + pd.segLen[i - 1] < target) { acc += pd.segLen[i - 1]; i++; }
+          if (i >= pd.pts.length) i = pd.pts.length - 1;
+          const sf = pd.segLen[i - 1] ? (target - acc) / pd.segLen[i - 1] : 0;
+          carRef.current.position = geometryLib.spherical.interpolate(pd.pts[i - 1], pd.pts[i], sf);
+          rotRef.current.style.transform = `rotate(${geometryLib.spherical.computeHeading(pd.pts[i - 1], pd.pts[i])}deg)`;
+          const curLeg = pd.legOf[Math.min(i, pd.legOf.length - 1)];   // light only the leg the car is on
+          if (activeLegRef.current < 0 && curLeg !== lastLegRef.current) { lastLegRef.current = curLeg; ghostLeg(curLeg); }
+          rafRef.current = requestAnimationFrame(tick);
+        };
+        rafRef.current = requestAnimationFrame(tick);
+      }
     });
-    return clear;
-  }, [map, routesLib, data, start, stops]);
+    return () => { cancelled = true; clear(); };
+  }, [map, routesLib, geometryLib, markerLib, data, start, stops]);
+
+  useEffect(() => {                                        // selection changed → tap-mode highlight, or back to the moving car
+    if (!linesRef.current.length) return;
+    if (activeLeg >= 0) { selectLeg(activeLeg); if (carElRef.current) carElRef.current.style.opacity = '0'; }
+    else if (carElRef.current) { carElRef.current.style.opacity = '1'; lastLegRef.current = -2; }
+    else fullRoute();
+  }, [activeLeg]);
+
   return null;
 }
 
