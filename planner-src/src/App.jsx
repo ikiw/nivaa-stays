@@ -3,7 +3,7 @@ import {
   AppBar, Toolbar, Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
   TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction,
   Snackbar, CircularProgress, Divider, useMediaQuery, InputAdornment, Tooltip, Slider,
-  ToggleButton, ToggleButtonGroup, Collapse, Menu,
+  ToggleButton, ToggleButtonGroup, Collapse, Menu, Link, Dialog, DialogContent,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
@@ -33,6 +33,7 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
+import InfoOutlinedRounded from '@mui/icons-material/InfoOutlined';
 import TuneRounded from '@mui/icons-material/TuneRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
@@ -153,6 +154,47 @@ const CURATED = [
 ];
 const DAY_COLORS = ['#2563EB', '#EA580C'];   // route colour per trip day (Day 1 blue, Day 2 orange)
 
+// SEO/About content — rendered in the DOM (mobile keeps it mounted so crawlers index it),
+// revealed by the user via the "About" tab. Real <h1>/<h2>/<h3> + the itineraries + FAQ.
+const FAQ = [
+  { q: 'How many days do you need in Pondicherry?', a: "One to two days covers the highlights. A single day fits White Town's French Quarter, the Promenade, the Sri Aurobindo Ashram and a beach; add a second day for Auroville and Matrimandir, or the Chunnambar backwater boat to Paradise Beach." },
+  { q: 'What is a good one-day Pondicherry itinerary?', a: 'Spend the cool morning in White Town — the Ashram before its midday close, Bharathi Park and a heritage café — then lunch, an afternoon at Serenity or Paradise Beach, a Promenade sunset and dinner. The planner sequences the stops by opening hours and driving time.' },
+  { q: 'Best Pondicherry itinerary for couples, families or solo travellers?', a: 'Couples enjoy a slow White-Town-and-beach day ending with a rooftop dinner; families do well with the Chunnambar boat, Paradise Beach and Goubert Market; solo travellers like a culture trail of the Ashram, galleries and the heritage library. The planner has a ready-made plan for each.' },
+  { q: 'Is the Pondicherry itinerary planner free?', a: 'Yes. Pick your stops, set a start time, and get a routed day plan with driving times and a live map — free, with no sign-up.' },
+];
+
+function AboutPanel() {
+  const h2 = { fontSize: '1.05rem', fontWeight: 700, color: 'text.primary', mt: 2.5, mb: 1.2 };
+  const h3 = { fontSize: '0.9rem', fontWeight: 700, color: 'text.primary', mb: 0.2 };
+  const p = { fontSize: '0.85rem', lineHeight: 1.55, color: 'text.secondary' };
+  return (
+    <Box sx={{ maxWidth: 720, mx: 'auto', pb: 3 }}>
+      <Typography component="h1" sx={{ fontSize: '1.5rem', fontWeight: 800, color: 'text.primary', letterSpacing: '-0.02em', mb: 1 }}>Pondicherry Itinerary Planner</Typography>
+      <Typography sx={{ ...p, mb: 1 }}>Build a routed Pondicherry day trip in seconds — pick the beaches, French-Quarter heritage, Auroville sights, cafés and nightlife you want, set your start time, and get an opening-hours-aware plan with driving times and a live map. Free, with no sign-up.</Typography>
+
+      <Typography component="h2" sx={h2}>Ready-made Pondicherry itineraries</Typography>
+      {CURATED.map(c => (
+        <Box key={c.id} sx={{ mb: 1.5 }}>
+          <Typography component="h3" sx={h3}>{c.cohort} — {c.tag} <Box component="span" sx={{ fontWeight: 400, color: 'text.disabled' }}>· {c.plan.length}-day</Box></Typography>
+          <Typography sx={p}>{c.why}</Typography>
+        </Box>
+      ))}
+
+      <Typography component="h2" sx={h2}>Pondicherry trip planning FAQ</Typography>
+      {FAQ.map((f, i) => (
+        <Box key={i} sx={{ mb: 1.4 }}>
+          <Typography component="h3" sx={h3}>{f.q}</Typography>
+          <Typography sx={p}>{f.a}</Typography>
+        </Box>
+      ))}
+
+      <Typography sx={{ ...p, mt: 2.5 }}>
+        More from Nivaa Stays: <Link href="https://nivaastays.com/" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>home</Link> · <Link href="https://nivaastays.com/pondicherry-travel-guide" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>Pondicherry travel guide</Link> · <Link href="https://nivaastays.com/booking" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>book your stay near JIPMER</Link>.
+      </Typography>
+    </Box>
+  );
+}
+
 // Fire a GA4 custom event (gtag is loaded in index.html). No-op if gtag is
 // blocked/absent, so analytics never affects the planner's behaviour.
 const track = (event, params) => { try { window.gtag && window.gtag('event', event, params || {}); } catch (e) {} };
@@ -204,6 +246,7 @@ export default function App() {
   const [selectedIdx, setSelectedIdx] = useState(null);   // place shown in the info card
   const [mobView, setMobView] = useState('itinerary'); // itinerary | places (mobile bottom tabs)
   const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
+  const [aboutOpen, setAboutOpen] = useState(false); // desktop About dialog
   const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
@@ -948,12 +991,12 @@ export default function App() {
           // ---- itinerary list / places: brand + AI prompt (+ start/window only on Places) ----
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
             <Box sx={{ mb: 1 }}>{Brand}</Box>
-            <Box sx={{ mb: 1 }}>{AiBar()}</Box>
+            {mobView !== 'about' && <Box sx={{ mb: 1 }}>{AiBar()}</Box>}
             {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{Controls()}</Box>}
           </Box>
         )}
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          {mobView === 'places' ? (
+          {mobView === 'about' ? null : mobView === 'places' ? (
             <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{PlacesPanel()}</Box>
           ) : planView && itinView === 'map' ? (
             <Box sx={{ flex: 1, minHeight: 0, p: 1.5, pt: 1 }}>{MapView()}</Box>
@@ -961,6 +1004,8 @@ export default function App() {
             <Box onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; }} onTouchEnd={swipeDays}
               sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{DayPanel({ hideBack: true })}</Box>
           )}
+          {/* About — always mounted (in the DOM for crawlers), shown only when its tab is active */}
+          <Box sx={{ display: mobView === 'about' ? 'block' : 'none', flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{AboutPanel()}</Box>
         </Box>
         {planView && selectedIdx != null && data.places[selectedIdx] && (
           <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} isMobile
@@ -968,9 +1013,10 @@ export default function App() {
         )}
         <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
           <BottomNavigation showLabels value={mobView}
-            onChange={(_, v) => { if (!v) return; if (v === 'itinerary') { setBrowsing(false); openView('day'); } else openView('places'); }} sx={{ bgcolor: 'transparent' }}>
+            onChange={(_, v) => { if (!v) return; if (v === 'about') setMobView('about'); else if (v === 'itinerary') { setBrowsing(false); openView('day'); } else openView('places'); }} sx={{ bgcolor: 'transparent' }}>
             <BottomNavigationAction value="itinerary" label={`Itinerary${stops.length ? ` (${stops.filter(s => !isPseudo(s)).length})` : ''}`} icon={<CalendarMonthRounded />} />
             <BottomNavigationAction value="places" label="Places" icon={<PlaceRounded />} />
+            <BottomNavigationAction value="about" label="About" icon={<InfoOutlinedRounded />} />
           </BottomNavigation>
         </Box>
         <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ mb: 7 }} />
@@ -987,7 +1033,14 @@ export default function App() {
         backgroundSize: 'cover', backgroundPosition: 'center 28%', backgroundRepeat: 'no-repeat' }}>
         {Brand}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{AiBar()}</Box>
+        <Button size="small" startIcon={<InfoOutlinedRounded />} onClick={() => setAboutOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary' }}>About</Button>
       </Paper>
+      <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundImage: 'none' } }}>
+        <DialogContent sx={{ position: 'relative' }}>
+          <IconButton onClick={() => setAboutOpen(false)} sx={{ position: 'absolute', top: 8, right: 8 }} aria-label="Close"><CloseRounded /></IconButton>
+          <AboutPanel />
+        </DialogContent>
+      </Dialog>
       {/* body */}
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: 1.25 }}>
         {/* left rail card */}
