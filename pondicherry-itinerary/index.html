@@ -27,20 +27,29 @@
   "@context": "https://schema.org",
   "@graph": [
     {
+      "@type": "LodgingBusiness",
+      "@id": "https://nivaastays.com/#lodging",
+      "name": "Nivaa Stays",
+      "url": "https://nivaastays.com/"
+    },
+    {
       "@type": "SoftwareApplication",
       "name": "Pondicherry Itinerary Planner",
       "applicationCategory": "TravelApplication",
       "operatingSystem": "Web",
       "url": "https://nivaastays.com/pondicherry-itinerary",
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "INR" },
-      "publisher": { "@type": "Organization", "name": "Nivaa Stays" }
+      "publisher": { "@id": "https://nivaastays.com/#lodging" }
     },
     {
       "@type": "WebPage",
       "@id": "https://nivaastays.com/pondicherry-itinerary#webpage",
       "url": "https://nivaastays.com/pondicherry-itinerary",
       "name": "Pondicherry Itinerary Planner",
+      "description": "Free Pondicherry itinerary planner — pick beaches, attractions and cafés, set a start time, and get a routed day plan with driving times and a live map.",
       "isPartOf": { "@type": "WebSite", "name": "Nivaa Stays", "url": "https://nivaastays.com/" },
+      "about": { "@id": "https://nivaastays.com/#lodging" },
+      "mainEntity": { "@id": "https://nivaastays.com/pondicherry-itinerary#itineraries" },
       "breadcrumb": { "@id": "https://nivaastays.com/pondicherry-itinerary#crumbs" }
     },
     {
@@ -51,6 +60,31 @@
         { "@type": "ListItem", "position": 2, "name": "Guides", "item": "https://nivaastays.com/guides" },
         { "@type": "ListItem", "position": 3, "name": "Pondicherry Itinerary Planner", "item": "https://nivaastays.com/pondicherry-itinerary" }
       ]
+    },
+    {
+      "@type": "ItemList",
+      "@id": "https://nivaastays.com/pondicherry-itinerary#itineraries",
+      "name": "Ready-made Pondicherry itineraries",
+      "itemListElement": [
+        { "@type": "ListItem", "position": 1, "name": "Family Day Out (1 day) — Boat, beaches & market", "description": "Chunnambar backwater boat to Paradise Beach, a beachside lunch, the Manakula Vinayagar temple, Goubert Market and a Promenade Beach sunset." },
+        { "@type": "ListItem", "position": 2, "name": "Couples Getaway (1 day) — White Town & Serenity Beach", "description": "Sri Aurobindo Ashram, the pink Our Lady of Angels church, Bharathi Park, a heritage lunch, Serenity Beach and a rooftop dinner." },
+        { "@type": "ListItem", "position": 3, "name": "Bachelors' Trip (1 day) — Surf beaches & nightlife", "description": "A Kallialay surf lesson at Serenity Beach, Auroville Beach, a seafood lunch, then a town brewery in the evening." },
+        { "@type": "ListItem", "position": 4, "name": "Solo Explorer (1 day) — Slow town culture", "description": "The Ashram, Aurodhan art gallery, the 1827 Romain Rolland Library, White-Town heritage and a Promenade sunset." },
+        { "@type": "ListItem", "position": 5, "name": "Family (2 days) — Town day + a boat-and-beach day", "description": "Day 1 in town (Sacred Heart Basilica, Botanical Garden, Toy Museum); Day 2 the Chunnambar boat, Paradise and Eden beaches." },
+        { "@type": "ListItem", "position": 6, "name": "Couples (2 days) — White Town, then Auroville", "description": "Day 1 French-Quarter romance; Day 2 Matrimandir via the Auroville Visitor Centre, Auroville Beach and cafés." },
+        { "@type": "ListItem", "position": 7, "name": "Bachelors (2 days) — Surf day, then a boat day", "description": "Day 1 the northern surf beaches; Day 2 the southern boat beaches, with one night venue each day." },
+        { "@type": "ListItem", "position": 8, "name": "Solo (2 days) — Town culture, then Auroville", "description": "Day 1 galleries, the heritage library and White-Town heritage; Day 2 a calm Auroville loop." }
+      ]
+    },
+    {
+      "@type": "FAQPage",
+      "@id": "https://nivaastays.com/pondicherry-itinerary#faq",
+      "mainEntity": [
+        { "@type": "Question", "name": "How many days do you need in Pondicherry?", "acceptedAnswer": { "@type": "Answer", "text": "One to two days covers the highlights. A single day fits White Town's French Quarter, the Promenade, the Sri Aurobindo Ashram and a beach; add a second day for Auroville and Matrimandir, or the Chunnambar backwater boat to Paradise Beach." } },
+        { "@type": "Question", "name": "What is a good one-day Pondicherry itinerary?", "acceptedAnswer": { "@type": "Answer", "text": "Spend the cool morning in White Town — the Ashram before its midday close, Bharathi Park and a heritage café — then lunch, an afternoon at Serenity or Paradise Beach, a Promenade sunset and dinner. The planner sequences the stops by opening hours and driving time." } },
+        { "@type": "Question", "name": "What is the best Pondicherry itinerary for couples, families or solo travellers?", "acceptedAnswer": { "@type": "Answer", "text": "Couples enjoy a slow White-Town-and-beach day ending with a rooftop dinner; families do well with the Chunnambar boat, Paradise Beach and Goubert Market; solo travellers like a culture trail of the Ashram, galleries and the heritage library. The planner has a ready-made plan for each." } },
+        { "@type": "Question", "name": "Is the Pondicherry itinerary planner free?", "acceptedAnswer": { "@type": "Answer", "text": "Yes. Pick your stops, set a start time, and get a routed day plan with driving times and a live map — free, with no sign-up." } }
+      ]
     }
   ]
 }
@@ -60,7 +94,41 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script type="module" crossorigin src="/pondicherry-itinerary/assets/index-DuXDHPpq.js"></script>
 </head>
-<body>
-<div id="root"></div>
+<body style="margin:0;background:#0A0A0C;">
+<div id="root"><main style="max-width:860px;margin:0 auto;padding:40px 22px 72px;font-family:Inter,system-ui,-apple-system,sans-serif;line-height:1.6;color:#D7DBE0;">
+<h1 style="font-size:1.95rem;font-weight:800;letter-spacing:-0.02em;color:#F3F4F6;margin:0 0 14px;">Pondicherry Itinerary Planner</h1>
+<p style="font-size:1.06rem;color:#A7ADB5;margin:0 0 10px;">Build a routed Pondicherry day trip in seconds. Pick the beaches, French-Quarter heritage, Auroville sights, caf&eacute;s and nightlife you want, set your start time, and get an opening-hours-aware plan with driving times and a live map &mdash; free, with no sign-up.</p>
+<p style="color:#6B7280;margin:0 0 30px;font-style:italic;">Loading the interactive planner&hellip;</p>
+<h2 style="font-size:1.25rem;font-weight:700;color:#F3F4F6;margin:0 0 6px;">Ready-made Pondicherry itineraries</h2>
+<p style="color:#A7ADB5;margin:0 0 12px;">Start from a curated plan, then tweak it. Each is opening-hours-aware and grouped by area to keep driving low.</p>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:14px 0 6px;">One-day itineraries</h3>
+<ul style="margin:0 0 6px;padding-left:20px;color:#A7ADB5;">
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Family Day Out &mdash; Boat, beaches &amp; market:</strong> the Chunnambar backwater boat to Paradise Beach, a beachside lunch, the Manakula Vinayagar temple, Goubert Market and a Promenade Beach sunset.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Couples Getaway &mdash; White Town &amp; Serenity Beach:</strong> the Sri Aurobindo Ashram, the pink Our Lady of Angels church, Bharathi Park, a heritage lunch, scenic Serenity Beach and a rooftop dinner.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Bachelors' Trip &mdash; Surf beaches &amp; nightlife:</strong> a Kallialay surf lesson at Serenity Beach, Auroville Beach, a seafood lunch, then a town brewery.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Solo Explorer &mdash; Slow town culture:</strong> the Ashram, Aurodhan art gallery, the 1827 Romain Rolland Library, White-Town heritage and a Promenade sunset.</li>
+</ul>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:14px 0 6px;">Two-day itineraries</h3>
+<ul style="margin:0 0 8px;padding-left:20px;color:#A7ADB5;">
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Family &mdash; Town day + a boat-and-beach day:</strong> Day 1 in town (Sacred Heart Basilica, Botanical Garden, Jawahar Toy Museum); Day 2 the Chunnambar boat, Paradise and Eden beaches.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Couples &mdash; White Town, then Auroville:</strong> Day 1 French-Quarter romance; Day 2 Matrimandir via the Auroville Visitor Centre, Auroville Beach and caf&eacute;s.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Bachelors &mdash; Surf day, then a boat day:</strong> Day 1 the northern surf beaches; Day 2 the southern boat beaches, with a night venue each.</li>
+<li style="margin-bottom:6px;"><strong style="color:#E5E7EB;">Solo &mdash; Town culture, then Auroville:</strong> Day 1 galleries, the heritage library and White-Town heritage; Day 2 a calm Auroville loop.</li>
+</ul>
+<h2 style="font-size:1.25rem;font-weight:700;color:#F3F4F6;margin:24px 0 6px;">Top places you can add</h2>
+<p style="color:#A7ADB5;margin:0 0 6px;"><strong style="color:#E5E7EB;">Beaches:</strong> Promenade Beach, Paradise Beach, Serenity Beach, Auroville Beach, Eden Beach.</p>
+<p style="color:#A7ADB5;margin:0 0 6px;"><strong style="color:#E5E7EB;">Attractions:</strong> Sri Aurobindo Ashram, Matrimandir (Auroville), Sacred Heart Basilica, Manakula Vinayagar Temple, Aayi Mandapam, Botanical Garden, Bharathi Park.</p>
+<p style="color:#A7ADB5;margin:0 0 6px;"><strong style="color:#E5E7EB;">Caf&eacute;s &amp; dining:</strong> Caf&eacute; des Arts, Le Caf&eacute;, Maison Perumal, Villa Shanti, Bay of Buddha.</p>
+<h2 style="font-size:1.25rem;font-weight:700;color:#F3F4F6;margin:24px 0 8px;">Pondicherry trip planning FAQ</h2>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:12px 0 4px;">How many days do you need in Pondicherry?</h3>
+<p style="color:#A7ADB5;margin:0 0 10px;">One to two days covers the highlights. A single day fits White Town's French Quarter, the Promenade, the Sri Aurobindo Ashram and a beach; add a second day for Auroville and Matrimandir, or the Chunnambar backwater boat to Paradise Beach.</p>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:12px 0 4px;">What is a good one-day Pondicherry itinerary?</h3>
+<p style="color:#A7ADB5;margin:0 0 10px;">Spend the cool morning in White Town &mdash; the Ashram before its midday close, Bharathi Park and a heritage caf&eacute; &mdash; then lunch, an afternoon at Serenity or Paradise Beach, a Promenade sunset and dinner. The planner sequences the stops by opening hours and driving time.</p>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:12px 0 4px;">What is the best Pondicherry itinerary for couples, families or solo travellers?</h3>
+<p style="color:#A7ADB5;margin:0 0 10px;">Couples enjoy a slow White-Town-and-beach day ending with a rooftop dinner; families do well with the Chunnambar boat, Paradise Beach and Goubert Market; solo travellers like a culture trail of the Ashram, galleries and the heritage library. The planner has a ready-made plan for each.</p>
+<h3 style="font-size:1rem;font-weight:700;color:#E5E7EB;margin:12px 0 4px;">Is the Pondicherry itinerary planner free?</h3>
+<p style="color:#A7ADB5;margin:0 0 10px;">Yes. Pick your stops, set a start time, and get a routed day plan with driving times and a live map &mdash; free, with no sign-up.</p>
+<p style="margin-top:26px;color:#A7ADB5;">More from Nivaa Stays: <a href="https://nivaastays.com/" style="color:#FCD34D;">home</a> &middot; <a href="https://nivaastays.com/pondicherry-travel-guide" style="color:#FCD34D;">Pondicherry travel guide</a> &middot; <a href="https://nivaastays.com/booking" style="color:#FCD34D;">book your stay near JIPMER</a>.</p>
+</main></div>
 </body>
 </html>
