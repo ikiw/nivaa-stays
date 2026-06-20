@@ -10,11 +10,30 @@ const SECURITY_HEADERS = {
   'Permissions-Policy': 'geolocation=(), microphone=(), camera=()',
 };
 
-function withSecurityHeaders(res) {
+function withSecurityHeaders(res, cacheControl) {
   // Response headers from ASSETS.fetch are immutable — clone into a mutable one.
   const headers = new Headers(res.headers);
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) headers.set(k, v);
+  if (cacheControl) headers.set('Cache-Control', cacheControl);
   return new Response(res.body, { status: res.status, statusText: res.statusText, headers });
+}
+
+// Cache policy for static assets (the live equivalent of Lighthouse's "efficient cache
+// lifetimes"). HTML always revalidates so deploys ship immediately; fingerprinted assets
+// are immutable; stable media/fonts get a month.
+function cacheControlFor(url) {
+  const p = url.pathname;
+  if (url.searchParams.has('v') || p.includes('/pondicherry-itinerary/assets/')) {
+    return 'public, max-age=31536000, immutable';
+  }
+  if (/\.(avif|webp|png|jpe?g|gif|svg|ico|woff2?|ttf|otf)$/i.test(p)) {
+    return 'public, max-age=2592000';
+  }
+  const last = p.slice(p.lastIndexOf('/'));
+  if (p.endsWith('/') || p.endsWith('.html') || !last.includes('.')) {
+    return 'public, max-age=0, must-revalidate';
+  }
+  return null; // leave manifest/json/etc. as served
 }
 
 function jsonRes(obj, status = 200) {
@@ -151,6 +170,6 @@ export default {
 
     // Everything else: serve from static assets.
     const res = await env.ASSETS.fetch(request);
-    return withSecurityHeaders(res);
+    return withSecurityHeaders(res, cacheControlFor(url));
   },
 };

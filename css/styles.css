@@ -123,6 +123,10 @@ h1, h2, h3, h4, .serif {
   filter: brightness(0.55);
   z-index: 0;
 }
+/* Homepage hero only (#top): a lighter, mobile-sized hero on small screens (critical-path LCP) */
+@media (max-width: 768px) {
+  #top::before { background-image: url('../images/exterior-entrance-arch-mobile.avif'); }
+}
 .hero::after {
   content: '';
   position: absolute; inset: 0;
@@ -141,6 +145,8 @@ h1, h2, h3, h4, .serif {
 .hero .max-w-3xl > *:nth-child(6) { animation-delay: 0.53s; }
 @keyframes heroRise { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) { .hero .max-w-3xl > * { opacity: 1; animation: none; } }
+/* Skip the entrance animation on mobile — it isn't worth the paint delay on slow connections */
+@media (max-width: 768px) { .hero .max-w-3xl > * { opacity: 1; animation: none; } }
 
 .section { padding: 5rem 0; }
 @media (max-width: 768px) { .section { padding: 3.5rem 0; } }
