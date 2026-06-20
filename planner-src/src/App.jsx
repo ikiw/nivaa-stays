@@ -35,10 +35,13 @@ import RouteRounded from '@mui/icons-material/RouteRounded';
 import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
 import TuneRounded from '@mui/icons-material/TuneRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
-import { Map, AdvancedMarker, InfoWindow, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import StarRounded from '@mui/icons-material/StarRounded';
+import CloseRounded from '@mui/icons-material/CloseRounded';
+import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from './config.js';
 
 const DATA_URL = '/data/pondicherry-itinerary.json';
+const photoCache = new globalThis.Map();   // session cache: placeId → { url, author } (NB: `Map` is the vis.gl component here, so use the global)
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const CAT_ICON = { Beach: BeachAccessRounded, Attraction: AccountBalanceRounded, Food: RestaurantRounded, Social: LocalBarRounded, Shopping: ShoppingBagRounded, Stay: FlagRounded, Area: FlagRounded };
@@ -196,6 +199,7 @@ export default function App() {
   const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
   const [shareAnchor, setShareAnchor] = useState(null);
   const [moreAnchor, setMoreAnchor] = useState(null);
+  const [selectedIdx, setSelectedIdx] = useState(null);   // place shown in the info card
   const [mobView, setMobView] = useState('itinerary'); // itinerary | places (mobile bottom tabs)
   const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
   const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
@@ -251,6 +255,9 @@ export default function App() {
     }
     window.history.replaceState(window.history.state, '', buildSearch(v));
   };
+
+  // Open the place info card. On mobile, flip the Itinerary tab to the map so the card is visible.
+  const selectPlace = (i) => { setSelectedIdx(i); };   // card pops over the current view; map is opt-in
 
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then(d => {
@@ -765,6 +772,7 @@ export default function App() {
     }
     const Icon = icon || (cat && CAT_ICON[cat]);
     const catColor = cat ? (CAT_HEX[cat] || '#94A3B8') : '#F59E0B';   // match the map markers
+    const p = idx != null ? data.places[idx] : null;   // for rating/reviews + tap-for-details
     return (
       <Stack direction="row" spacing={1.2} alignItems="stretch">
         <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -773,24 +781,36 @@ export default function App() {
           {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
-          <Paper variant="outlined" sx={{ p: 1 }}>
+          <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx) : undefined}
+            sx={{ p: 1, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.22)' }, '&:active': { bgcolor: 'rgba(255,255,255,0.09)' } }) }}>
             <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
               <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
-                {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</span>
+                {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
                 {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
+                {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
               </Typography>
               {editable && (
                 <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
-                  <IconButton size="small" disabled={upDisabled} onClick={() => move(gi, -1)}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
-                  <IconButton size="small" disabled={downDisabled} onClick={() => move(gi, 1)}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
-                  <IconButton size="small" onClick={() => removeAt(gi)}><DeleteOutlineRounded fontSize="small" /></IconButton>
+                  <IconButton size="small" disabled={upDisabled} onClick={(e) => { e.stopPropagation(); move(gi, -1); }}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
+                  <IconButton size="small" disabled={downDisabled} onClick={(e) => { e.stopPropagation(); move(gi, 1); }}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
+                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); removeAt(gi); }}><DeleteOutlineRounded fontSize="small" /></IconButton>
                 </Stack>
               )}
             </Stack>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
-              <span>{sub}</span>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                {p && p.rating ? (
+                  <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
+                    <StarRounded sx={{ fontSize: 13, color: '#FBBF24' }} />
+                    <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{p.rating}</Box>
+                    {p.reviews ? <Box component="span">({Number(p.reviews).toLocaleString()})</Box> : null}
+                  </Box>
+                ) : null}
+                {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
+                {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
+              </Box>
               {editable && (
-                <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118 }}
+                <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0 }}
                   InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
                   SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
                   {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
@@ -814,7 +834,7 @@ export default function App() {
     <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
       {mapActive ? (
         <>
-          <RouteMap data={data} start={start} stops={mapStops} />
+          <RouteMap data={data} start={start} stops={mapStops} selected={selectedIdx} onSelect={setSelectedIdx} />
           {!stops.length && (
             <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(18,20,26,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
               <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
@@ -940,6 +960,10 @@ export default function App() {
               sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{DayPanel({ hideBack: true })}</Box>
           )}
         </Box>
+        {planView && selectedIdx != null && data.places[selectedIdx] && (
+          <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} isMobile
+            onShowOnMap={() => { setItinView('map'); setMapActive(true); }} />
+        )}
         <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
           <BottomNavigation showLabels value={mobView}
             onChange={(_, v) => { if (!v) return; if (v === 'itinerary') { setBrowsing(false); openView('day'); } else openView('places'); }} sx={{ bgcolor: 'transparent' }}>
@@ -965,7 +989,7 @@ export default function App() {
       {/* body */}
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: 1.25 }}>
         {/* left rail card */}
-        <Paper elevation={0} sx={{ width: 470, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
+        <Paper elevation={0} sx={{ width: 510, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
           background: 'linear-gradient(180deg, #1C1A16 0%, #16161A 22%, #101013 100%)' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
             {Controls()}
@@ -1024,6 +1048,9 @@ export default function App() {
             </Paper>
           )}
           {MapView()}
+          {selectedIdx != null && data.places[selectedIdx] && (
+            <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} />
+          )}
         </Box>
       </Box>
       <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} />
@@ -1032,19 +1059,18 @@ export default function App() {
 }
 
 // ---------- interactive Google map ----------
-function RouteMap({ data, start, stops }) {
+function RouteMap({ data, start, stops, selected, onSelect }) {
   return (
     <Map mapId={MAP_ID} defaultCenter={{ lat: 11.934, lng: 79.83 }} defaultZoom={12} gestureHandling="greedy"
       mapTypeControl={false} streetViewControl={false} fullscreenControl={false} clickableIcons={false}
       style={{ width: '100%', height: '100%' }}>
-      <RouteLayer data={data} start={start} stops={stops} />
+      <RouteLayer data={data} start={start} stops={stops} selected={selected} onSelect={onSelect} />
     </Map>
   );
 }
 
-function RouteLayer({ data, start, stops }) {
+function RouteLayer({ data, start, stops, selected, onSelect }) {
   const map = useMap();
-  const [selected, setSelected] = useState(null);
   // markers: start (S) + each stop numbered within its day; coloured by day when 2 days.
   const markers = useMemo(() => {
     const out = [{ idx: start, label: 'S', color: '#F59E0B', isStart: true }];
@@ -1065,40 +1091,102 @@ function RouteLayer({ data, start, stops }) {
     map.setZoom(13);
   }, [map, start, stops.length, data]);
 
-  const sel = selected != null ? data.places[selected] : null;
+  // Pan to the place picked from the timeline or a marker, so the info card has context.
+  useEffect(() => {
+    if (!map || selected == null || !data.places[selected]) return;
+    map.panTo({ lat: data.places[selected].lat, lng: data.places[selected].lng });
+    if ((map.getZoom() || 0) < 14) map.setZoom(15);
+  }, [map, selected, data]);
+
   return (
     <>
       {markers.map((m, i) => {
         const p = data.places[m.idx]; if (!p) return null;
         return (
-          <AdvancedMarker key={m.idx + '-' + i} position={{ lat: p.lat, lng: p.lng }} zIndex={m.isStart ? 9999 : 100 + i} onClick={() => setSelected(m.idx)}>
-            <PinChip label={m.label} name={p.name} color={m.color} />
+          <AdvancedMarker key={m.idx + '-' + i} position={{ lat: p.lat, lng: p.lng }} zIndex={m.idx === selected ? 10000 : (m.isStart ? 9999 : 100 + i)} onClick={() => onSelect(m.idx)}>
+            <PinChip label={m.label} name={p.name} color={m.color} active={m.idx === selected} />
           </AdvancedMarker>
         );
       })}
-      {sel && (
-        <InfoWindow position={{ lat: sel.lat, lng: sel.lng }} onCloseClick={() => setSelected(null)}>
-          <div style={{ minWidth: 160, maxWidth: 230, fontFamily: 'Inter, system-ui, sans-serif', color: '#1b1b1b' }}>
-            <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.25 }}>{sel.name}</div>
-            <div style={{ fontSize: 11.5, color: '#666', margin: '3px 0' }}>{(CAT_LABEL[sel.cat] || sel.cat || 'Start') + (sel.sub ? ' · ' + (SUB_LABEL[sel.sub] || sel.sub) : '')}</div>
-            {sel.desc && <div style={{ fontSize: 12, color: '#333', marginBottom: 5 }}>{sel.desc}</div>}
-            <a href={mapLink(sel)} target="_blank" rel="noopener" style={{ fontSize: 12, color: '#1976d2', textDecoration: 'none', fontWeight: 600 }}>Open in Google Maps ↗</a>
-          </div>
-        </InfoWindow>
-      )}
       <DirectionsRoute data={data} start={start} stops={stops} />
     </>
   );
 }
 
 // A pill marker: coloured numbered badge + the place name, sitting above its point.
-function PinChip({ label, name, color }) {
+function PinChip({ label, name, color, active }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 9px 3px 3px', transform: 'translateY(-6px)',
-      background: '#15171c', border: '1px solid rgba(255,255,255,0.16)', borderRadius: 999, boxShadow: '0 3px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', cursor: 'pointer' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 9px 3px 3px', transform: active ? 'translateY(-6px) scale(1.08)' : 'translateY(-6px)',
+      background: active ? '#23262e' : '#15171c', border: active ? `1.5px solid ${color}` : '1px solid rgba(255,255,255,0.16)', borderRadius: 999,
+      boxShadow: active ? `0 0 0 3px ${color}44, 0 3px 12px rgba(0,0,0,0.5)` : '0 3px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'transform .12s ease' }}>
       <span style={{ width: 20, height: 20, borderRadius: '50%', background: color, color: '#0B1020', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</span>
       <span style={{ color: '#ECEDEE', fontSize: 12.5, fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
     </div>
+  );
+}
+
+// Floating info card for a tapped place: lazy Google photo + rating/reviews + description.
+function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }) {
+  const placesLib = useMapsLibrary('places');
+  const [photo, setPhoto] = useState(() => (place.placeId ? photoCache.get(place.placeId) : null));
+  useEffect(() => {
+    if (!place.placeId) { setPhoto(null); return; }
+    if (photoCache.has(place.placeId)) { setPhoto(photoCache.get(place.placeId)); return; }
+    setPhoto(undefined);                       // loading
+    if (!placesLib) return;
+    let alive = true;
+    (async () => {
+      let res = { url: '', author: '' };
+      try {
+        const pl = new placesLib.Place({ id: place.placeId });
+        await pl.fetchFields({ fields: ['photos'] });
+        const ph = pl.photos && pl.photos[0];
+        if (ph && ph.getURI) res = { url: ph.getURI({ maxWidth: 400 }), author: (ph.authorAttributions && ph.authorAttributions[0] && ph.authorAttributions[0].displayName) || '' };
+      } catch (e) { /* Places API not enabled / no photo — fall back to icon */ }
+      photoCache.set(place.placeId, res);
+      if (alive) setPhoto(res);
+    })();
+    return () => { alive = false; };
+  }, [placesLib, place.placeId]);
+
+  const cat = (CAT_LABEL[place.cat] || place.cat || 'Start') + (place.sub ? ' · ' + (SUB_LABEL[place.sub] || place.sub) : '');
+  const gmaps = place.placeId ? `https://www.google.com/maps/place/?q=place_id:${place.placeId}` : mapLink(place);
+  const FallbackIcon = CAT_ICON[place.cat] || PlaceRounded;
+  const hasPhoto = photo && photo.url;
+  return (
+    <Paper elevation={10} sx={{ position: isMobile ? 'fixed' : 'absolute', left: isMobile ? 10 : 12, right: isMobile ? 10 : 12,
+      bottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 66px)' : 12, zIndex: isMobile ? 1250 : 5, p: 1.25, borderRadius: '14px',
+      maxWidth: isMobile ? 'none' : 380, mx: isMobile ? 0 : 'auto', bgcolor: 'rgba(20,22,28,0.98)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', boxShadow: '0 14px 40px rgba(0,0,0,0.65)' }}>
+      <Stack direction="row" spacing={1.25}>
+        <Box sx={{ width: 76, height: 76, borderRadius: '10px', flexShrink: 0, overflow: 'hidden', bgcolor: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {photo === undefined ? <CircularProgress size={20} />
+            : hasPhoto ? <Box component="img" src={photo.url} alt={place.name} loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : <FallbackIcon sx={{ fontSize: 30, color: 'text.disabled' }} />}
+        </Box>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={0.5}>
+            <Typography sx={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }}>{place.name}</Typography>
+            <IconButton size="small" onClick={onClose} sx={{ mt: -0.6, mr: -0.6 }} aria-label="Close"><CloseRounded sx={{ fontSize: 18 }} /></IconButton>
+          </Stack>
+          {place.rating ? (
+            <Stack direction="row" spacing={0.4} alignItems="center" sx={{ mt: 0.2 }}>
+              <StarRounded sx={{ fontSize: 15, color: '#FBBF24' }} />
+              <Typography sx={{ fontSize: '0.82rem', fontWeight: 700 }}>{place.rating}</Typography>
+              {place.reviews ? <Typography sx={{ fontSize: '0.76rem', color: 'text.secondary' }}>({Number(place.reviews).toLocaleString()} reviews)</Typography> : null}
+            </Stack>
+          ) : null}
+          <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.2 }}>{cat}</Typography>
+        </Box>
+      </Stack>
+      {place.desc && <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: 0.85, lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{place.desc}</Typography>}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.85 }}>
+        <Typography sx={{ fontSize: '0.62rem', color: 'text.disabled', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hasPhoto && photo.author ? `Photo: ${photo.author} · Google` : 'Ratings via Google'}</Typography>
+        <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
+          {onShowOnMap && <Button size="small" startIcon={<MapRounded sx={{ fontSize: 15 }} />} onClick={onShowOnMap} sx={{ px: 0.6 }}>Map</Button>}
+          <Button size="small" endIcon={<OpenInNewRounded sx={{ fontSize: 15 }} />} component="a" href={gmaps} target="_blank" rel="noopener" sx={{ px: 0.6 }}>Google Maps</Button>
+        </Stack>
+      </Stack>
+    </Paper>
   );
 }
 

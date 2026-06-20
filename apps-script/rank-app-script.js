@@ -496,7 +496,7 @@ function resolvePlace_(query) {
   if (res.getResponseCode() !== 200) { Logger.log('resolve "%s" → %s', query, res.getResponseCode()); return null; }
   const p = (JSON.parse(res.getContentText() || '{}').places || [])[0];
   if (!p || !p.location) return null;
-  return { lat: p.location.latitude, lng: p.location.longitude };
+  return { lat: p.location.latitude, lng: p.location.longitude, id: p.id };
 }
 
 // ---- Incremental cache (Itin Coords / Itin Legs sheets) ----------------------
@@ -519,6 +519,27 @@ function loadLegs_() {
   if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 4).getValues()
     .forEach(r => { if (r[0]) out[legKey_(r[0], r[1])] = { min: r[2], km: r[3] }; });
   return out;
+}
+
+// Place id / rating / review-count / editorial summary — cached so each build only
+// fetches details for NEW places. Powers the planner's place info card.
+const ITIN_DETAILS_SHEET = 'Itin Details';
+function loadDetails_() {
+  const sh = rankSpreadsheet_().getSheetByName(ITIN_DETAILS_SHEET); const out = {};
+  if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, 5).getValues()
+    .forEach(r => { if (r[0]) out[r[0]] = { placeId: r[1], rating: r[2], reviews: r[3], summary: r[4] }; });
+  return out;
+}
+// Place Details (New) → { rating, reviews, summary } for one place id.
+function itinDetailsById_(id) {
+  const key = PropertiesService.getScriptProperties().getProperty('PLACES_API_KEY');
+  const res = UrlFetchApp.fetch('https://places.googleapis.com/v1/places/' + id, {
+    method: 'get', muteHttpExceptions: true,
+    headers: { 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': 'rating,userRatingCount,editorialSummary' }
+  });
+  if (res.getResponseCode() !== 200) { Logger.log('details %s → %s', id, res.getResponseCode()); return null; }
+  const b = JSON.parse(res.getContentText() || '{}');
+  return { rating: b.rating || '', reviews: b.userRatingCount || '', summary: (b.editorialSummary && b.editorialSummary.text) || '' };
 }
 
 // One computeRouteMatrix call with 429/5xx backoff. Returns ROUTE_EXISTS rows.
@@ -607,6 +628,31 @@ function buildItineraryData() {
   const legs = loadLegs_();
   const newLegs = computeMissingLegs_(points, legs);
 
+  // 3.5) place details — id / rating / reviews (incremental); backfill blank descriptions
+  const PLACE_CATS = ['Beach', 'Attraction', 'Food', 'Social', 'Shopping'];
+  const details = loadDetails_();
+  const ds = getOrCreateSheet_(ITIN_DETAILS_SHEET, ['name', 'placeId', 'rating', 'reviews', 'summary']);
+  let newDetails = 0;
+  points.forEach(p => {
+    if (!PLACE_CATS.includes(p.cat) || details[p.name]) return;
+    const r = resolveBest_(p.name);
+    const id = (r && r.id) || '';
+    let det = { rating: '', reviews: '', summary: '' };
+    if (id) { const dd = itinDetailsById_(id); if (dd) det = dd; Utilities.sleep(120); }
+    details[p.name] = { placeId: id, rating: det.rating, reviews: det.reviews, summary: det.summary };
+    ds.appendRow([p.name, id, det.rating, det.reviews, det.summary]);
+    newDetails++;
+    Utilities.sleep(80);
+  });
+  points.forEach(p => {
+    const d = details[p.name];
+    if (!d) return;
+    if (d.placeId) p.placeId = d.placeId;
+    if (d.rating)  p.rating = d.rating;
+    if (d.reviews) p.reviews = d.reviews;
+    if (!p.desc && d.summary) p.desc = d.summary;   // backfill blank descriptions from Google
+  });
+
   // 4) assemble matrix from the cache
   const n = points.length;
   const minM = Array.from({ length: n }, () => new Array(n).fill(null));
@@ -618,7 +664,7 @@ function buildItineraryData() {
   }
   const data = { generated: Utilities.formatDate(new Date(), TZ, 'yyyy-MM-dd'), origin: 0, places: points, minutes: minM, km: kmM };
   writeItinJson_(JSON.stringify(data));
-  Logger.log('Itinerary built: %s points (%s newly resolved), %s new legs, %sx%s matrix.', n, resolved, newLegs, n, n);
+  Logger.log('Itinerary built: %s points (%s newly resolved), %s new legs, %s new details, %sx%s matrix.', n, resolved, newLegs, newDetails, n, n);
 }
 
 // A Sheets cell maxes out at 50,000 chars; the itinerary JSON is larger, so store
@@ -635,6 +681,7 @@ function writeItinJson_(json) {
 function clearItinCache() {
   const cs = getOrCreateSheet_(ITIN_COORDS_SHEET, ['name', 'lat', 'lng']); cs.clear(); cs.appendRow(['name', 'lat', 'lng']);
   const ls = getOrCreateSheet_(ITIN_LEGS_SHEET, ['from', 'to', 'min', 'km']); ls.clear(); ls.appendRow(['from', 'to', 'min', 'km']);
+  const ds = getOrCreateSheet_(ITIN_DETAILS_SHEET, ['name', 'placeId', 'rating', 'reviews', 'summary']); ds.clear(); ds.appendRow(['name', 'placeId', 'rating', 'reviews', 'summary']);
   Logger.log('Itinerary caches cleared.');
 }
 
