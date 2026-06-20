@@ -154,8 +154,8 @@ h1, h2, h3, h4, .serif {
 }
 
 .divider-gold {
-  width: 48px; height: 2px;
-  background: var(--brand-gold);
+  width: 56px; height: 1px;
+  background: linear-gradient(90deg, var(--brand-gold), var(--brand-ochre-soft));
   margin: 1rem 0 1.5rem;
 }
 .divider-center { margin-left: auto; margin-right: auto; }
@@ -654,6 +654,40 @@ footer a:hover { color: var(--brand-gold-soft); }
   .about-collage .collage-1 { width: 60%; }
   .about-collage .collage-2 { width: 54%; border-width: 4px; }
   .about-collage .collage-3 { width: 46%; left: 4%; border-width: 4px; }
+}
+
+/* ---- Phase 2: arch motif (echoes the entrance arch) + editorial pull-quote ---- */
+.arch-top { border-radius: 52% 52% 10px 10px / 30% 30% 10px 10px; }
+.about-collage .collage-1 { border-radius: 52% 52% 10px 10px / 30% 30% 10px 10px; }   /* the arch photo, arch-framed */
+
+.pullquote {
+  max-width: 720px;
+  margin: 0 auto 3.25rem;
+  text-align: center;
+  position: relative;
+  padding-top: 2.25rem;
+}
+.pullquote::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 46px; height: 1px; background: var(--brand-gold);
+}
+.pullquote p {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: clamp(1.55rem, 4.2vw, 2.35rem);
+  line-height: 1.28;
+  color: var(--brand-teal);
+  margin: 0;
+}
+.pullquote figcaption {
+  margin-top: 1.05rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--brand-ochre);
+  font-weight: 600;
 }
 
 /* Rate picker (calendar) */
