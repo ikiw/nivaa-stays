@@ -7,7 +7,6 @@ import {
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
-import RestaurantRounded from '@mui/icons-material/RestaurantRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
@@ -23,8 +22,6 @@ import ShareRounded from '@mui/icons-material/ShareRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import WhatsApp from '@mui/icons-material/WhatsApp';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
-import KeyboardArrowUpRounded from '@mui/icons-material/KeyboardArrowUpRounded';
-import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
@@ -32,18 +29,19 @@ import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
 import InfoOutlinedRounded from '@mui/icons-material/InfoOutlined';
 import TuneRounded from '@mui/icons-material/TuneRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
-import StarRounded from '@mui/icons-material/StarRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
-import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, TAG_COLOR, STAY_OPTIONS, DAY_COLORS } from './constants.js';
-import { idealStay, isPseudo, stopDur, fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils.js';
+import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, DAY_COLORS } from './constants.js';
+import { idealStay, isPseudo, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils.js';
 import { CURATED } from './curated.js';
 import AboutPanel from './components/AboutPanel.jsx';
 import RouteMap from './components/RouteMap.jsx';
 import PlaceInfoCard from './components/PlaceInfoCard.jsx';
 import { GlanceRow, Centered, Grid, CatHead } from './components/Bits.jsx';
+import { computeSchedule, scheduleStays } from './scheduler.js';
+import TimelineNode from './components/TimelineNode.jsx';
 export default function App() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');
@@ -271,35 +269,6 @@ export default function App() {
   };
 
   // load a curated starter plan (resolve names → catalog indices, then open the day view)
-  // Give every stop its realistic ideal duration, then fill the day toward ~10 PM by
-  // stretching only the FLEXIBLE places (beaches, boating, nightlife) up to their max —
-  // so quick stops (temples, museums) stay short and the long experiences soak up the slack.
-  // items: array of { idx } (a place) or { brk:true } (free time). Returns a stay per item.
-  const scheduleStays = (startIdx, items) => {
-    const n = items.length; if (!n) return [];
-    const D = items.map(it => stopDur(it, data.places));
-    const stays = D.map(x => x[1]);
-    // breaks add 0 drive and don't move you — carry the previous real place through them
-    const driveAt = k => { if (isPseudo(items[k])) return 0; let prev = startIdx; for (let j = 0; j < k; j++) if (!isPseudo(items[j])) prev = items[j].idx; return driveMin(prev, items[k].idx); };
-    let lastReal = startIdx; for (let j = n - 1; j >= 0; j--) if (!isPseudo(items[j])) { lastReal = items[j].idx; break; }
-    let drive = driveMin(lastReal, startIdx);
-    for (let k = 0; k < n; k++) drive += driveAt(k);
-    const target = parseTime('22:45');
-    const backBy = () => parseTime('09:00') + drive + stays.reduce((a, b) => a + b, 0);
-    let slack = target - backBy();
-    if (slack > 0) {
-      for (let pass = 0; pass < 6 && slack > 5; pass++) {
-        const head = stays.map((s, k) => D[k][2] - s), tot = head.reduce((a, b) => a + b, 0);
-        if (tot <= 0) break;
-        stays.forEach((s, k) => { stays[k] = s + Math.min(head[k], slack * head[k] / tot); });
-        slack = target - backBy();
-      }
-    } else if (slack < 0) {
-      const head = stays.map((s, k) => s - D[k][0]), tot = head.reduce((a, b) => a + b, 0);
-      if (tot > 0) stays.forEach((s, k) => { stays[k] = s - Math.min(head[k], (-slack) * head[k] / tot); });
-    }
-    return stays.map((s, k) => Math.max(D[k][0], Math.round(s / 5) * 5));
-  };
 
   const loadCurated = (c, silent) => {
     const find = n => data.places.findIndex(p => p.name === n);
@@ -307,7 +276,7 @@ export default function App() {
     const all = [];
     c.plan.forEach((dayNames, di) => {                 // each plan day scheduled independently
       const items = dayNames.map(n => n === 'Break' ? { brk: true } : MEAL_LABELS.includes(n) ? { meal: n } : { idx: find(n) }).filter(it => it.brk || it.meal || it.idx >= 0);
-      const stays = scheduleStays(startIdx, items);
+      const stays = scheduleStays(startIdx, items, data.places, driveMin);
       items.forEach((it, k) => all.push(it.brk ? { brk: true, stay: stays[k], day: di + 1 } : it.meal ? { meal: it.meal, stay: stays[k], day: di + 1 } : { idx: it.idx, stay: stays[k], day: di + 1 }));
     });
     setStart(startIdx);
@@ -335,29 +304,8 @@ export default function App() {
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
   if (!data) return <Centered><CircularProgress /></Centered>;
 
-  // ---------- timeline computation (per day; each day loops from the start) ----------
-  const tripDays = stops.length ? [...new Set(stops.map(s => s.day || 1))].sort((a, b) => a - b) : [1];
-  const dayData = tripDays.map(dn => {
-    const tl = []; let clock = parseTime(startTime), drive = 0, km = 0, prev = start;
-    stops.forEach((s, gi) => {
-      if ((s.day || 1) !== dn) return;
-      if (isPseudo(s)) {                                 // free time / a meal of your choosing — no travel
-        const arrive = clock; clock += s.stay;
-        tl.push({ gi, brk: s.brk, meal: s.meal, dm: 0, dk: 0, arrive, depart: clock, stay: s.stay });
-        return;
-      }
-      const dm = driveMin(prev, s.idx), dk = driveKm(prev, s.idx);
-      drive += dm; km += dk; clock += dm;
-      const arrive = clock; clock += s.stay; const depart = clock;
-      tl.push({ gi, idx: s.idx, dm, dk, arrive, depart, stay: s.stay });
-      prev = s.idx;
-    });
-    const rMin = driveMin(prev, start), rKm = driveKm(prev, start);
-    if (tl.length) { drive += rMin; km += rKm; clock += rMin; }
-    return { day: dn, tl, drive, km, clock, rMin, rKm };
-  });
-  const tripDrive = dayData.reduce((a, d) => a + d.drive, 0);
-  const tripKm = dayData.reduce((a, d) => a + d.km, 0);
+  // ---------- timeline computation (extracted to scheduler.js; each day loops from start) ----------
+  const { tripDays, dayData, tripDrive, tripKm } = computeSchedule(stops, start, startTime, driveMin, driveKm);
   const curDay = tripDays.includes(activeDay) ? activeDay : tripDays[0];   // active day tab
   const mapStops = stops.filter(s => !isPseudo(s) && (s.day || 1) === curDay);   // map shows only the active day's real stops
 
@@ -592,109 +540,8 @@ export default function App() {
     );
   };
 
-  // connected timeline row: coloured dot + a leg-coloured line to the next dot,
-  // the place card, and the drive label sitting on the connector.
-  function Node({ icon, idx, cat, dot, title, sub, stay, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal }) {
-    const editable = typeof gi === 'number';
-    const stayField = editable && (
-      <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118 }}
-        InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
-        SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
-        {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (<MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>))}
-      </TextField>
-    );
-    if (brk || meal) {
-      const PIcon = meal ? RestaurantRounded : SelfImprovementRounded;
-      const pColor = meal ? (TAG_COLOR[meal] || '#94A3B8') : null;
-      return (
-        <Stack direction="row" spacing={1.2} alignItems="stretch">
-          <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: meal ? `${pColor}22` : 'rgba(255,255,255,0.10)', color: meal ? pColor : 'text.secondary' }}><PIcon sx={{ fontSize: 15 }} /></Box>
-            {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22, opacity: 0.55 }} />}
-          </Box>
-          <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
-            <Paper variant="outlined" sx={{ p: 1, borderStyle: 'dashed', bgcolor: 'transparent' }}>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={1}>
-                <Typography sx={{ fontWeight: 600, fontSize: '0.85rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.6 }}>
-                  <PIcon sx={{ fontSize: 16, color: meal ? pColor : 'inherit' }} /> {meal || 'Free time'}
-                  {meal && <Box component="span" sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${pColor}26`, color: pColor }}>{meal}</Box>}
-                </Typography>
-                {editable && (
-                  <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
-                    <IconButton size="small" disabled={upDisabled} onClick={() => move(gi, -1)}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
-                    <IconButton size="small" disabled={downDisabled} onClick={() => move(gi, 1)}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
-                    <IconButton size="small" onClick={() => removeAt(gi)}><DeleteOutlineRounded fontSize="small" /></IconButton>
-                  </Stack>
-                )}
-              </Stack>
-              <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
-                <span>{sub} · {meal ? 'grab a bite nearby' : 'relax or explore on your own'}</span>{stayField}
-              </Stack>
-            </Paper>
-            {!last && drive && (<Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}><DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}</Box>)}
-          </Box>
-        </Stack>
-      );
-    }
-    const Icon = icon || (cat && CAT_ICON[cat]);
-    const catColor = cat ? (CAT_HEX[cat] || '#94A3B8') : '#F59E0B';   // match the map markers
-    const p = idx != null ? data.places[idx] : null;   // for rating/reviews + tap-for-details
-    return (
-      <Stack direction="row" spacing={1.2} alignItems="stretch">
-        <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            bgcolor: catColor, color: '#0B1020', fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
-          {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
-        </Box>
-        <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
-          <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx) : undefined}
-            sx={{ p: 1, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.22)' }, '&:active': { bgcolor: 'rgba(255,255,255,0.09)' } }) }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-              <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
-                {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
-                {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
-                {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
-              </Typography>
-              {editable && (
-                <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
-                  <IconButton size="small" disabled={upDisabled} onClick={(e) => { e.stopPropagation(); move(gi, -1); }}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
-                  <IconButton size="small" disabled={downDisabled} onClick={(e) => { e.stopPropagation(); move(gi, 1); }}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
-                  <IconButton size="small" onClick={(e) => { e.stopPropagation(); removeAt(gi); }}><DeleteOutlineRounded fontSize="small" /></IconButton>
-                </Stack>
-              )}
-            </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-                {p && p.rating ? (
-                  <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
-                    <StarRounded sx={{ fontSize: 13, color: '#FBBF24' }} />
-                    <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{p.rating}</Box>
-                    {p.reviews ? <Box component="span">({Number(p.reviews).toLocaleString()})</Box> : null}
-                  </Box>
-                ) : null}
-                {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
-                {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
-              </Box>
-              {editable && (
-                <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0 }}
-                  InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
-                  SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
-                  {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
-                    <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
-                  ))}
-                </TextField>
-              )}
-            </Stack>
-          </Paper>
-          {!last && drive && (
-            <Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-              <DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}
-            </Box>
-          )}
-        </Box>
-      </Stack>
-    );
-  }
+  // Timeline row — rendering lives in components/TimelineNode.jsx; inject App data + handlers.
+  const Node = (props) => TimelineNode({ ...props, data, setStay, move, removeAt, selectPlace });
 
   const MapView = () => (
     <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
@@ -912,12 +759,15 @@ export default function App() {
                     {tripDays.length > 1 && <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: DAY_COLORS[(d.day - 1) % DAY_COLORS.length], mt: 0.6, mb: 0.4 }}>DAY {d.day} · back {fmtClock(d.clock)}</Typography>}
                     <GlanceRow color="#F59E0B" dot="S" name={data.places[start].name} time={fmtClock(parseTime(startTime))}
                       legColor={LEG_COLORS[0]} drive={`${d.tl[0].dm} min · ${d.tl[0].dk} km`} />
-                    {d.tl.map((t, ti) => {
+                    {(() => { let rn = 0; return d.tl.map((t, ti) => {
                       const lastStop = ti === d.tl.length - 1;
-                      return <GlanceRow key={t.gi} color={CAT_HEX[data.places[t.idx].cat] || '#2196F3'} dot={ti + 1} name={data.places[t.idx].name} time={fmtClock(t.arrive)}
-                        last={lastStop} legColor={LEG_COLORS[(ti + 1) % LEG_COLORS.length]}
-                        drive={lastStop ? null : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`} />;
-                    })}
+                      const legColor = lastStop ? '#64748B' : LEG_COLORS[(ti + 1) % LEG_COLORS.length];
+                      const drive = lastStop ? null : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
+                      if (t.brk || t.meal)   // free time / meal — no place lookup (matches the main timeline guard)
+                        return <GlanceRow key={t.gi} color="#64748B" dot="•" name={t.meal || 'Free time'} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
+                      rn++;
+                      return <GlanceRow key={t.gi} color={CAT_HEX[data.places[t.idx].cat] || '#2196F3'} dot={rn} name={data.places[t.idx].name} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
+                    }); })()}
                   </Box>
                 ))}
               </Box>

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 // Built into the served subfolder of the static site (committed + served at
@@ -16,5 +16,10 @@ export default defineConfig({
       '/data': { target: 'https://nivaastays.com', changeOrigin: true },
       '/api': { target: 'https://nivaastays.com', changeOrigin: true },
     },
+  },
+  // unit tests for the pure logic modules (utils + scheduler). Node env — no DOM needed.
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.js'],
   },
 });
