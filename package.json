@@ -7,7 +7,8 @@
     "watch:css": "tailwindcss -i css/tailwind-src.css -o css/tailwind.css --watch",
     "cache-bust": "node scripts/cache-bust.mjs",
     "build:planner": "npm --prefix planner-src install --no-audit --no-fund && npm --prefix planner-src run build",
-    "build": "npm run build:css && npm run build:planner && npm run cache-bust"
+    "build": "npm run build:css && npm run build:planner && npm run cache-bust && npm run inline-css",
+    "inline-css": "node scripts/inline-css.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0"
