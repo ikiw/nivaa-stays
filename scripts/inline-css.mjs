@@ -13,7 +13,16 @@ const css =
   readFileSync(join(ROOT, 'css/tailwind.css'), 'utf8').trim() + '\n' +
   readFileSync(join(ROOT, 'css/styles.css'), 'utf8').trim();
 
-const PAGES = ['index.html'];
+const PAGES = [
+  'index.html', '404.html', 'gallery.html', 'guides.html',
+  'celebration-stay-pondicherry.html', 'full-house-stay-pondicherry.html',
+  'work-from-home-pondicherry.html', 'pet-friendly-stay-pondicherry.html',
+  'conference-stay-jipmer.html', 'marine-training-stay-jipmer.html',
+  'patient-family-stay-jipmer.html', 'student-family-stay-jipmer.html',
+  'guest-house-near-jipmer.html', 'hotels-near-jipmer.html',
+  'hotel-with-bathtub-pondicherry.html', 'pondicherry-travel-guide.html',
+  'stay-guide.html',
+];
 const START = '<style id="inline-css">';
 
 for (const p of PAGES) {
