@@ -1,7 +1,7 @@
 // Nivaa Stays — inline two-month calendar picker with per-night pricing.
 // Renders into <div id="rate-picker"></div>. Uses pricing.js for rate lookups.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, advancePaymentFor, guestFeeFor } from './pricing.js';
+import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, advancePaymentFor, guestFeeFor, petFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -18,6 +18,7 @@ const state = {
   discountValue: 0,
   studios: 1,            // 1 = single studio, 2 = full house
   guests: 2,             // total guest count across the booking
+  hasPet: false,         // travelling with a pet → flat ₹/night pet charge
   guestName: '',         // admin-only, not in URL (PII)
   guestMobile: '',       // admin-only, not in URL (PII)
   isAdmin: false,
@@ -108,10 +109,45 @@ function renderInstruction() {
   </div>`;
 }
 
+// Single source of truth for the money math — used by the on-screen breakdown,
+// the sticky bar, and the printable quote so the four totals can never drift.
+function computeQuote() {
+  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
+  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+  const studios = state.studios || 1;
+  const roomTotal = q.total * studios;
+  const transitSubtotal = (tt.total || 0) * studios;
+  const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
+  const petInfo = petFeeFor(state.hasPet, q.totalNights, state.config);
+  const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee;
+  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
+  const grandTotal = Math.max(0, subtotal - disc.amount);
+  return { q, tt, studios, roomTotal, transitSubtotal, guestInfo, petInfo, subtotal, disc, grandTotal };
+}
+
+// Build the WhatsApp booking message + deep link from a computeQuote() result.
+// Shared by the breakdown CTA and the sticky bar so they stay identical.
+function buildBookingMessage(c) {
+  const tx = state.config.transit;
+  const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
+  const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
+  const transitMsgPart = (state.earlyHours > 0 || state.lateHours > 0)
+    ? ` Includes${state.earlyHours > 0 ? ` early check-in ${state.earlyHours}h (₹${c.tt.early})` : ''}${state.earlyHours > 0 && state.lateHours > 0 ? ' and' : ''}${state.lateHours > 0 ? ` late checkout ${state.lateHours}h (₹${c.tt.late})` : ''}${c.tt.capped ? ' (combined cap applied)' : ''}.`
+    : '';
+  const discMsgPart = c.disc.amount > 0 ? ` Discount: ${c.disc.label} (−${formatINR(c.disc.amount)}).` : '';
+  const studiosMsgPart = c.studios > 1 ? ` ${c.studios} studios (Full House).` : '';
+  const guestsMsgPart = ` ${state.guests} guest${state.guests === 1 ? '' : 's'}${c.guestInfo.extras > 0 ? ` (${c.guestInfo.extras} extra)` : ''}.`;
+  const petsMsgPart = c.petInfo.fee > 0 ? ` Travelling with a pet (+${formatINR(c.petInfo.fee)}).` : '';
+  const quoteUrl = buildShareUrl(false);
+  const msg = `Hi Nivaa Stays, I'd like to book ${c.q.totalNights} night${c.q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart}${petsMsgPart} Total ${formatINR(c.grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
+  return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+}
+
 function renderBreakdown() {
   if (!state.checkIn || !state.checkOut) return '';
 
-  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
+  const c = computeQuote();
+  const q = c.q;
   const rows = q.nights.map(n => {
     const tierLabel = n.tier === 'longWeekend' ? 'Long wknd'
                     : n.tier === 'weekend'     ? 'Weekend'
@@ -124,30 +160,19 @@ function renderBreakdown() {
   }).join('');
 
   const tx = state.config.transit;
-  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+  const tt = c.tt;
   const transitSection = renderTransit(tx, tt);
 
-  const studios = state.studios || 1;
-  const roomTotal = q.total * studios;
-  const transitSubtotal = (tt.total || 0) * studios;
-  const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
-  const subtotal = roomTotal + transitSubtotal + guestInfo.fee;
-  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
-  const grandTotal = Math.max(0, subtotal - disc.amount);
+  const studios = c.studios;
+  const roomTotal = c.roomTotal;
+  const transitSubtotal = c.transitSubtotal;
+  const guestInfo = c.guestInfo;
+  const petInfo = c.petInfo;
+  const subtotal = c.subtotal;
+  const disc = c.disc;
+  const grandTotal = c.grandTotal;
 
-  const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
-  const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
-
-  const transitMsgPart = (state.earlyHours > 0 || state.lateHours > 0)
-    ? ` Includes${state.earlyHours > 0 ? ` early check-in ${state.earlyHours}h (₹${tt.early})` : ''}${state.earlyHours > 0 && state.lateHours > 0 ? ' and' : ''}${state.lateHours > 0 ? ` late checkout ${state.lateHours}h (₹${tt.late})` : ''}${tt.capped ? ' (combined cap applied)' : ''}.`
-    : '';
-  const discMsgPart = disc.amount > 0 ? ` Discount: ${disc.label} (−${formatINR(disc.amount)}).` : '';
-  const quoteUrl = buildShareUrl(false);
-
-  const studiosMsgPart = studios > 1 ? ` ${studios} studios (Full House).` : '';
-  const guestsMsgPart = ` ${state.guests} guest${state.guests === 1 ? '' : 's'}${guestInfo.extras > 0 ? ` (${guestInfo.extras} extra)` : ''}.`;
-  const msg = `Hi Nivaa Stays, I'd like to book ${q.totalNights} night${q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart} Total ${formatINR(grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
-  const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  const waUrl = buildBookingMessage(c);
 
   const transitTotalRow = tt.total
     ? `<div class="rp-row rp-row-transit">
@@ -170,6 +195,13 @@ function renderBreakdown() {
         <span class="rp-row-rate">${formatINR(guestInfo.fee)}</span>
       </div>`
     : '';
+  const petScreenRow = petInfo.fee > 0
+    ? `<div class="rp-row rp-row-pet">
+        <span class="rp-row-date">Pet charge</span>
+        <span class="rp-row-tier">${formatINR(petInfo.perNight)} × ${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</span>
+        <span class="rp-row-rate">${formatINR(petInfo.fee)}</span>
+      </div>`
+    : '';
 
   const subtotalRow = disc.amount > 0
     ? `<div class="rp-row rp-row-subtotal"><span class="rp-row-date">Subtotal</span><span></span><span class="rp-row-rate">${formatINR(subtotal)}</span></div>
@@ -181,7 +213,7 @@ function renderBreakdown() {
       <div><strong>${fmtPretty(state.checkIn)}</strong> → <strong>${fmtPretty(state.checkOut)}</strong></div>
       <div class="rp-nights">${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</div>
     </div>
-    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${subtotalRow}</div>
+    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${petScreenRow}${subtotalRow}</div>
     <div class="rp-total">
       <span>Total</span>
       <span class="rp-total-amt">${formatINR(grandTotal)}</span>
@@ -352,6 +384,13 @@ function render() {
           </div>
           <span class="rp-guests-hint">${state.studios * 2} included · max ${state.studios * 4}</span>
         </div>
+        <div class="rp-pets-group">
+          <span class="rp-studios-label">Pet</span>
+          <div class="rp-studios-toggle">
+            <button type="button" class="rp-studio-opt ${state.hasPet ? 'active' : ''}" data-action="pet-toggle" aria-pressed="${state.hasPet}">${state.hasPet ? '🐾 With pet' : '+ Add pet'}</button>
+          </div>
+          <span class="rp-guests-hint">+${formatINR(state.config?.petPolicy?.feePerNight || 0)}/night</span>
+        </div>
       </div>
       <div class="rp-header">
         <button type="button" class="rp-nav" data-action="prev" aria-label="Previous month">‹</button>
@@ -398,13 +437,9 @@ function renderPrintQuote() {
     host.innerHTML = '';
     return;
   }
-  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
-  const studios = state.studios || 1;
-  const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
-  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
-  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
-  const grandTotal = Math.max(0, subtotal - disc.amount);
+  const c = computeQuote();
+  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo;
+  const subtotal = c.subtotal, disc = c.disc, grandTotal = c.grandTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
   const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
@@ -429,6 +464,9 @@ function renderPrintQuote() {
     : '';
   const guestPdfRow = guestInfo.fee > 0
     ? `<tr class="guest-row"><td>Extra guests</td><td>${guestInfo.extras} × ${formatINR(guestInfo.perGuestPerNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.fee)}</td></tr>`
+    : '';
+  const petPdfRow = petInfo.fee > 0
+    ? `<tr class="pet-row"><td>Pet charge</td><td>${formatINR(petInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(petInfo.fee)}</td></tr>`
     : '';
   const subtotalRow = disc.amount > 0
     ? `<tr class="subtotal-row"><td colspan="2">${studios > 1 ? 'Booking subtotal' : 'Subtotal'}</td><td class="num">${formatINR(subtotal)}</td></tr>
@@ -465,6 +503,7 @@ function renderPrintQuote() {
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
           <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'}</td></tr>
           <tr><td>Guests</td><td>${state.guests}${guestInfo.extras > 0 ? ` <span class="pq-pill">${guestInfo.extras} extra</span>` : ''}</td></tr>
+          ${petInfo.fee > 0 ? `<tr><td>Pet</td><td>Travelling with a pet <span class="pq-pill">+${formatINR(petInfo.perNight)}/night</span></td></tr>` : ''}
         </table>
       </section>
 
@@ -477,6 +516,7 @@ function renderPrintQuote() {
             ${transitRow}
             ${studiosMultRow}
             ${guestPdfRow}
+            ${petPdfRow}
             ${subtotalRow}
           </tbody>
           <tfoot>
@@ -514,25 +554,12 @@ function renderStickyBar() {
     document.body.classList.remove('rp-has-sticky');
     return;
   }
-  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
-  const studios = state.studios || 1;
-  const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
-  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
-  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
-  const grandTotal = Math.max(0, subtotal - disc.amount);
+  const c = computeQuote();
+  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo;
+  const subtotal = c.subtotal, disc = c.disc, grandTotal = c.grandTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
-  const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
-  const transitMsgPart = (state.earlyHours > 0 || state.lateHours > 0)
-    ? ` Includes${state.earlyHours > 0 ? ` early check-in ${state.earlyHours}h (₹${tt.early})` : ''}${state.earlyHours > 0 && state.lateHours > 0 ? ' and' : ''}${state.lateHours > 0 ? ` late checkout ${state.lateHours}h (₹${tt.late})` : ''}${tt.capped ? ' (combined cap applied)' : ''}.`
-    : '';
-  const discMsgPart = disc.amount > 0 ? ` Discount: ${disc.label} (−${formatINR(disc.amount)}).` : '';
-  const quoteUrl = buildShareUrl(false);
-  const studiosMsgPart = studios > 1 ? ` ${studios} studios (Full House).` : '';
-  const guestsMsgPart = ` ${state.guests} guest${state.guests === 1 ? '' : 's'}${guestInfo.extras > 0 ? ` (${guestInfo.extras} extra)` : ''}.`;
-  const msg = `Hi Nivaa Stays, I'd like to book ${q.totalNights} night${q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart} Total ${formatINR(grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
-  const waUrl = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
+  const waUrl = buildBookingMessage(c);
 
   if (!bar) {
     bar = document.createElement('div');
@@ -588,6 +615,7 @@ function onClick(e) {
       state.guests = Math.max(1, (state.guests || 2) - 1);
       render(); return;
     }
+    if (a === 'pet-toggle') { state.hasPet = !state.hasPet; render(); return; }
     if (a === 'disc-clear') { state.discountValue = 0; render(); return; }
     if (a === 'export-pdf') {
       renderPrintQuote();
@@ -662,6 +690,7 @@ function parseUrlState() {
   const g = parseInt(p.get('guests') || '0', 10);
   if (g > 0) state.guests = g;
   else state.guests = state.studios === 2 ? 4 : 2;
+  state.hasPet = p.get('pet') === '1';
 
   // Only sticky-apply manual discounts. Auto values (discSrc=auto) are
   // informational in the URL — the rules engine recomputes them on render.
@@ -689,6 +718,7 @@ function buildShareUrl(includeAdmin = false) {
   // Only emit guests if it differs from the default-for-studios (cleaner URLs)
   const defaultGuests = state.studios === 2 ? 4 : 2;
   if (state.guests && state.guests !== defaultGuests) p.set('guests', String(state.guests));
+  if (state.hasPet) p.set('pet', '1');
 
   // Always reflect the effective discount in the URL. Manual values are sticky
   // (parser writes them back to state). Auto values are tagged with discSrc=auto

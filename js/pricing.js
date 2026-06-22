@@ -166,6 +166,16 @@ export function guestFeeFor(guests, studios, nights, config) {
   return { included, max, extras, fee, perGuestPerNight: gp.extraGuestFeePerNight || 0 };
 }
 
+// Flat pet charge: a single ₹feePerNight add-on per night when the guest is
+// travelling with a pet — once per booking, NOT per studio (mirrors how the
+// extra-guest fee is a booking-level add-on). Returns { hasPet, perNight, fee }.
+export function petFeeFor(hasPet, nights, config) {
+  const pp = config.petPolicy;
+  const perNight = pp ? (pp.feePerNight || 0) : 0;
+  if (!pp || !hasPet) return { hasPet: false, perNight, fee: 0 };
+  return { hasPet: true, perNight, fee: perNight * nights };
+}
+
 // Compute the advance-payment amount required to confirm a booking.
 // Rules are evaluated top-down; first matching rule wins. Each rule may
 // gate on minTotal / maxTotal of the grand total.

@@ -47,6 +47,10 @@
     "maxPerStudio": 4,
     "extraGuestFeePerNight": 500
   },
+  "petPolicy": {
+    "feePerNight": 500,
+    "label": "Pet charge"
+  },
   "advancePayment": {
     "minAmount": 1000,
     "maxAmount": 3000,

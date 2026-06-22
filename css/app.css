@@ -20,7 +20,7 @@
   flex-wrap: wrap;
   justify-content: space-between;
 }
-.rp-studios-group, .rp-guests-group {
+.rp-studios-group, .rp-guests-group, .rp-pets-group {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -86,6 +86,8 @@
 .rp-row-studios .rp-row-tier { color: var(--brand-gold); font-weight: 600; font-size: 0.8rem; }
 .rp-row-guest { color: #8b6f12; }
 .rp-row-guest .rp-row-tier { color: var(--brand-muted); font-size: 0.74rem; }
+.rp-row-pet { color: #8b6f12; }
+.rp-row-pet .rp-row-tier { color: var(--brand-muted); font-size: 0.74rem; }
 .rp-header {
   display: flex;
   align-items: center;
@@ -600,6 +602,8 @@
   .pq-rate-tbl .studios-row td:nth-child(2) { color: #C9A227; }
   .pq-rate-tbl .guest-row td { padding: 5pt 4pt; color: #8b6f12; }
   .pq-rate-tbl .guest-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
+  .pq-rate-tbl .pet-row td { padding: 5pt 4pt; color: #8b6f12; }
+  .pq-rate-tbl .pet-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .pq-rate-tbl .subtotal-row td { padding-top: 8pt; color: #5B6B68; border-top: 1pt dashed #d8dedb; border-bottom: none; }
   .pq-rate-tbl .discount-row td { color: #1a7a4a; font-weight: 600; border-bottom: none; }
   /* Render the TOTAL/Advance/Balance footer ONCE — browsers otherwise repeat a
