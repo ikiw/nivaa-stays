@@ -33,14 +33,14 @@ import CloseRounded from '@mui/icons-material/CloseRounded';
 import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
-import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, DAY_COLORS } from './constants.js';
-import { idealStay, isPseudo, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils.js';
+import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, DAY_COLORS } from './constants';
+import { idealStay, isPseudo, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils';
 import { CURATED } from './curated.js';
 import AboutPanel from './components/AboutPanel.jsx';
 import RouteMap from './components/RouteMap.jsx';
 import PlaceInfoCard from './components/PlaceInfoCard.jsx';
 import { GlanceRow, Centered, Grid, CatHead } from './components/Bits.jsx';
-import { computeSchedule, scheduleStays } from './scheduler.js';
+import { computeSchedule, scheduleStays } from './scheduler';
 import TimelineNode from './components/TimelineNode.jsx';
 export default function App() {
   const theme = useTheme();

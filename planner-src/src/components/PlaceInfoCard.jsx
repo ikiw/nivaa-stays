@@ -8,8 +8,8 @@ import StarRounded from '@mui/icons-material/StarRounded';
 import MapRounded from '@mui/icons-material/MapRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
-import { photoCache, mapLink } from '../utils.js';
-import { CAT_LABEL, SUB_LABEL, CAT_ICON } from '../constants.js';
+import { photoCache, mapLink } from '../utils';
+import { CAT_LABEL, SUB_LABEL, CAT_ICON } from '../constants';
 
 /**
  * @param {{ place:object, onClose:()=>void, isMobile:boolean, onShowOnMap?:()=>void }} props

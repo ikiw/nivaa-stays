@@ -11,8 +11,8 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
-import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants.js';
-import { fmtDur } from '../utils.js';
+import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
+import { fmtDur } from '../utils';
 
 /**
  * @param {object} props row fields (icon, idx, cat, dot, title, sub, stay, gi, last,

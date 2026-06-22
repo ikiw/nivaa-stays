@@ -2,7 +2,7 @@
 import { Box, Stack, Typography } from '@mui/material';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
-import { CAT_ICON, CAT_LABEL } from '../constants.js';
+import { CAT_ICON, CAT_LABEL } from '../constants';
 
 /**
  * Compact connected day-glance row (used in the on-map floating card) — a dot + a

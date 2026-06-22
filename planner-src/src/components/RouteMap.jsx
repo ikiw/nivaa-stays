@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from '../config.js';
-import { DAY_COLORS, CAT_HEX, LEG_COLORS, CAR_SVG } from '../constants.js';
+import { DAY_COLORS, CAT_HEX, LEG_COLORS, CAR_SVG } from '../constants';
 
 /**
  * The planner map. Renders the start + stop markers and the routed driving path.

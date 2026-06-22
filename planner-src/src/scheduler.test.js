@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { scheduleStays, computeSchedule } from './scheduler.js';
-import { stopDur } from './utils.js';
+import { scheduleStays, computeSchedule } from './scheduler';
+import { stopDur } from './utils';
 
 // ---- a tiny fake world: catalog + symmetric drive matrices -------------------
 // 0 = start (Area, zero duration), 1 = Beach (flexible), 2 = Temple (rigid), 3 = Cafe.

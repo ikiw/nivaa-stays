@@ -2,8 +2,8 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
   fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch,
-} from './utils.js';
-import { BREAK_DUR, MEAL_DUR } from './constants.js';
+} from './utils';
+import { BREAK_DUR, MEAL_DUR } from './constants';
 
 describe('time math', () => {
   it('parseTime: "HH:MM" → minutes since midnight', () => {
