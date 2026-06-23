@@ -1,14 +1,18 @@
 import { describe, it, expect } from 'vitest';
-import { scheduleStays, computeSchedule } from './scheduler';
-import { stopDur } from './utils';
+import { scheduleStays, computeSchedule } from '../src/scheduler';
+import { stopDur } from '../src/utils';
+import type { Place, Stop, Category } from '../src/types';
+
+/** Build a full Place from the minimal fields these scheduler tests care about. */
+const mk = (name: string, cat: Category, sub?: string): Place => ({ name, cat, sub, lat: 0, lng: 0 });
 
 // ---- a tiny fake world: catalog + symmetric drive matrices -------------------
 // 0 = start (Area, zero duration), 1 = Beach (flexible), 2 = Temple (rigid), 3 = Cafe.
-const places = [
-  { name: 'Bus Stand', cat: 'Area' },
-  { name: 'A Beach', cat: 'Beach' },                              // DUR_CAT.Beach   [45,75,160]
-  { name: 'A Temple', cat: 'Attraction', sub: 'spiritual' },     // DUR_SUB.spiritual [20,30,50]
-  { name: 'A Cafe', cat: 'Food', sub: 'cafe' },                  // DUR_FOOD.cafe    [30,40,70]
+const places: Place[] = [
+  mk('Bus Stand', 'Area'),
+  mk('A Beach', 'Beach'),                       // DUR_CAT.Beach   [45,75,160]
+  mk('A Temple', 'Attraction', 'spiritual'),    // DUR_SUB.spiritual [20,30,50]
+  mk('A Cafe', 'Food', 'cafe'),                 // DUR_FOOD.cafe    [30,40,70]
 ];
 const minutes = [
   [0, 10, 12, 8],
@@ -22,10 +26,10 @@ const km = [
   [7, 4, 0, 2],
   [5, 3, 2, 0],
 ];
-const driveMin = (a, b) => (minutes[a]?.[b] ?? 0);
-const driveKm = (a, b) => (km[a]?.[b] ?? 0);
+const driveMin = (a: number, b: number) => (minutes[a]?.[b] ?? 0);
+const driveKm = (a: number, b: number) => (km[a]?.[b] ?? 0);
 
-const multipleOf5 = (n) => n % 5 === 0;
+const multipleOf5 = (n: number) => n % 5 === 0;
 
 describe('scheduleStays', () => {
   it('empty plan → empty array', () => {
@@ -56,7 +60,7 @@ describe('scheduleStays', () => {
   it('shrinks toward the minimums when the day overflows', () => {
     // 6 adventure attractions (min 150, ideal 180) = 900 min of minimums alone, well past
     // the internal ~825-min day window → stays must compress below their ideal toward the min.
-    const longPlaces = [{ name: 'base', cat: 'Area' }, { name: 'Dive', cat: 'Attraction', sub: 'adventure' }];
+    const longPlaces: Place[] = [mk('base', 'Area'), mk('Dive', 'Attraction', 'adventure')];
     const noDrive = () => 0;
     const items = Array.from({ length: 6 }, () => ({ idx: 1 }));
     const stays = scheduleStays(0, items, longPlaces, noDrive);
@@ -98,7 +102,7 @@ describe('computeSchedule', () => {
   it('real entries carry idx; pseudo entries carry brk/meal and NO idx (the guard contract)', () => {
     // This is exactly the shape the timeline + overview must handle without indexing
     // data.places[t.idx] for a break/meal — the bug that crashed "Add places".
-    const stops = [
+    const stops: Stop[] = [
       { idx: 1, stay: 60, day: 1 },
       { meal: 'Lunch', stay: 45, day: 1 },
       { brk: true, stay: 30, day: 1 },
@@ -118,7 +122,7 @@ describe('computeSchedule', () => {
   });
 
   it('gi is the index into the ORIGINAL stops array (so reorder/remove hit the right one)', () => {
-    const stops = [
+    const stops: Stop[] = [
       { idx: 1, stay: 60, day: 1 },
       { idx: 2, stay: 30, day: 2 },  // different day
       { idx: 3, stay: 30, day: 1 },
@@ -130,7 +134,7 @@ describe('computeSchedule', () => {
   });
 
   it('each day loops independently from the start', () => {
-    const stops = [
+    const stops: Stop[] = [
       { idx: 1, stay: 60, day: 1 },
       { idx: 2, stay: 30, day: 2 },
     ];
@@ -142,7 +146,7 @@ describe('computeSchedule', () => {
   });
 
   it('totals sum the per-day drive and distance', () => {
-    const stops = [
+    const stops: Stop[] = [
       { idx: 1, stay: 30, day: 1 },
       { idx: 2, stay: 30, day: 1 },
     ];

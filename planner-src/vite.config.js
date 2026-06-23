@@ -20,6 +20,6 @@ export default defineConfig({
   // unit tests for the pure logic modules (utils + scheduler). Node env — no DOM needed.
   test: {
     environment: 'node',
-    include: ['src/**/*.test.js'],
+    include: ['tests/**/*.test.ts'],
   },
 });

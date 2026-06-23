@@ -2,8 +2,12 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
   fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch,
-} from './utils';
-import { BREAK_DUR, MEAL_DUR } from './constants';
+} from '../src/utils';
+import { BREAK_DUR, MEAL_DUR } from '../src/constants';
+import type { Place, Category } from '../src/types';
+
+/** Build a full Place from the minimal fields these pure-logic tests care about. */
+const mk = (name: string, cat: Category, sub?: string): Place => ({ name, cat, sub, lat: 0, lng: 0 });
 
 describe('time math', () => {
   it('parseTime: "HH:MM" → minutes since midnight', () => {
@@ -43,10 +47,10 @@ describe('time math', () => {
 });
 
 describe('stop classification & durations', () => {
-  const beach = { name: 'Some Beach', cat: 'Beach' };
-  const overridden = { name: 'Paradise Beach', cat: 'Beach' };
-  const spiritual = { name: 'A Temple', cat: 'Attraction', sub: 'spiritual' };
-  const cafe = { name: 'A Cafe', cat: 'Food', sub: 'cafe' };
+  const beach = mk('Some Beach', 'Beach');
+  const overridden = mk('Paradise Beach', 'Beach');
+  const spiritual = mk('A Temple', 'Attraction', 'spiritual');
+  const cafe = mk('A Cafe', 'Food', 'cafe');
 
   it('placeDur: name override wins over category default', () => {
     expect(placeDur(beach)).toEqual([45, 75, 160]);       // DUR_CAT.Beach
@@ -55,7 +59,7 @@ describe('stop classification & durations', () => {
   it('placeDur: falls back through sub-type then category', () => {
     expect(placeDur(spiritual)).toEqual([20, 30, 50]);    // DUR_SUB.spiritual
     expect(placeDur(cafe)).toEqual([30, 40, 70]);         // DUR_FOOD.cafe
-    expect(placeDur({ name: 'X', cat: 'Mystery' })).toEqual([30, 45, 60]); // DUR_CAT fallback
+    expect(placeDur(mk('X', 'Mystery' as Category))).toEqual([30, 45, 60]); // DUR_CAT fallback
   });
   it('idealStay: the middle of the duration triple', () => {
     expect(idealStay(beach)).toBe(75);
@@ -95,7 +99,7 @@ describe('misc helpers', () => {
     expect(esc(null)).toBe('');
   });
   it('mapLink: explicit map URL wins, else a name search', () => {
-    expect(mapLink({ map: 'https://maps.example/x' })).toBe('https://maps.example/x');
+    expect(mapLink({ name: '', map: 'https://maps.example/x' })).toBe('https://maps.example/x');
     const link = mapLink({ name: 'Paradise Beach' });
     expect(link).toContain('google.com/maps/search');
     expect(link).toContain(encodeURIComponent('Paradise Beach, Pondicherry'));
@@ -107,8 +111,8 @@ describe('misc helpers', () => {
 
 describe('parseSearch: shareable-URL decoding', () => {
   const prev = globalThis.window;
-  afterEach(() => { globalThis.window = prev; });
-  const parse = (search) => { globalThis.window = { location: { search } }; return parseSearch(); };
+  afterEach(() => { (globalThis as any).window = prev; });
+  const parse = (search: string) => { (globalThis as any).window = { location: { search } }; return parseSearch(); };
 
   it('empty query → empty plan', () => {
     expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null });
