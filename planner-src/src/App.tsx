@@ -1,19 +1,16 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Box, Stack, Paper, Card, CardActionArea, Chip, Button, IconButton,
-  TextField, MenuItem, Typography, BottomNavigation, BottomNavigationAction,
-  Snackbar, CircularProgress, useMediaQuery, Tooltip, Slider,
+  MenuItem, Typography, BottomNavigation, BottomNavigationAction,
+  Snackbar, CircularProgress, useMediaQuery,
   ToggleButton, ToggleButtonGroup, Collapse, Menu, Link, Dialog, DialogContent,
 } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
-import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import MapRounded from '@mui/icons-material/MapRounded';
 import CalendarMonthRounded from '@mui/icons-material/CalendarMonthRounded';
-import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
-import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import LightbulbOutlinedRounded from '@mui/icons-material/LightbulbOutlined';
@@ -21,11 +18,9 @@ import SelfImprovementRounded from '@mui/icons-material/SelfImprovementRounded';
 import ShareRounded from '@mui/icons-material/ShareRounded';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
 import WhatsApp from '@mui/icons-material/WhatsApp';
-import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
-import AccessTimeRounded from '@mui/icons-material/AccessTimeRounded';
 import InfoOutlinedRounded from '@mui/icons-material/InfoOutlined';
 import TuneRounded from '@mui/icons-material/TuneRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
@@ -34,7 +29,7 @@ import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, DAY_COLORS } from './constants';
-import { idealStay, isPseudo, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils';
+import { idealStay, isPseudo, parseTime, fmtClock, mealTag, track, parseSearch } from './utils';
 import { CURATED } from './curated';
 import AboutPanel from './components/AboutPanel';
 import RouteMap from './components/RouteMap';
@@ -43,6 +38,10 @@ import { GlanceRow, Centered, Grid, CatHead } from './components/Bits';
 import { computeSchedule, scheduleStays } from './scheduler';
 import TimelineNode from './components/TimelineNode';
 import type { TimelineNodeProps } from './components/TimelineNode';
+import Brand from './components/Brand';
+import AiBar from './components/AiBar';
+import Controls from './components/Controls';
+import PlaceCard from './components/PlaceCard';
 import type { ReactNode, TouchEvent } from 'react';
 import type { ItineraryData, Place, Stop, PlaceStop, SchedItem, ParsedSearch, Curated, Category } from './types';
 
@@ -369,44 +368,9 @@ export default function App() {
     );
   };
 
-  const PlaceCard = (i: number) => {
-    const p = data.places[i], added = isStop(i), Icon = CAT_ICON[p.cat];
-    const cat = CAT_HEX[p.cat] || '#94A3B8';
-    const dm = driveMin(start, i), dk = driveKm(start, i);
-    return (
-      <Card key={i} variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'rgba(255,255,255,0.10)', bgcolor: added ? 'rgba(33,150,243,0.16)' : 'background.paper', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(33,150,243,0.5), 0 8px 22px rgba(0,0,0,0.45)' }, '&:hover .map-ghost': { opacity: 1 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
-          <CardActionArea onClick={(e) => { addToggle(i); e.currentTarget.blur(); }} sx={{ flex: 1, minWidth: 0, p: 1.25, display: 'flex', alignItems: 'center', gap: 1.25, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
-            <Box sx={{ width: 38, height: 38, borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${cat}22`, color: cat }}>
-              <Icon sx={{ fontSize: 20 }} />
-            </Box>
-            <Box sx={{ minWidth: 0, flex: 1 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.25, letterSpacing: '-0.01em' }}>{p.name}</Typography>
-              {p.desc && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.2, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.desc}</Typography>}
-              {dm > 0 && (
-                <Box sx={{ mt: 0.4, display: 'flex', alignItems: 'center', gap: 0.5, fontSize: '0.7rem', fontWeight: 600, color: 'text.secondary' }}>
-                  <DirectionsCarRounded sx={{ fontSize: 13 }} /> {dm} min · {dk.toFixed(1)} km
-                </Box>
-              )}
-            </Box>
-            <Tooltip title={added ? 'Remove from day' : 'Add to day'}>
-              <Box component="span" sx={{ flexShrink: 0, display: 'flex' }}>
-                {added
-                  ? <CheckCircleRounded sx={{ fontSize: 25, color: 'primary.main' }} />
-                  : <AddCircleOutlineRounded sx={{ fontSize: 25, color: 'text.secondary' }} />}
-              </Box>
-            </Tooltip>
-          </CardActionArea>
-          <Tooltip title="Open in Google Maps">
-            <IconButton size="small" component="a" href={mapLink(p)} target="_blank" rel="noopener" className="map-ghost"
-              sx={{ flexShrink: 0, alignSelf: 'center', mr: 0.5, color: 'text.secondary', opacity: { xs: 0.65, md: 0 }, transition: 'opacity .15s ease, color .15s ease', '&:hover': { opacity: 1, color: 'primary.light' } }}>
-              <OpenInNewRounded sx={{ fontSize: 17 }} />
-            </IconButton>
-          </Tooltip>
-        </Box>
-      </Card>
-    );
-  };
+  const placeCard = (i: number) => (
+    <PlaceCard key={i} place={data.places[i]} added={isStop(i)} dm={driveMin(start, i)} dk={driveKm(start, i)} onToggle={() => addToggle(i)} />
+  );
 
   const PlacesPanel = () => {
     const cats = filter === 'All' ? PICK_ORDER : PICK_ORDER.filter(c => c === filter);
@@ -425,10 +389,10 @@ export default function App() {
             if (single) subs = subs.filter(s => s === subFilter);
             subs.forEach(s => {
               if (s && !single) inner.push(<Typography key={cat + s} sx={{ fontSize: '0.66rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: 'text.secondary', mt: 1, mb: 0.5 }}>{SUB_LABEL[s] || s}</Typography>);
-              inner.push(<Grid key={cat + s + 'g'}>{bySub[s].map(PlaceCard)}</Grid>);
+              inner.push(<Grid key={cat + s + 'g'}>{bySub[s].map(placeCard)}</Grid>);
             });
           } else {
-            inner.push(<Grid key={cat + 'g'}>{items.map(PlaceCard)}</Grid>);
+            inner.push(<Grid key={cat + 'g'}>{items.map(placeCard)}</Grid>);
           }
           return (
             <Box key={cat} sx={{ mb: 1.5 }}>
@@ -598,59 +562,6 @@ export default function App() {
     </Box>
   );
 
-  const AiBar = () => (
-    <Paper elevation={0} sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999,
-      backgroundColor: 'rgba(18,19,22,0.42)', backdropFilter: 'blur(14px)',
-      boxShadow: '0 0 14px rgba(251,191,36,0.16), 0 4px 18px rgba(0,0,0,0.4)', transition: 'box-shadow .18s ease',
-      '&::before': { content: '""', position: 'absolute', inset: 0, borderRadius: 'inherit', padding: '1.5px', pointerEvents: 'none',
-        background: 'linear-gradient(90deg, #0A0A0C 0%, #5B4A12 45%, #FBBF24 100%)',
-        WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' },
-      '&:focus-within': { boxShadow: '0 0 0 3px rgba(251,191,36,0.20), 0 0 22px rgba(251,191,36,0.40), 0 4px 18px rgba(0,0,0,0.45)' } }}>
-      <TextField fullWidth variant="standard" placeholder={isMobile ? 'Describe your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
-        value={aiQuery} onChange={e => setAiQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') aiPlan(); }}
-        InputProps={{ disableUnderline: true, startAdornment: <AutoAwesomeRounded sx={{ color: 'secondary.main', ml: 0.8, mr: 1 }} />, sx: { fontSize: '0.95rem' } }} />
-      <Button variant="contained" color="secondary" onClick={aiPlan} disabled={aiBusy} aria-label="Plan my day"
-        startIcon={isMobile ? undefined : (aiBusy ? <CircularProgress size={16} color="inherit" /> : <AutoAwesomeRounded />)}
-        sx={{ borderRadius: 999, flexShrink: 0, minWidth: isMobile ? 44 : undefined, px: isMobile ? 0 : 2 }}>
-        {isMobile ? (aiBusy ? <CircularProgress size={18} color="inherit" /> : <AutoAwesomeRounded />) : (aiBusy ? 'Planning…' : 'Plan my day')}
-      </Button>
-    </Paper>
-  );
-
-  const Controls = () => {
-    const sMin = parseTime(startTime), eMin = parseTime(endTime);
-    return (
-      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ flexWrap: { xs: 'wrap', md: 'nowrap' } }} useFlexGap>
-        <TextField select size="small" label="Start from" value={start} onChange={e => { const v = +e.target.value; touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }}
-          sx={{ flex: '1 1 0', minWidth: { xs: '46%', md: 0 }, '& .MuiInputBase-input': { fontSize: '0.85rem', fontWeight: 600 } }}>
-          {starts.map(({ p, i }) => <MenuItem key={i} value={i}>{p.name}</MenuItem>)}
-        </TextField>
-        <Stack sx={{ flex: '1 1 0', minWidth: { xs: 150, md: 0 } }}>
-          <Typography variant="caption" noWrap sx={{ color: 'text.secondary', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 0.4 }}>
-            <AccessTimeRounded sx={{ fontSize: 14 }} /> {fmtClock(sMin)} – {fmtClock(eMin)}
-          </Typography>
-          <Slider size="small" value={[sMin, eMin]} min={300} max={1380} step={30} disableSwap
-            onChange={(_, v) => { touched(); const r = v as number[]; setStartTime(toHHMM(r[0])); setEndTime(toHHMM(r[1])); }}
-            valueLabelDisplay="auto" valueLabelFormat={(m) => fmtClock(m)} getAriaLabel={() => 'Day window'} sx={{ mt: -0.2, py: 0.5 }} />
-        </Stack>
-      </Stack>
-    );
-  };
-
-  // ---------- layouts ----------
-  const Brand = (
-    <Stack direction="row" spacing={1.3} alignItems="center" sx={{ minWidth: 0 }}>
-      <Box sx={{ width: 40, height: 40, borderRadius: '11px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'linear-gradient(135deg, #FCD34D 0%, #F59E0B 100%)', color: '#231A00', boxShadow: '0 4px 14px rgba(245,158,11,0.45)' }}>
-        <BeachAccessRounded />
-      </Box>
-      <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.05, letterSpacing: '-0.01em' }}>Pondicherry Planner</Typography>
-        <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>Plan a day trip · driving times · r/pondicherry picks</Typography>
-      </Box>
-    </Stack>
-  );
-
   if (isMobile) {
     const loadedC = CURATED.find(c => c.id === loadedId);
     const showList = !stops.length || browsing;          // browsing the ready-made list
@@ -682,9 +593,9 @@ export default function App() {
         ) : (
           // ---- itinerary list / places: brand + AI prompt (+ start/window only on Places) ----
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
-            <Box sx={{ mb: 1 }}>{Brand}</Box>
-            {mobView !== 'about' && <Box sx={{ mb: 1 }}>{AiBar()}</Box>}
-            {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{Controls()}</Box>}
+            <Box sx={{ mb: 1 }}>{<Brand />}</Box>
+            {mobView !== 'about' && <Box sx={{ mb: 1 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>}
+            {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{<Controls start={start} startTime={startTime} endTime={endTime} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} />}</Box>}
           </Box>
         )}
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -723,8 +634,8 @@ export default function App() {
       <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, flexShrink: 0, borderRadius: '14px', border: '1px solid', borderColor: 'divider',
         backgroundImage: 'linear-gradient(90deg, rgba(10,10,12,0.96) 28%, rgba(10,10,12,0.72) 60%, rgba(10,10,12,0.84)), url(/images/pondy-planner-bg.avif)',
         backgroundSize: 'cover', backgroundPosition: 'center 28%', backgroundRepeat: 'no-repeat' }}>
-        {Brand}
-        <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{AiBar()}</Box>
+        {<Brand />}
+        <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
         <Button size="small" startIcon={<InfoOutlinedRounded />} onClick={() => setAboutOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary' }}>About</Button>
       </Paper>
       <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundImage: 'none' } }}>
@@ -739,7 +650,7 @@ export default function App() {
         <Paper elevation={0} sx={{ width: 510, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
           background: 'linear-gradient(180deg, #1C1A16 0%, #16161A 22%, #101013 100%)' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-            {Controls()}
+            {<Controls start={start} startTime={startTime} endTime={endTime} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && openView(v)} color="primary">
               <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
               <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Itinerary{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
