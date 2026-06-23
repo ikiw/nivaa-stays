@@ -1,5 +1,6 @@
 // Authored content: the ready-made starter itineraries and the FAQ shown in the
 // About panel. Pure data.
+import type { Curated, Faq } from './types';
 
 /**
  * Curated starter itineraries — authored by us, by place name (resolved to catalog
@@ -9,7 +10,7 @@
  * have one day, 2-day plans two. Each day is its own loop from the start (you return to base).
  * @type {{id:string, cohort:string, tag:string, start:string, why:string, plan:string[][]}[]}
  */
-export const CURATED = [
+export const CURATED: Curated[] = [
   // orders are opening-hours-aware + grouped by area; see `why`. Re-authored against the expanded catalog.
   // ---------- 1-day ----------
   { id: "family-1d", cohort: "Family Day Out", tag: "Boat, beaches & market", start: "Pondicherry Bus Stand",
@@ -52,7 +53,7 @@ export const CURATED = [
 ];
 
 /** FAQ shown in the About panel (also strong SEO content). */
-export const FAQ = [
+export const FAQ: Faq[] = [
   { q: 'How many days do you need in Pondicherry?', a: "One to two days covers the highlights. A single day fits White Town's French Quarter, the Promenade, the Sri Aurobindo Ashram and a beach; add a second day for Auroville and Matrimandir, or the Chunnambar backwater boat to Paradise Beach." },
   { q: 'What is a good one-day Pondicherry itinerary?', a: 'Spend the cool morning in White Town — the Ashram before its midday close, Bharathi Park and a heritage café — then lunch, an afternoon at Serenity or Paradise Beach, a Promenade sunset and dinner. The planner sequences the stops by opening hours and driving time.' },
   { q: 'Best Pondicherry itinerary for couples, families or solo travellers?', a: 'Couples enjoy a slow White-Town-and-beach day ending with a rooftop dinner; families do well with the Chunnambar boat, Paradise Beach and Goubert Market; solo travellers like a culture trail of the Ashram, galleries and the heritage library. The planner has a ready-made plan for each.' },

@@ -10,28 +10,37 @@ import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import { photoCache, mapLink } from '../utils';
 import { CAT_LABEL, SUB_LABEL, CAT_ICON } from '../constants';
+import type { Place } from '../types';
 
-/**
- * @param {{ place:object, onClose:()=>void, isMobile:boolean, onShowOnMap?:()=>void }} props
- */
-export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }) {
+type Photo = { url: string; author: string };
+
+interface PlaceInfoCardProps {
+  place: Place;
+  onClose: () => void;
+  isMobile: boolean;
+  onShowOnMap?: () => void;
+}
+
+export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }: PlaceInfoCardProps) {
   const placesLib = useMapsLibrary('places');
-  const [photo, setPhoto] = useState(() => (place.placeId ? photoCache.get(place.placeId) : null));
+  // photo: a Photo once resolved, null when there's no place, undefined while loading.
+  const [photo, setPhoto] = useState<Photo | null | undefined>(() => (place.placeId ? photoCache.get(place.placeId) : null));
   useEffect(() => {
-    if (!place.placeId) { setPhoto(null); return; }
-    if (photoCache.has(place.placeId)) { setPhoto(photoCache.get(place.placeId)); return; }
-    setPhoto(undefined);                       // loading
+    const placeId = place.placeId;                 // capture so narrowing survives the async closure
+    if (!placeId) { setPhoto(null); return; }
+    if (photoCache.has(placeId)) { setPhoto(photoCache.get(placeId)); return; }
+    setPhoto(undefined);                           // loading
     if (!placesLib) return;
     let alive = true;
     (async () => {
-      let res = { url: '', author: '' };
+      let res: Photo = { url: '', author: '' };
       try {
-        const pl = new placesLib.Place({ id: place.placeId });
+        const pl = new placesLib.Place({ id: placeId });
         await pl.fetchFields({ fields: ['photos'] });
         const ph = pl.photos && pl.photos[0];
         if (ph && ph.getURI) res = { url: ph.getURI({ maxWidth: 400 }), author: (ph.authorAttributions && ph.authorAttributions[0] && ph.authorAttributions[0].displayName) || '' };
-      } catch (e) { /* Places API not enabled / no photo — fall back to icon */ }
-      photoCache.set(place.placeId, res);
+      } catch { /* Places API not enabled / no photo — fall back to icon */ }
+      photoCache.set(placeId, res);
       if (alive) setPhoto(res);
     })();
     return () => { alive = false; };
@@ -40,7 +49,8 @@ export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap })
   const cat = (CAT_LABEL[place.cat] || place.cat || 'Start') + (place.sub ? ' · ' + (SUB_LABEL[place.sub] || place.sub) : '');
   const gmaps = place.placeId ? `https://www.google.com/maps/place/?q=place_id:${place.placeId}` : mapLink(place);
   const FallbackIcon = CAT_ICON[place.cat] || PlaceRounded;
-  const hasPhoto = photo && photo.url;
+  const photoUrl = photo && photo.url ? photo.url : null;     // a real photo URL once loaded
+  const photoAuthor = (photo && photo.author) || '';
   return (
     <Paper elevation={10} sx={{ position: isMobile ? 'fixed' : 'absolute', left: isMobile ? 10 : 12, right: isMobile ? 10 : 12,
       bottom: isMobile ? 'calc(env(safe-area-inset-bottom) + 66px)' : 12, zIndex: isMobile ? 1250 : 5, p: 1.25, borderRadius: '14px',
@@ -48,7 +58,7 @@ export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap })
       <Stack direction="row" spacing={1.25}>
         <Box sx={{ width: 76, height: 76, borderRadius: '10px', flexShrink: 0, overflow: 'hidden', bgcolor: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           {photo === undefined ? <CircularProgress size={20} />
-            : hasPhoto ? <Box component="img" src={photo.url} alt={place.name} loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : photoUrl ? <Box component="img" src={photoUrl} alt={place.name} loading="lazy" sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             : <FallbackIcon sx={{ fontSize: 30, color: 'text.disabled' }} />}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -68,7 +78,7 @@ export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap })
       </Stack>
       {place.desc && <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mt: 0.85, lineHeight: 1.45, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{place.desc}</Typography>}
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.85 }}>
-        <Typography sx={{ fontSize: '0.62rem', color: 'text.disabled', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{hasPhoto && photo.author ? `Photo: ${photo.author} · Google` : 'Ratings via Google'}</Typography>
+        <Typography sx={{ fontSize: '0.62rem', color: 'text.disabled', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{photoUrl && photoAuthor ? `Photo: ${photoAuthor} · Google` : 'Ratings via Google'}</Typography>
         <Stack direction="row" spacing={0.5} sx={{ flexShrink: 0 }}>
           {onShowOnMap && <Button size="small" startIcon={<MapRounded sx={{ fontSize: 15 }} />} onClick={onShowOnMap} sx={{ px: 0.6 }}>Map</Button>}
           <Button size="small" endIcon={<OpenInNewRounded sx={{ fontSize: 15 }} />} component="a" href={gmaps} target="_blank" rel="noopener" sx={{ px: 0.6 }}>Google Maps</Button>

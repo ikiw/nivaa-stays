@@ -100,6 +100,12 @@ export interface Curated {
   why?: string;
 }
 
+/** One About-panel FAQ entry. */
+export interface Faq {
+  q: string;
+  a: string;
+}
+
 /** One parsed stop from a shared URL (stays may be absent → null → default later). */
 export interface ParsedStop { idx?: number; brk?: true; meal?: string; stay: number | null; day: number; }
 

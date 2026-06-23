@@ -2,7 +2,7 @@
 // it), revealed by the user via the "About" tab. Real <h1>/<h2>/<h3> + the itineraries
 // + FAQ.
 import { Box, Typography, Link } from '@mui/material';
-import { CURATED, FAQ } from '../curated.js';
+import { CURATED, FAQ } from '../curated';
 
 /** The crawlable "About this planner" panel: intro + ready-made itineraries + FAQ. */
 export default function AboutPanel() {

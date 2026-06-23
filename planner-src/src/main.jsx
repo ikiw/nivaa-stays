@@ -5,7 +5,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import App from './App.jsx';
-import { MAPS_KEY } from './config.js';
+import { MAPS_KEY } from './config';
 
 // Standalone app theme (deliberately NOT the nivaastays brand) — a fresh,
 // premium "coastal" system: vivid teal + warm amber, soft elevation, big radius.

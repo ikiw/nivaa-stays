@@ -35,13 +35,13 @@ import { Map } from '@vis.gl/react-google-maps';
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { DATA_URL, CAT_ICON, CAT_HEX, LEG_COLORS, CAT_LABEL, PICK_ORDER, SUB_ORDER, SUB_LABEL, BREAK_DUR, MEAL_DUR, MEAL_LABELS, DAY_COLORS } from './constants';
 import { idealStay, isPseudo, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch } from './utils';
-import { CURATED } from './curated.js';
-import AboutPanel from './components/AboutPanel.jsx';
-import RouteMap from './components/RouteMap.jsx';
-import PlaceInfoCard from './components/PlaceInfoCard.jsx';
-import { GlanceRow, Centered, Grid, CatHead } from './components/Bits.jsx';
+import { CURATED } from './curated';
+import AboutPanel from './components/AboutPanel';
+import RouteMap from './components/RouteMap';
+import PlaceInfoCard from './components/PlaceInfoCard';
+import { GlanceRow, Centered, Grid, CatHead } from './components/Bits';
 import { computeSchedule, scheduleStays } from './scheduler';
-import TimelineNode from './components/TimelineNode.jsx';
+import TimelineNode from './components/TimelineNode';
 export default function App() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');

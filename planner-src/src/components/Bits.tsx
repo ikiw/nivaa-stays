@@ -1,15 +1,26 @@
 // Small shared presentational bits used across the planner's panels.
+import type { ReactNode } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ExpandMoreRounded from '@mui/icons-material/ExpandMoreRounded';
 import { CAT_ICON, CAT_LABEL } from '../constants';
+import type { Category } from '../types';
+
+interface GlanceRowProps {
+  color: string;
+  dot: string | number;
+  name: string;
+  time: string;
+  legColor?: string;
+  drive?: string | null;
+  last?: boolean;
+}
 
 /**
  * Compact connected day-glance row (used in the on-map floating card) — a dot + a
  * leg-coloured line down to the next dot, with the drive label on the connector.
- * @param {{ color:string, dot:string|number, name:string, time:string, legColor?:string, drive?:string, last?:boolean }} props
  */
-export function GlanceRow({ color, dot, name, time, legColor, drive, last }) {
+export function GlanceRow({ color, dot, name, time, legColor, drive, last }: GlanceRowProps) {
   return (
     <Stack direction="row" spacing={1} alignItems="stretch">
       <Box sx={{ width: 20, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -32,16 +43,20 @@ export function GlanceRow({ color, dot, name, time, legColor, drive, last }) {
 }
 
 /** Full-height centred wrapper for loading / error / empty states. */
-export function Centered({ children }) { return <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>{children}</Box>; }
+export function Centered({ children }: { children: ReactNode }) { return <Box sx={{ minHeight: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4, textAlign: 'center' }}>{children}</Box>; }
 
 /** Single-column grid used by the picker lists. */
-export function Grid({ children }) { return <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>{children}</Box>; }
+export function Grid({ children }: { children: ReactNode }) { return <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 1 }}>{children}</Box>; }
 
-/**
- * Collapsible category section header in the place picker.
- * @param {{ cat:string, count:number, collapsed:boolean, onToggle:()=>void }} props
- */
-export function CatHead({ cat, count, collapsed, onToggle }) {
+interface CatHeadProps {
+  cat: Category;
+  count: number;
+  collapsed: boolean;
+  onToggle: () => void;
+}
+
+/** Collapsible category section header in the place picker. */
+export function CatHead({ cat, count, collapsed, onToggle }: CatHeadProps) {
   const Icon = CAT_ICON[cat];
   return (
     <Box onClick={onToggle} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle?.(); } }}

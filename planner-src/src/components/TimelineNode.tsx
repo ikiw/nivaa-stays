@@ -11,17 +11,39 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
+import type { SvgIconComponent } from '@mui/icons-material';
 import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
 import { fmtDur } from '../utils';
+import type { Category, ItineraryData } from '../types';
 
-/**
- * @param {object} props row fields (icon, idx, cat, dot, title, sub, stay, gi, last,
- *   legColor, drive, tag, day, upDisabled, downDisabled, brk, meal) PLUS the injected
- *   `data` and edit handlers `setStay`, `move`, `removeAt`, `selectPlace`.
- */
-export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, data, setStay, move, removeAt, selectPlace }) {
-  const editable = typeof gi === 'number';
-  const stayField = editable && (
+interface TimelineNodeProps {
+  icon?: SvgIconComponent;
+  idx?: number;
+  cat?: Category;
+  dot: string | number;
+  title?: string;
+  sub?: string;
+  stay?: number;
+  gi?: number;
+  last?: boolean;
+  legColor?: string;
+  drive?: string | null;
+  tag?: string | null;
+  day?: number;
+  upDisabled?: boolean;
+  downDisabled?: boolean;
+  brk?: true;
+  meal?: string;
+  data: ItineraryData;
+  setStay: (gi: number, v: string | number) => void;
+  move: (gi: number, dir: number) => void;
+  removeAt: (gi: number) => void;
+  selectPlace: (idx: number) => void;
+}
+
+/** One timeline row: a place stop, or a break/meal pseudo-row. App injects `data` + handlers. */
+export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
+  const stayField = gi != null && (
     <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118 }}
       InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
       SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
@@ -30,7 +52,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay, gi
   );
   if (brk || meal) {
     const PIcon = meal ? RestaurantRounded : SelfImprovementRounded;
-    const pColor = meal ? (TAG_COLOR[meal] || '#94A3B8') : null;
+    const pColor = (meal && TAG_COLOR[meal]) || '#94A3B8';   // only read on meal rows
     return (
       <Stack direction="row" spacing={1.2} alignItems="stretch">
         <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -44,7 +66,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay, gi
                 <PIcon sx={{ fontSize: 16, color: meal ? pColor : 'inherit' }} /> {meal || 'Free time'}
                 {meal && <Box component="span" sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${pColor}26`, color: pColor }}>{meal}</Box>}
               </Typography>
-              {editable && (
+              {gi != null && (
                 <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
                   <IconButton size="small" disabled={upDisabled} onClick={() => move(gi, -1)}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
                   <IconButton size="small" disabled={downDisabled} onClick={() => move(gi, 1)}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
@@ -80,7 +102,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay, gi
               {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
               {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
             </Typography>
-            {editable && (
+            {gi != null && (
               <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
                 <IconButton size="small" disabled={upDisabled} onClick={(e) => { e.stopPropagation(); move(gi, -1); }}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
                 <IconButton size="small" disabled={downDisabled} onClick={(e) => { e.stopPropagation(); move(gi, 1); }}><KeyboardArrowDownRounded fontSize="small" /></IconButton>
@@ -100,7 +122,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay, gi
               {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
               {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
             </Box>
-            {editable && (
+            {gi != null && (
               <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0 }}
                 InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
                 SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
