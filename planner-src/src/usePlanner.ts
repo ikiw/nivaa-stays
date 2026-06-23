@@ -11,7 +11,7 @@ import { DATA_URL, PICK_ORDER, BREAK_DUR, MEAL_DUR, MEAL_LABELS } from './consta
 import { idealStay, isPseudo, track, parseSearch } from './utils';
 import { CURATED } from './curated';
 
-import { scheduleStays } from './scheduler';
+import { scheduleStays, computeSchedule } from './scheduler';
 
 import type { ItineraryData, Stop, PlaceStop, SchedItem, ParsedSearch, Curated } from './types';
 
@@ -279,5 +279,13 @@ export function usePlanner() {
   };
 
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink };
+  // ---------- derived: the day-by-day timeline (recomputed each render from stops) ----------
+  const { tripDays, dayData, tripDrive, tripKm } = computeSchedule(stops, start, startTime, driveMin, driveKm);
+  const curDay = tripDays.includes(activeDay) ? activeDay : tripDays[0];   // active day tab
+  const mapStops = stops.filter((s): s is PlaceStop => !isPseudo(s) && (s.day || 1) === curDay);   // map = active day's real stops
+
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
+
+/** Everything the planner exposes — panels receive this as a single `planner` prop. */
+export type Planner = ReturnType<typeof usePlanner>;
