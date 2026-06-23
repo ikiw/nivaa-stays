@@ -42,27 +42,36 @@ import PlaceInfoCard from './components/PlaceInfoCard';
 import { GlanceRow, Centered, Grid, CatHead } from './components/Bits';
 import { computeSchedule, scheduleStays } from './scheduler';
 import TimelineNode from './components/TimelineNode';
+import type { TimelineNodeProps } from './components/TimelineNode';
+import type { ReactNode, TouchEvent } from 'react';
+import type { ItineraryData, Place, Stop, PlaceStop, SchedItem, ParsedSearch, Curated, Category } from './types';
+
+/** State snapshot read from history callbacks. */
+type StateSnap = { start: number; startTime: string; endTime: string; stops: Stop[]; loadedId: string | null };
+/** The row-field subset App passes to the timeline (handlers/data are injected by the Node wrapper). */
+type NodeProps = Omit<TimelineNodeProps, 'data' | 'setStay' | 'move' | 'removeAt' | 'selectPlace'>;
+
 export default function App() {
   const theme = useTheme();
   const isMobile = useMediaQuery('(max-width:900px)');
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<ItineraryData | null>(null);
   const [err, setErr] = useState(false);
   const [start, setStart] = useState(0);
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('19:00');
-  const [stops, setStops] = useState([]); // [{ idx, stay, day }]
+  const [stops, setStops] = useState<Stop[]>([]); // [{ idx, stay, day }]
   const [activeDay, setActiveDay] = useState(1); // which day's tab is shown (2-day curated plans)
-  const [loadedId, setLoadedId] = useState(null); // id of a pristine curated plan → readable ?itinerary= URL
-  const [pendingCurated, setPendingCurated] = useState(null); // ?itinerary=<id> to load once data is ready
+  const [loadedId, setLoadedId] = useState<string | null>(null); // id of a pristine curated plan → readable ?itinerary= URL
+  const [pendingCurated, setPendingCurated] = useState<string | null>(null); // ?itinerary=<id> to load once data is ready
   const [filter, setFilter] = useState('All');
   const [subFilter, setSubFilter] = useState('All');
-  const [planFilter, setPlanFilter] = useState('all'); // ready-made plans: 'all' | 1 | 2 days
+  const [planFilter, setPlanFilter] = useState<string | number>('all'); // ready-made plans: 'all' | 1 | 2 days
   const [browsing, setBrowsing] = useState(false); // viewing the plan list while a plan is loaded
-  const [collapsed, setCollapsed] = useState(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
-  const toggleCat = (cat) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
-  const [shareAnchor, setShareAnchor] = useState(null);
-  const [moreAnchor, setMoreAnchor] = useState(null);
-  const [selectedIdx, setSelectedIdx] = useState(null);   // place shown in the info card
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set(PICK_ORDER.slice(1))); // only the first section (Beaches) open by default
+  const toggleCat = (cat: string) => setCollapsed(prev => { const n = new Set(prev); n.has(cat) ? n.delete(cat) : n.add(cat); return n; });
+  const [shareAnchor, setShareAnchor] = useState<HTMLElement | null>(null);
+  const [moreAnchor, setMoreAnchor] = useState<HTMLElement | null>(null);
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);   // place shown in the info card
   const [mobView, setMobView] = useState('itinerary'); // itinerary | places (mobile bottom tabs)
   const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
   const [aboutOpen, setAboutOpen] = useState(false); // desktop About dialog
@@ -79,16 +88,16 @@ export default function App() {
   // ---------- shareable URL state (query params) ----------
   const hydrated = useRef(false);
   const defaultStartRef = useRef(0);              // the no-op start (bus stand) — omitted from the URL
-  const initialUrl = useRef(null);
+  const initialUrl = useRef<ParsedSearch | null>(null);
   if (initialUrl.current === null) initialUrl.current = parseSearch();
-  const stateRef = useRef(null);                  // latest itinerary, readable from history callbacks
+  const stateRef = useRef<StateSnap | null>(null);                  // latest itinerary, readable from history callbacks
   stateRef.current = { start, startTime, endTime, stops, loadedId };
-  const touchStartX = useRef(null);               // mobile swipe-between-days
+  const touchStartX = useRef<number | null>(null);               // mobile swipe-between-days
   const viewRef = useRef('itinerary');
   viewRef.current = isMobile ? mobView : deskTab;
 
-  const buildSearch = (viewOverride) => {
-    const { start, startTime, endTime, stops, loadedId } = stateRef.current;
+  const buildSearch = (viewOverride?: string) => {
+    const { start, startTime, endTime, stops, loadedId } = stateRef.current!;
     const view = viewOverride !== undefined ? viewOverride : viewRef.current;
     const q = new URLSearchParams();
     if (loadedId) {
@@ -97,7 +106,7 @@ export default function App() {
       if (start != null && start !== defaultStartRef.current) q.set('s', String(start));
       if (startTime && startTime !== '09:00') q.set('st', startTime);
       if (endTime && endTime !== '19:00') q.set('et', endTime);
-      const enc = s => { if (s.brk) return 'b' + s.stay; if (s.meal) return 'm' + s.meal[0] + s.stay; const def = data?.places?.[s.idx] ? idealStay(data.places[s.idx]) : 45; return s.stay === def ? String(s.idx) : `${s.idx}.${s.stay}`; };
+      const enc = (s: Stop) => { if (s.brk) return 'b' + s.stay; if (s.meal) return 'm' + s.meal[0] + s.stay; const idx = (s as PlaceStop).idx; const def = data && data.places[idx] ? idealStay(data.places[idx]) : 45; return s.stay === def ? String(idx) : `${idx}.${s.stay}`; };
       if (stops.length) {
         const days = [...new Set(stops.map(s => s.day || 1))].sort((a, b) => a - b);
         q.set('p', days.length > 1                                 // 2-day plans → day groups split by "~"
@@ -111,7 +120,7 @@ export default function App() {
   };
 
   // Switch the active panel. Mobile: 'day' → the Itinerary tab (timeline), 'places' → Places tab.
-  const openView = (v) => {
+  const openView = (v: string) => {
     setDeskTab(v === 'day' ? 'day' : 'places');
     if (isMobile) {
       if (v === 'places') setMobView('places');
@@ -121,15 +130,15 @@ export default function App() {
   };
 
   // Open the place info card. On mobile, flip the Itinerary tab to the map so the card is visible.
-  const selectPlace = (i) => { setSelectedIdx(i); };   // card pops over the current view; map is opt-in
+  const selectPlace = (i: number) => { setSelectedIdx(i); };   // card pops over the current view; map is opt-in
 
   useEffect(() => {
-    fetch(DATA_URL).then(r => r.json()).then(d => {
+    fetch(DATA_URL).then(r => r.json()).then((d: ItineraryData) => {
       setData(d);
       const bus = d.places.findIndex(p => /bus stand/i.test(p.name));
       defaultStartRef.current = bus >= 0 ? bus : 0;
       // Hydrate from a shared link if present, else fall back to the bus-stand default.
-      const u = initialUrl.current;
+      const u = initialUrl.current!;
       const curated = u.itinerary && CURATED.find(c => c.id === u.itinerary);
       const startIdx = u.start != null && d.places[u.start] ? u.start : (bus >= 0 ? bus : 0);
       setStart(startIdx);
@@ -139,12 +148,12 @@ export default function App() {
         if (u.startTime) setStartTime(u.startTime);
         if (u.endTime) setEndTime(u.endTime);
         if (u.stops.length) {
-          const seen = new Set();
+          const seen = new Set<number>();
           setStops(u.stops
-            .filter(o => o.brk || o.meal || (d.places[o.idx] && o.idx !== startIdx && !seen.has(o.idx) && seen.add(o.idx)))
-            .map(o => o.brk ? { brk: true, stay: o.stay ?? BREAK_DUR[1], day: o.day || 1 }
+            .filter(o => o.brk || o.meal || (o.idx != null && d.places[o.idx] && o.idx !== startIdx && !seen.has(o.idx) && seen.add(o.idx)))
+            .map((o): Stop => o.brk ? { brk: true, stay: o.stay ?? BREAK_DUR[1], day: o.day || 1 }
               : o.meal ? { meal: o.meal, stay: o.stay ?? MEAL_DUR[1], day: o.day || 1 }
-              : { idx: o.idx, stay: o.stay ?? idealStay(d.places[o.idx]), day: o.day || 1 }));
+              : { idx: o.idx!, stay: o.stay ?? idealStay(d.places[o.idx!]), day: o.day || 1 }));
         }
       }
       if (u.view === 'places') { setMobView('places'); setDeskTab('places'); }
@@ -178,33 +187,34 @@ export default function App() {
     return () => window.removeEventListener('popstate', onPop);
   }, [isMobile]);
 
-  const driveMin = (a, b) => { const v = data?.minutes?.[a]?.[b]; return v == null ? 0 : v; };
-  const driveKm = (a, b) => { const v = data?.km?.[a]?.[b]; return v == null ? 0 : v; };
-  const isStop = (i) => stops.some(s => s.idx === i);
+  const driveMin = (a: number, b: number) => { const v = data?.minutes?.[a]?.[b]; return v == null ? 0 : v; };
+  const driveKm = (a: number, b: number) => { const v = data?.km?.[a]?.[b]; return v == null ? 0 : v; };
+  const isStop = (i: number) => stops.some(s => s.idx === i);
 
   const starts = useMemo(() => data ? data.places.map((p, i) => ({ p, i })).filter(x => x.p.cat === 'Stay' || x.p.cat === 'Area') : [], [data]);
 
   // group selectable places by category for the picker
   const byCat = useMemo(() => {
-    const m = {};
+    const m: Record<string, number[]> = {};
     if (data) data.places.forEach((p, i) => { if (i !== start && PICK_ORDER.includes(p.cat)) (m[p.cat] = m[p.cat] || []).push(i); });
     return m;
   }, [data, start]);
 
-  const sortByDay = (a) => a.map((s, i) => [s, i]).sort((x, y) => ((x[0].day || 1) - (y[0].day || 1)) || (x[1] - y[1])).map(p => p[0]);
+  const sortByDay = (a: Stop[]): Stop[] => a.map((s, i): [Stop, number] => [s, i]).sort((x, y) => ((x[0].day || 1) - (y[0].day || 1)) || (x[1] - y[1])).map(p => p[0]);
   const touched = () => setLoadedId(null);   // any manual edit drops the readable ?itinerary= URL
-  const addToggle = (i) => {
+  const addToggle = (i: number) => {
+    if (!data) return;
     touched();
     track('plan_edit', { kind: stops.some(s => s.idx === i) ? 'remove_place' : 'add_place' });
     setStops(prev => prev.some(s => s.idx === i)
       ? prev.filter(s => s.idx !== i)
       : sortByDay([...prev, { idx: i, stay: idealStay(data.places[i]), day: activeDay }]));   // add to the day you're viewing
   };
-  const removeStop = (i) => { touched(); track('plan_edit', { kind: 'remove_place' }); setStops(prev => prev.filter(s => s.idx !== i)); };
-  const removeAt = (gi) => { touched(); track('plan_edit', { kind: 'remove' }); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
+  const removeStop = (i: number) => { touched(); track('plan_edit', { kind: 'remove_place' }); setStops(prev => prev.filter(s => s.idx !== i)); };
+  const removeAt = (gi: number) => { touched(); track('plan_edit', { kind: 'remove' }); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
   const addBreak = () => { touched(); track('plan_edit', { kind: 'add_break' }); setStops(prev => sortByDay([...prev, { brk: true, stay: 60, day: activeDay }])); };
-  const move = (gi, dir) => { touched(); track('plan_edit', { kind: 'reorder' }); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
-  const setStay = (gi, v) => { touched(); setStops(prev => prev.map((s, k) => k === gi ? { ...s, stay: Math.max(0, +v || 0) } : s)); };
+  const move = (gi: number, dir: number) => { touched(); track('plan_edit', { kind: 'reorder' }); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
+  const setStay = (gi: number, v: string | number) => { touched(); setStops(prev => prev.map((s, k) => k === gi ? { ...s, stay: Math.max(0, +v || 0) } : s)); };
 
   function optimize() {
     touched();
@@ -212,13 +222,13 @@ export default function App() {
     setStops(prev => {
       if (prev.length < 2) return prev;
       const days = [...new Set(prev.map(s => s.day || 1))].sort((a, b) => a - b);
-      const ordered = [];
+      const ordered: Stop[] = [];
       days.forEach(dn => {                                 // nearest-neighbour within each day
         const remaining = prev.filter(s => (s.day || 1) === dn); let cur = start;
         while (remaining.length) {
           let best = 0, bestMin = Infinity;
-          remaining.forEach((s, i) => { const m = driveMin(cur, s.idx); if (m < bestMin) { bestMin = m; best = i; } });
-          const nx = remaining.splice(best, 1)[0]; ordered.push(nx); cur = nx.idx;
+          remaining.forEach((s, i) => { const m = driveMin(cur, s.idx as number); if (m < bestMin) { bestMin = m; best = i; } });
+          const nx = remaining.splice(best, 1)[0]; ordered.push(nx); cur = nx.idx as number;
         }
       });
       return ordered;
@@ -226,11 +236,11 @@ export default function App() {
   }
 
   async function aiPlan() {
-    const q = aiQuery.trim(); if (!q || aiBusy) return;
+    const q = aiQuery.trim(); if (!q || aiBusy || !data) return;
     setAiBusy(true);
     const hadStops = stops.length > 0;
     track('plan_ai_request', { has_stops: hadStops, query_len: q.length });
-    const prevStay = {}; stops.forEach(s => { prevStay[s.idx] = s.stay; });
+    const prevStay: Record<number, number> = {}; stops.forEach(s => { if (s.idx != null) prevStay[s.idx] = s.stay; });
     try {
       const res = await fetch('/api/plan', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -241,10 +251,10 @@ export default function App() {
       let nextStart = start;
       if (typeof d.start === 'number' && data.places[d.start] && ['Area', 'Stay'].includes(data.places[d.start].cat)) nextStart = d.start;
       setStart(nextStart);
-      let next = d.stops.filter(i => data.places[i] && i !== nextStart)
-        .map(i => ({ idx: i, stay: prevStay[i] ?? idealStay(data.places[i]), day: 1 }));
+      let next = (d.stops as number[]).filter((i: number) => data.places[i] && i !== nextStart)
+        .map((i: number) => ({ idx: i, stay: prevStay[i] ?? idealStay(data.places[i]), day: 1 }));
       if (!hadStops && next.length >= 2) {
-        const remaining = next.slice(), ordered = []; let cur = nextStart;
+        const remaining = next.slice(); const ordered: typeof next = []; let cur = nextStart;
         while (remaining.length) { let b = 0, bm = Infinity; remaining.forEach((s, i) => { const m = driveMin(cur, s.idx); if (m < bm) { bm = m; b = i; } }); const nx = remaining.splice(b, 1)[0]; ordered.push(nx); cur = nx.idx; }
         next = ordered;
       }
@@ -261,7 +271,8 @@ export default function App() {
   }
 
   const gmapsUrl = () => {
-    const pt = i => `${data.places[i].lat},${data.places[i].lng}`;
+    if (!data) return '';
+    const pt = (i: number) => `${data.places[i].lat},${data.places[i].lng}`;
     let u = `https://www.google.com/maps/dir/?api=1&origin=${pt(start)}&destination=${pt(start)}&travelmode=driving`;
     const wps = stops.filter(s => !isPseudo(s)).map(s => pt(s.idx)).join('|');
     if (wps) u += `&waypoints=${encodeURIComponent(wps)}`;
@@ -270,14 +281,15 @@ export default function App() {
 
   // load a curated starter plan (resolve names → catalog indices, then open the day view)
 
-  const loadCurated = (c, silent) => {
-    const find = n => data.places.findIndex(p => p.name === n);
+  const loadCurated = (c: Curated, silent?: boolean) => {
+    if (!data) return;
+    const find = (n: string) => data.places.findIndex(p => p.name === n);
     const s = find(c.start), startIdx = s >= 0 ? s : start;
-    const all = [];
+    const all: Stop[] = [];
     c.plan.forEach((dayNames, di) => {                 // each plan day scheduled independently
-      const items = dayNames.map(n => n === 'Break' ? { brk: true } : MEAL_LABELS.includes(n) ? { meal: n } : { idx: find(n) }).filter(it => it.brk || it.meal || it.idx >= 0);
+      const items = dayNames.map((n): SchedItem => n === 'Break' ? { brk: true } : MEAL_LABELS.includes(n) ? { meal: n } : { idx: find(n) }).filter(it => it.brk || it.meal || (it.idx ?? -1) >= 0);
       const stays = scheduleStays(startIdx, items, data.places, driveMin);
-      items.forEach((it, k) => all.push(it.brk ? { brk: true, stay: stays[k], day: di + 1 } : it.meal ? { meal: it.meal, stay: stays[k], day: di + 1 } : { idx: it.idx, stay: stays[k], day: di + 1 }));
+      items.forEach((it, k) => all.push(it.brk ? { brk: true, stay: stays[k], day: di + 1 } : it.meal ? { meal: it.meal, stay: stays[k], day: di + 1 } : { idx: it.idx!, stay: stays[k], day: di + 1 }));
     });
     setStart(startIdx);
     setStartTime('09:00'); setEndTime('23:00');
@@ -307,14 +319,18 @@ export default function App() {
   // ---------- timeline computation (extracted to scheduler.js; each day loops from start) ----------
   const { tripDays, dayData, tripDrive, tripKm } = computeSchedule(stops, start, startTime, driveMin, driveKm);
   const curDay = tripDays.includes(activeDay) ? activeDay : tripDays[0];   // active day tab
-  const mapStops = stops.filter(s => !isPseudo(s) && (s.day || 1) === curDay);   // map shows only the active day's real stops
+  const mapStops = stops.filter((s): s is PlaceStop => !isPseudo(s) && (s.day || 1) === curDay);   // map shows only the active day's real stops
 
   // ---------- render helpers ----------
-  const categoryChips = () => (
+  const categoryChips = () => {
+    const rows: [string, string, number][] = [
+      ['All', 'All places', Object.values(byCat).reduce((a, b) => a + b.length, 0)],
+      ...PICK_ORDER.filter(c => byCat[c]).map((c): [string, string, number] => [c, CAT_LABEL[c] || c, byCat[c].length]),
+    ];
+    return (
     <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
-      {[['All', 'All places', Object.values(byCat).reduce((a, b) => a + b.length, 0)],
-        ...PICK_ORDER.filter(c => byCat[c]).map(c => [c, CAT_LABEL[c], byCat[c].length])].map(([key, label, n]) => {
-        const Icon = key === 'All' ? null : CAT_ICON[key];
+      {rows.map(([key, label, n]) => {
+        const Icon = key === 'All' ? null : CAT_ICON[key as Category];
         return (
           <Chip key={key} label={`${label} ${n}`} icon={Icon ? <Icon /> : undefined} size="small"
             color={filter === key ? 'primary' : 'default'} variant={filter === key ? 'filled' : 'outlined'}
@@ -322,23 +338,29 @@ export default function App() {
         );
       })}
     </Stack>
-  );
-  const planChips = () => (
+    );
+  };
+  const planChips = () => {
+    const opts: [string | number, string][] = [['all', 'All'], [1, '1 Day Itinerary'], [2, '2 Day Itinerary']];
+    return (
     <Stack direction="row" spacing={0.8} useFlexGap flexWrap="wrap">
-      {[['all', 'All'], [1, '1 Day Itinerary'], [2, '2 Day Itinerary']].map(([key, label]) => (
+      {opts.map(([key, label]) => (
         <Chip key={key} label={label} size="small"
           color={planFilter === key ? 'primary' : 'default'} variant={planFilter === key ? 'filled' : 'outlined'}
           onClick={() => setPlanFilter(key)} sx={{ fontWeight: 600 }} />
       ))}
     </Stack>
-  );
+    );
+  };
   const subChips = () => {
-    if (!SUB_ORDER[filter]) return null;
-    const counts = {}; (byCat[filter] || []).forEach(i => { const sub = data.places[i].sub || ''; counts[sub] = (counts[sub] || 0) + 1; });
-    const subs = SUB_ORDER[filter].filter(s => counts[s]).concat(Object.keys(counts).filter(s => s && !SUB_ORDER[filter].includes(s)));
+    const subOrder = SUB_ORDER[filter];
+    if (!subOrder) return null;
+    const counts: Record<string, number> = {}; (byCat[filter] || []).forEach(i => { const sub = data.places[i].sub || ''; counts[sub] = (counts[sub] || 0) + 1; });
+    const subs = subOrder.filter(s => counts[s]).concat(Object.keys(counts).filter(s => s && !subOrder.includes(s)));
+    const rows: [string, string, number][] = [['All', 'All', Object.values(counts).reduce((a, b) => a + b, 0)], ...subs.map((s): [string, string, number] => [s, SUB_LABEL[s] || s, counts[s]])];
     return (
       <Stack direction="row" spacing={0.6} useFlexGap flexWrap="wrap">
-        {[['All', 'All', Object.values(counts).reduce((a, b) => a + b, 0)], ...subs.map(s => [s, SUB_LABEL[s] || s, counts[s]])].map(([key, label, n]) => (
+        {rows.map(([key, label, n]) => (
           <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => setSubFilter(key)}
             color={subFilter === key ? 'primary' : 'default'} variant={subFilter === key ? 'filled' : 'outlined'}
             sx={{ fontWeight: 600, fontSize: '0.7rem' }} />
@@ -347,7 +369,7 @@ export default function App() {
     );
   };
 
-  const PlaceCard = (i) => {
+  const PlaceCard = (i: number) => {
     const p = data.places[i], added = isStop(i), Icon = CAT_ICON[p.cat];
     const cat = CAT_HEX[p.cat] || '#94A3B8';
     const dm = driveMin(start, i), dk = driveKm(start, i);
@@ -394,10 +416,11 @@ export default function App() {
           const items = byCat[cat]; if (!items) return null;
           const collapsible = filter === 'All';
           const isCollapsed = collapsible && collapsed.has(cat);
-          const inner = [];
-          if (SUB_ORDER[cat]) {
-            const bySub = {}; items.forEach(i => { const s = data.places[i].sub || ''; (bySub[s] = bySub[s] || []).push(i); });
-            let subs = SUB_ORDER[cat].filter(s => bySub[s]).concat(Object.keys(bySub).filter(s => !SUB_ORDER[cat].includes(s)));
+          const inner: ReactNode[] = [];
+          const subOrder = SUB_ORDER[cat];
+          if (subOrder) {
+            const bySub: Record<string, number[]> = {}; items.forEach(i => { const s = data.places[i].sub || ''; (bySub[s] = bySub[s] || []).push(i); });
+            let subs = subOrder.filter(s => bySub[s]).concat(Object.keys(bySub).filter(s => !subOrder.includes(s)));
             const single = filter === cat && subFilter !== 'All';
             if (single) subs = subs.filter(s => s === subFilter);
             subs.forEach(s => {
@@ -422,7 +445,7 @@ export default function App() {
     );
   };
 
-  const DayPanel = ({ hideBack } = {}) => {
+  const DayPanel = ({ hideBack }: { hideBack?: boolean } = {}) => {
     const showList = !stops.length || browsing;          // browse the ready-made list (current plan kept)
     const loadedC = CURATED.find(c => c.id === loadedId);
     return (
@@ -525,9 +548,10 @@ export default function App() {
                       const drive = lastStop ? `${d.rMin} min · ${d.rKm} km · back to start` : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
                       if (t.brk || t.meal) return <Fragment key={t.gi}>{Node({ gi: t.gi, brk: t.brk, meal: t.meal, sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, day: d.day, upDisabled: ti === 0, downDisabled: lastStop, legColor, drive })}</Fragment>;
                       rn++;
+                      const place = data.places[t.idx!];
                       return <Fragment key={t.gi}>{Node({
-                        idx: t.idx, gi: t.gi, dot: rn, title: data.places[t.idx].name, cat: data.places[t.idx].cat, day: d.day,
-                        tag: mealTag(data.places[t.idx].cat, t.arrive),
+                        idx: t.idx, gi: t.gi, dot: rn, title: place.name, cat: place.cat, day: d.day,
+                        tag: mealTag(place.cat, t.arrive),
                         sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay,
                         upDisabled: ti === 0, downDisabled: lastStop, legColor, drive,
                       })}</Fragment>;
@@ -540,8 +564,8 @@ export default function App() {
     );
   };
 
-  // Timeline row — rendering lives in components/TimelineNode.jsx; inject App data + handlers.
-  const Node = (props) => TimelineNode({ ...props, data, setStay, move, removeAt, selectPlace });
+  // Timeline row — rendering lives in components/TimelineNode.tsx; inject App data + handlers.
+  const Node = (props: NodeProps) => TimelineNode({ ...props, data, setStay, move, removeAt, selectPlace });
 
   const MapView = () => (
     <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
@@ -606,7 +630,7 @@ export default function App() {
             <AccessTimeRounded sx={{ fontSize: 14 }} /> {fmtClock(sMin)} – {fmtClock(eMin)}
           </Typography>
           <Slider size="small" value={[sMin, eMin]} min={300} max={1380} step={30} disableSwap
-            onChange={(_, v) => { touched(); setStartTime(toHHMM(v[0])); setEndTime(toHHMM(v[1])); }}
+            onChange={(_, v) => { touched(); const r = v as number[]; setStartTime(toHHMM(r[0])); setEndTime(toHHMM(r[1])); }}
             valueLabelDisplay="auto" valueLabelFormat={(m) => fmtClock(m)} getAriaLabel={() => 'Day window'} sx={{ mt: -0.2, py: 0.5 }} />
         </Stack>
       </Stack>
@@ -631,7 +655,7 @@ export default function App() {
     const loadedC = CURATED.find(c => c.id === loadedId);
     const showList = !stops.length || browsing;          // browsing the ready-made list
     const planView = mobView === 'itinerary' && !showList; // a loaded plan is on screen
-    const swipeDays = (e) => {                            // swipe left/right between Day 1 / Day 2
+    const swipeDays = (e: TouchEvent) => {                            // swipe left/right between Day 1 / Day 2
       const x0 = touchStartX.current; touchStartX.current = null;
       if (x0 == null || tripDays.length < 2) return;
       const dx = e.changedTouches[0].clientX - x0;
@@ -766,7 +790,8 @@ export default function App() {
                       if (t.brk || t.meal)   // free time / meal — no place lookup (matches the main timeline guard)
                         return <GlanceRow key={t.gi} color="#64748B" dot="•" name={t.meal || 'Free time'} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
                       rn++;
-                      return <GlanceRow key={t.gi} color={CAT_HEX[data.places[t.idx].cat] || '#2196F3'} dot={rn} name={data.places[t.idx].name} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
+                      const place = data.places[t.idx!];
+                      return <GlanceRow key={t.gi} color={CAT_HEX[place.cat] || '#2196F3'} dot={rn} name={place.name} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
                     }); })()}
                   </Box>
                 ))}

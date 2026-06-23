@@ -4,7 +4,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { APIProvider } from '@vis.gl/react-google-maps';
-import App from './App.jsx';
+import App from './App';
 import { MAPS_KEY } from './config';
 
 // Standalone app theme (deliberately NOT the nivaastays brand) — a fresh,
@@ -43,7 +43,7 @@ const theme = createTheme({
   },
 });
 
-createRoot(document.getElementById('root')).render(
+createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />

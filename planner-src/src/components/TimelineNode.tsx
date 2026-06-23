@@ -16,11 +16,11 @@ import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
 import { fmtDur } from '../utils';
 import type { Category, ItineraryData } from '../types';
 
-interface TimelineNodeProps {
+export interface TimelineNodeProps {
   icon?: SvgIconComponent;
   idx?: number;
   cat?: Category;
-  dot: string | number;
+  dot?: string | number;
   title?: string;
   sub?: string;
   stay?: number;

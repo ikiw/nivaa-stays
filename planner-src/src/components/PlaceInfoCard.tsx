@@ -17,7 +17,7 @@ type Photo = { url: string; author: string };
 interface PlaceInfoCardProps {
   place: Place;
   onClose: () => void;
-  isMobile: boolean;
+  isMobile?: boolean;
   onShowOnMap?: () => void;
 }
 
