@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
-  fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, track, parseSearch,
+  fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, mealTagsForDay, track, parseSearch,
 } from '../src/utils';
 import { BREAK_DUR, MEAL_DUR } from '../src/constants';
 import type { Place, Category } from '../src/types';
@@ -90,6 +90,36 @@ describe('mealTag: timeline role from category + arrival', () => {
     expect(mealTag('Social', parseTime('19:00'))).toBe('Dinner & drinks');
     expect(mealTag('Shopping', parseTime('15:00'))).toBe('Shopping');
     expect(mealTag('Beach', parseTime('15:00'))).toBeNull();
+  });
+});
+
+describe('mealTagsForDay: sequence-aware meal tags', () => {
+  const t = (h: number, m = 0) => h * 60 + m;
+  it('bumps a second lunch-window food to Snack (the Daddy Amma momo case)', () => {
+    expect(mealTagsForDay([
+      { cat: 'Food', arrive: t(9, 30) },   // Breakfast
+      { cat: 'Food', arrive: t(12, 30) },  // Lunch
+      { cat: 'Food', arrive: t(14, 30) },  // lunch window, but lunch is taken → Snack
+      { cat: 'Food', arrive: t(20) },      // Dinner
+    ])).toEqual(['Breakfast', 'Lunch', 'Snack', 'Dinner']);
+  });
+  it('leaves a single food per slot unchanged', () => {
+    expect(mealTagsForDay([
+      { cat: 'Food', arrive: t(9) }, { cat: 'Food', arrive: t(13) }, { cat: 'Food', arrive: t(20) },
+    ])).toEqual(['Breakfast', 'Lunch', 'Dinner']);
+  });
+  it('three lunch-window foods cascade Lunch → Snack → Dinner', () => {
+    expect(mealTagsForDay([
+      { cat: 'Food', arrive: t(12) }, { cat: 'Food', arrive: t(13) }, { cat: 'Food', arrive: t(14) },
+    ])).toEqual(['Lunch', 'Snack', 'Dinner']);
+  });
+  it('non-food stops keep their time-based tag and consume no meal slot', () => {
+    expect(mealTagsForDay([
+      { cat: 'Food', arrive: t(13) },      // Lunch
+      { cat: 'Shopping', arrive: t(15) },  // Shopping
+      { cat: 'Social', arrive: t(19) },    // Dinner & drinks
+      { cat: 'Food', arrive: t(20) },      // still free → Dinner
+    ])).toEqual(['Lunch', 'Shopping', 'Dinner & drinks', 'Dinner']);
   });
 });
 
