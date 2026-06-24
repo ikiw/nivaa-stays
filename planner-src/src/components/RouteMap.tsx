@@ -169,7 +169,7 @@ function DirectionsRoute({ data, start, stops, selected }: Omit<RouteMapProps, '
         carElRef.current = el; rotRef.current = (el.firstElementChild?.firstElementChild ?? null) as HTMLElement | null;
         if (activeLegRef.current >= 0) el.style.opacity = '0';
         carRef.current = new markerLib.AdvancedMarkerElement({ map, position: full[0], content: el, zIndex: 9998 });
-        const DURATION = Math.min(18000, Math.max(8000, total / 2));
+        const DURATION = Math.min(36000, Math.max(16000, total));   // ms per full loop — slower, calmer car
         let startTs = 0;
         const tick = (ts: number) => {
           const pd = pathRef.current; const car = carRef.current;

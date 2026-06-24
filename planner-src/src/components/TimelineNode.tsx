@@ -44,8 +44,8 @@ export interface TimelineNodeProps {
 /** One timeline row: a place stop, or a break/meal pseudo-row. App injects `data` + handlers. */
 export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
   const stayField = gi != null && (
-    <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118 }}
-      InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
+    <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, '& .MuiSelect-select': { fontSize: '0.78rem' } }}
+      InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 14, color: 'text.secondary', mr: 0.5 }} /> }}
       SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
       {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (<MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>))}
     </TextField>
@@ -123,8 +123,8 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
             </Box>
             {gi != null && (
-              <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0 }}
-                InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary', mr: 0.6 }} /> }}
+              <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0, '& .MuiSelect-select': { fontSize: '0.78rem' } }}
+                InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 14, color: 'text.secondary', mr: 0.5 }} /> }}
                 SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
                 {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
                   <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
