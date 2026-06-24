@@ -59,6 +59,32 @@ export function mealTag(cat: string, arrive: number): string | null {
   return null;
 }
 
+const MEAL_ORDER = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
+/** Food meal slot from arrival minutes: 0 Breakfast · 1 Lunch · 2 Snack · 3 Dinner. */
+function foodSlot(arrive: number): number {
+  if (arrive < 11 * 60) return 0;
+  if (arrive < 16 * 60) return 1;
+  if (arrive < 18.5 * 60) return 2;
+  return 3;
+}
+/**
+ * Sequence-aware meal tags for a day's stops, in chronological order. A Food stop normally
+ * takes its time-of-day slot, but if that slot is already used it's bumped to the next one —
+ * so a second lunch-window meal becomes a Snack (then Dinner), never a duplicate "Lunch".
+ * Non-food stops (Social / Shopping) keep their plain time-based tag.
+ * @param stops ordered [{ cat, arrive }] for the day's real stops
+ * @returns the tag (or null) per stop, aligned by index
+ */
+export function mealTagsForDay(stops: { cat: string; arrive: number }[]): (string | null)[] {
+  let last = -1;   // index in MEAL_ORDER of the last meal assigned this day
+  return stops.map(s => {
+    if (s.cat !== 'Food') return mealTag(s.cat, s.arrive);
+    const slot = Math.min(3, Math.max(foodSlot(s.arrive), last + 1));
+    last = slot;
+    return MEAL_ORDER[slot];
+  });
+}
+
 /** Fire a GA4 custom event (gtag is loaded in index.html). No-op if gtag is
  *  blocked/absent, so analytics never affects the planner's behaviour. */
 export const track = (event: string, params?: Record<string, unknown>): void => {

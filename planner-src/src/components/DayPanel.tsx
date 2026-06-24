@@ -17,7 +17,7 @@ import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import { CURATED } from '../curated';
 import { LEG_COLORS, DAY_COLORS } from '../constants';
-import { isPseudo, parseTime, fmtClock, mealTag, track } from '../utils';
+import { isPseudo, parseTime, fmtClock, mealTagsForDay, track } from '../utils';
 import TimelineNode from './TimelineNode';
 import type { TimelineNodeProps } from './TimelineNode';
 import { PlanChips } from './Chips';
@@ -133,7 +133,7 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
                 : (<>
                     {Node({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S',
                       legColor: LEG_COLORS[0], drive: `${d.tl[0].dm} min · ${d.tl[0].dk} km` })}
-                    {(() => { let rn = 0; return d.tl.map((t, ti) => {
+                    {(() => { let rn = 0; const dayTags = mealTagsForDay(d.tl.map(e => ({ cat: e.idx != null ? data.places[e.idx].cat : '', arrive: e.arrive }))); return d.tl.map((t, ti) => {
                       const lastStop = ti === d.tl.length - 1;
                       const legColor = lastStop ? '#64748B' : LEG_COLORS[(ti + 1) % LEG_COLORS.length];
                       const drive = lastStop ? `${d.rMin} min · ${d.rKm} km · back to start` : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
@@ -142,7 +142,7 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
                       const place = data.places[t.idx!];
                       return <Fragment key={t.gi}>{Node({
                         idx: t.idx, gi: t.gi, dot: rn, title: place.name, cat: place.cat, day: d.day,
-                        tag: mealTag(place.cat, t.arrive),
+                        tag: dayTags[ti],
                         sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay,
                         upDisabled: ti === 0, downDisabled: lastStop, legColor, drive,
                       })}</Fragment>;
