@@ -24,6 +24,9 @@ const state = {
   bookingId: '',
   platform: 'Direct',
   notes: '',
+  addons: [],          // [{ label, amount }] custom line items added on top of the total
+  newAddonLabel: '',   // the in-progress "add a line" inputs (admin form)
+  newAddonAmount: '',
   sheetAmount: 0,   // final price from the bookings sheet (used to auto-calc discount)
   isAdmin: false,
   root: null
@@ -83,13 +86,16 @@ function computeAll() {
   const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
   const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
   const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
-  const grandTotal = Math.max(0, subtotal - disc.amount);
+  // Custom add-ons are a flat addition on top — not discounted, and they don't
+  // disturb the sheet-amount auto-match (which works on the room subtotal).
+  const addonsTotal = state.addons.reduce((s, a) => s + (Number(a.amount) || 0), 0);
+  const grandTotal = Math.max(0, subtotal - disc.amount) + addonsTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
   const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
   const adv = Number(state.advancePaid) || 0;
   const balance = Math.max(0, grandTotal - adv);
-  return { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance, tx };
+  return { q, tt, studios, guestInfo, subtotal, disc, addonsTotal, grandTotal, ciTime, coTime, adv, balance, tx };
 }
 
 /* ---------- URL state ---------- */
@@ -112,6 +118,10 @@ function parseUrlState() {
   state.bookingId = p.get('bid') || '';
   state.platform = p.get('platform') || 'Direct';
   state.notes = p.get('notes') || '';
+  try {
+    const ad = JSON.parse(p.get('addons') || '[]');
+    if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
+  } catch (_) { /* malformed addons param — ignore */ }
   state.sheetAmount = parseInt(p.get('amt') || '0', 10);
   // Admin mode: URL flag (?mode=admin) OR a signed-in admin via Google Sign-In.
   const urlAdmin = p.get('mode') === 'admin';
@@ -138,6 +148,7 @@ function buildShareUrl(includeAdmin = false) {
   if (state.bookingId) p.set('bid', state.bookingId);
   if (state.platform && state.platform !== 'Direct') p.set('platform', state.platform);
   if (state.notes) p.set('notes', state.notes);
+  if (state.addons.length) p.set('addons', JSON.stringify(state.addons));
   if (includeAdmin && state.isAdmin) p.set('mode', 'admin');
   return location.origin + location.pathname + (p.toString() ? '?' + p.toString() : '');
 }
@@ -250,6 +261,21 @@ function renderAdminForm() {
         </div>
       </div>
 
+      <div class="bc-admin-group">
+        <div class="bc-admin-group-label">Add-ons</div>
+        ${state.addons.map((a, i) => `
+        <div class="bc-admin-row">
+          <span class="bc-field-label" style="flex:1 1 auto">${escapeHtml(a.label)}</span>
+          <span class="bc-step-val">${formatINR(a.amount)}</span>
+          <button type="button" class="bc-step-btn" data-action="addon-remove" data-idx="${i}" title="Remove" style="font-size:0.7rem">✕</button>
+        </div>`).join('')}
+        <div class="bc-admin-row">
+          <input type="text" class="bc-input" data-input="addonLabel" value="${escapeHtml(state.newAddonLabel)}" placeholder="e.g. Breakfast">
+          <input type="number" class="bc-input bc-input-sm" data-input="addonAmount" min="0" step="50" value="${escapeHtml(state.newAddonAmount)}" placeholder="₹">
+          <button type="button" class="bc-step-btn" data-action="addon-add" title="Add line" style="font-size:1.1rem">+</button>
+        </div>
+      </div>
+
       <div class="bc-admin-actions">
         <button type="button" class="btn-outline-teal bc-action-btn" data-action="copy-share">Copy share link</button>
         <button type="button" class="btn-whatsapp bc-action-btn" data-action="wa-share">Share on WhatsApp</button>
@@ -314,6 +340,12 @@ function renderReceipt() {
       <span class="bc-rate-amt">−${formatINR(disc.amount)}</span>
     </div>` : '';
 
+  const addonRows = state.addons.map(a => `<div class="bc-rate-row bc-rate-addon">
+      <span class="bc-rate-date">${escapeHtml(a.label)}</span>
+      <span class="bc-rate-tier">Add-on</span>
+      <span class="bc-rate-amt">${formatINR(a.amount)}</span>
+    </div>`).join('');
+
   const paymentRows = adv > 0 ? `
     <div class="bc-payment-row bc-payment-total"><span>Total</span><span>${formatINR(grandTotal)}</span></div>
     <div class="bc-payment-row bc-payment-paid"><span>Advance paid</span><span>−${formatINR(adv)}</span></div>
@@ -353,7 +385,7 @@ function renderReceipt() {
 
       <div class="bc-rates">
         <div class="bc-rates-title">Rate Breakdown</div>
-        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${discountRows}</div>
+        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${discountRows}${addonRows}</div>
         <div class="bc-payment">${paymentRows}</div>
       </div>
 
@@ -419,6 +451,8 @@ function renderPrintReceipt() {
        <tr class="discount-row"><td colspan="2">Discount · ${disc.label}</td><td class="num">−${formatINR(disc.amount)}</td></tr>`
     : '';
 
+  const addonPdfRows = state.addons.map(a => `<tr class="addon-row"><td>${escapeHtml(a.label)}</td><td>Add-on</td><td class="num">${formatINR(a.amount)}</td></tr>`).join('');
+
   const advanceRows = adv > 0 ? `
     <tr class="advance-row"><td colspan="2">Advance paid</td><td class="num">−${formatINR(adv)}</td></tr>
     <tr class="balance-row"><td colspan="2">Balance at check-in</td><td class="num">${formatINR(balance)}</td></tr>
@@ -465,6 +499,7 @@ function renderPrintReceipt() {
             ${studiosRow}
             ${guestPdfRow}
             ${subtotalRow}
+            ${addonPdfRows}
           </tbody>
           <tfoot>
             <tr class="total-row"><td colspan="2">TOTAL</td><td class="num">${formatINR(grandTotal)}</td></tr>
@@ -554,6 +589,24 @@ function onClick(e) {
   if (a === 'late-dec')  { state.lateHours  = Math.max(0, state.lateHours - 1);  render(); return; }
   if (a === 'disc-clear') { state.discountValue = 0; render(); return; }
 
+  if (a === 'addon-add') {
+    const labelEl = state.root.querySelector('[data-input="addonLabel"]');
+    const amountEl = state.root.querySelector('[data-input="addonAmount"]');
+    const label = (labelEl ? labelEl.value : '').trim();
+    const amount = Math.max(0, parseFloat(amountEl ? amountEl.value : '') || 0);
+    if (label && amount > 0) {
+      state.addons.push({ label, amount });
+      state.newAddonLabel = ''; state.newAddonAmount = '';
+      render();
+    }
+    return;
+  }
+  if (a === 'addon-remove') {
+    const idx = parseInt(action.getAttribute('data-idx'), 10);
+    if (idx >= 0 && idx < state.addons.length) { state.addons.splice(idx, 1); render(); }
+    return;
+  }
+
   if (a === 'copy-share') {
     const url = buildShareUrl(false);
     navigator.clipboard.writeText(url).then(() => {
@@ -614,6 +667,9 @@ function onInput(e) {
   if (key === 'notes')       { state.notes = input.value; updatePreview(); return; }
   if (key === 'discValue')   { state.discountValue = Math.max(0, parseFloat(input.value) || 0); updatePreview(); return; }
   if (key === 'advancePaid') { state.advancePaid = Math.max(0, parseInt(input.value) || 0); updatePreview(); return; }
+  // In-progress "add a line" inputs — store without re-rendering (they only matter on "Add").
+  if (key === 'addonLabel')  { state.newAddonLabel = input.value; return; }
+  if (key === 'addonAmount') { state.newAddonAmount = input.value; return; }
 
   // Discount type select — update state, adjust the sibling step attribute
   // in-place (no full re-render), and refresh the preview.

@@ -1415,6 +1415,7 @@
 .bc-rate-transit { color: var(--brand-muted); }
 .bc-rate-studios { color: var(--brand-teal); font-weight: 600; border-top: 1px dashed #d8dedb; }
 .bc-rate-guest { color: #8b6f12; }
+.bc-rate-addon { color: #8b6f12; }
 .bc-rate-subtotal { color: var(--brand-muted); border-top: 1px dashed #d8dedb; border-bottom: none; }
 .bc-rate-discount { color: #1a7a4a; font-weight: 600; border-bottom: none; }
 .bc-payment { border-top: 2px solid var(--brand-teal); padding-top: 0.5rem; }
@@ -1560,6 +1561,8 @@
   .br-rate-tbl .studios-row td:nth-child(2) { color: #C9A227; }
   .br-rate-tbl .guest-row td { padding: 5pt 4pt; color: #8b6f12; }
   .br-rate-tbl .guest-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
+  .br-rate-tbl .addon-row td { padding: 5pt 4pt; color: #8b6f12; }
+  .br-rate-tbl .addon-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .br-rate-tbl .subtotal-row td { padding-top: 8pt; color: #5B6B68; border-top: 1pt dashed #d8dedb; border-bottom: none; }
   .br-rate-tbl .discount-row td { color: #1a7a4a; font-weight: 600; border-bottom: none; }
   /* Same fix as the quote: render the footer once, not on every printed page. */
