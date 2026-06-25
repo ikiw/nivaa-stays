@@ -8,14 +8,14 @@ import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { DATA_URL, PICK_ORDER, BREAK_DUR, MEAL_DUR, MEAL_LABELS } from './constants';
-import { idealStay, isPseudo, track, parseSearch } from './utils';
+import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWeather } from './utils';
 import { CURATED } from './curated';
 
 import { scheduleStays, computeSchedule } from './scheduler';
 
-import type { ItineraryData, Stop, PlaceStop, SchedItem, ParsedSearch, Curated } from './types';
+import type { ItineraryData, Stop, PlaceStop, SchedItem, ParsedSearch, Curated, Weather } from './types';
 
-type StateSnap = { start: number; startTime: string; endTime: string; stops: Stop[]; loadedId: string | null };
+type StateSnap = { start: number; startTime: string; endTime: string; stops: Stop[]; loadedId: string | null; tripDate: string };
 
 export function usePlanner() {
   const isMobile = useMediaQuery('(max-width:900px)');
@@ -25,6 +25,9 @@ export function usePlanner() {
   const [startTime, setStartTime] = useState('09:00');
   const [endTime, setEndTime] = useState('19:00');
   const [stops, setStops] = useState<Stop[]>([]); // [{ idx, stay, day }]
+  const [tripDate, setTripDate] = useState(todayISO());  // date the plan is for → drives the weather chip
+  const [weather, setWeather] = useState<Weather | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
   const [activeDay, setActiveDay] = useState(1); // which day's tab is shown (2-day curated plans)
   const [loadedId, setLoadedId] = useState<string | null>(null); // id of a pristine curated plan → readable ?itinerary= URL
   const [pendingCurated, setPendingCurated] = useState<string | null>(null); // ?itinerary=<id> to load once data is ready
@@ -56,13 +59,13 @@ export function usePlanner() {
   const initialUrl = useRef<ParsedSearch | null>(null);
   if (initialUrl.current === null) initialUrl.current = parseSearch();
   const stateRef = useRef<StateSnap | null>(null);                  // latest itinerary, readable from history callbacks
-  stateRef.current = { start, startTime, endTime, stops, loadedId };
+  stateRef.current = { start, startTime, endTime, stops, loadedId, tripDate };
   const touchStartX = useRef<number | null>(null);               // mobile swipe-between-days
   const viewRef = useRef('itinerary');
   viewRef.current = isMobile ? mobView : deskTab;
 
   const buildSearch = (viewOverride?: string) => {
-    const { start, startTime, endTime, stops, loadedId } = stateRef.current!;
+    const { start, startTime, endTime, stops, loadedId, tripDate } = stateRef.current!;
     const view = viewOverride !== undefined ? viewOverride : viewRef.current;
     const q = new URLSearchParams();
     if (loadedId) {
@@ -80,6 +83,7 @@ export function usePlanner() {
       }
     }
     if (view === 'places') q.set('v', 'places');                    // itinerary/day is the default view — keep it out of the URL
+    if (tripDate && tripDate !== todayISO()) q.set('d', tripDate);  // only a non-today date is worth sharing
     const qs = q.toString();
     return window.location.pathname + (qs ? '?' + qs : '');
   };
@@ -107,6 +111,7 @@ export function usePlanner() {
       const curated = u.itinerary && CURATED.find(c => c.id === u.itinerary);
       const startIdx = u.start != null && d.places[u.start] ? u.start : (bus >= 0 ? bus : 0);
       setStart(startIdx);
+      if (u.date) { const t = todayISO(); if (u.date >= t && u.date <= addDaysISO(t, 15)) setTripDate(u.date); }   // honour a shared date, but only if still in forecast range
       if (curated) {
         setPendingCurated(curated.id);                  // load it once `data` state is committed (needs the matrix)
       } else {
@@ -139,7 +144,17 @@ export function usePlanner() {
   // Keep the URL in sync with the itinerary (always shareable) — replace, never push.
   useEffect(() => {
     if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', buildSearch());
-  }, [start, startTime, endTime, stops, loadedId]);
+  }, [start, startTime, endTime, stops, loadedId, tripDate]);
+
+  // Fetch Pondicherry's forecast for the selected date (skip dates outside the model's ~16-day range).
+  useEffect(() => {
+    const t = todayISO();
+    if (tripDate < t || tripDate > addDaysISO(t, 15)) { setWeather(null); setWeatherLoading(false); return; }
+    const ctrl = new AbortController();
+    setWeatherLoading(true);
+    fetchWeather(tripDate, ctrl.signal).then(w => { if (!ctrl.signal.aborted) { setWeather(w); setWeatherLoading(false); } });
+    return () => ctrl.abort();
+  }, [tripDate]);
 
   // Phone back/forward → restore the open view without rolling back the live plan.
   useEffect(() => {
@@ -284,7 +299,7 @@ export function usePlanner() {
   const curDay = tripDays.includes(activeDay) ? activeDay : tripDays[0];   // active day tab
   const mapStops = stops.filter((s): s is PlaceStop => !isPseudo(s) && (s.day || 1) === curDay);   // map = active day's real stops
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */

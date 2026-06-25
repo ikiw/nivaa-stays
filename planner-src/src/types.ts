@@ -90,6 +90,17 @@ export interface Schedule {
   tripKm: number;
 }
 
+/** A day's weather for the trip date (Open-Meteo daily forecast). Temps are rounded °C. */
+export interface Weather {
+  date: string;       // YYYY-MM-DD
+  code: number;       // WMO weather code
+  tMax: number;
+  tMin: number;
+  precip: number;     // max precipitation probability, %
+  sunrise: string;    // ISO local, e.g. "2026-06-26T05:54"
+  sunset: string;
+}
+
 /** A curated starter itinerary (curated.ts). `plan` is one array of place names per day. */
 export interface Curated {
   id: string;
@@ -117,6 +128,7 @@ export interface ParsedSearch {
   endTime: string | null;
   stops: ParsedStop[];
   view: 'places' | 'day' | null;
+  date: string | null;   // selected trip date (YYYY-MM-DD), for the weather forecast
 }
 
 declare global {

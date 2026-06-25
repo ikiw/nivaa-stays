@@ -28,7 +28,7 @@ import DayPanel from './components/DayPanel';
 export default function App() {
   const planner = usePlanner();
   const {
-    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
+    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
   } = planner;
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
@@ -67,7 +67,7 @@ export default function App() {
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
             <Box sx={{ mb: 1 }}>{<Brand />}</Box>
             {mobView !== 'about' && <Box sx={{ mb: 1 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>}
-            {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{<Controls start={start} startTime={startTime} endTime={endTime} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} />}</Box>}
+            {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}</Box>}
           </Box>
         )}
         <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -122,7 +122,7 @@ export default function App() {
         <Paper elevation={0} sx={{ width: 510, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
           background: 'linear-gradient(180deg, #1C1A16 0%, #16161A 22%, #101013 100%)' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-            {<Controls start={start} startTime={startTime} endTime={endTime} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} />}
+            {<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && openView(v)} color="primary">
               <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
               <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Itinerary{stops.length ? ` (${stops.length})` : ''}</ToggleButton>

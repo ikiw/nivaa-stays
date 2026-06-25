@@ -2,7 +2,7 @@
 // map links, the timeline role tagger, GA4 tracking and the shareable-URL parser.
 // No React — safe to import anywhere.
 import { DUR_OVERRIDE, DUR_FOOD, DUR_SUB, DUR_CAT, BREAK_DUR, MEAL_DUR } from './constants';
-import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop } from './types';
+import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop, Weather } from './types';
 
 /** Escape a string for safe interpolation into HTML/attributes. */
 export const esc = (s: unknown): string => {
@@ -42,6 +42,48 @@ export const fmtClock = (t: number): string => { t = ((Math.round(t) % 1440) + 1
 export const toHHMM = (m: number): string => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 /** A place's Google Maps link, falling back to a name search. */
 export const mapLink = (p: { name: string; map?: string }): string => p.map || ('https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.name + ', Pondicherry'));
+
+// ---- trip date + weather (Open-Meteo, free, no API key) ----
+
+/** Local calendar date as "YYYY-MM-DD" (avoids toISOString()'s UTC day-shift). */
+export const todayISO = (): string => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+/** Shift a "YYYY-MM-DD" date by n calendar days (handles month/year rollover). */
+export const addDaysISO = (iso: string, n: number): string => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
+
+/** WMO weather code → a short label + emoji (Open-Meteo's daily weather_code). */
+export function weatherInfo(code: number): { label: string; emoji: string } {
+  if (code === 0) return { label: 'Clear sky', emoji: '☀️' };
+  if (code <= 2) return { label: 'Partly cloudy', emoji: '🌤️' };
+  if (code === 3) return { label: 'Overcast', emoji: '☁️' };
+  if (code <= 48) return { label: 'Fog', emoji: '🌫️' };
+  if (code <= 57) return { label: 'Drizzle', emoji: '🌦️' };
+  if (code <= 67) return { label: 'Rain', emoji: '🌧️' };
+  if (code <= 77) return { label: 'Snow', emoji: '🌨️' };
+  if (code <= 82) return { label: 'Rain showers', emoji: '🌦️' };
+  if (code <= 86) return { label: 'Snow showers', emoji: '🌨️' };
+  if (code <= 99) return { label: 'Thunderstorm', emoji: '⛈️' };
+  return { label: 'Weather', emoji: '🌡️' };
+}
+
+/** Pondicherry's daily forecast for `date` from Open-Meteo. Returns null on error or
+ *  when the date is outside the model's range. No API key; safe to call from the browser. */
+export async function fetchWeather(date: string, signal?: AbortSignal): Promise<Weather | null> {
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=11.9416&longitude=79.8083'
+    + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'
+    + `&timezone=Asia%2FKolkata&start_date=${date}&end_date=${date}`;
+  try {
+    const r = await fetch(url, { signal });
+    if (!r.ok) return null;
+    const d = (await r.json())?.daily;
+    if (!d || !d.time?.length || d.temperature_2m_max?.[0] == null) return null;
+    return {
+      date, code: d.weather_code[0],
+      tMax: Math.round(d.temperature_2m_max[0]), tMin: Math.round(d.temperature_2m_min[0]),
+      precip: d.precipitation_probability_max?.[0] ?? 0,
+      sunrise: d.sunrise?.[0] ?? '', sunset: d.sunset?.[0] ?? '',
+    };
+  } catch { return null; }
+}
 
 /**
  * Role tag for a timeline stop, from category + arrival time (minutes since midnight).
@@ -97,7 +139,7 @@ export const track = (event: string, params?: Record<string, unknown>): void => 
  */
 export function parseSearch(): ParsedSearch {
   const q = new URLSearchParams(window.location.search);
-  const s = q.get('s'), st = q.get('st'), et = q.get('et'), p = q.get('p'), v = q.get('v');
+  const s = q.get('s'), st = q.get('st'), et = q.get('et'), p = q.get('p'), v = q.get('v'), dt = q.get('d');
   const mealMap: Record<string, string> = { B: 'Breakfast', L: 'Lunch', S: 'Snack', D: 'Dinner' };
   return {
     itinerary: q.get('itinerary'),
@@ -115,5 +157,6 @@ export function parseSearch(): ParsedSearch {
       return Number.isInteger(idx) && idx >= 0 ? { idx, stay: b != null && /^\d+$/.test(b) ? +b : null, day: di + 1 } : null;
     }).filter((x): x is ParsedStop => x != null)) : [],
     view: v === 'places' || v === 'day' ? v : null,
+    date: /^\d{4}-\d{2}-\d{2}$/.test(dt || '') ? dt : null,
   };
 }

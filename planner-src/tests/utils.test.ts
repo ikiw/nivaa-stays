@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
   fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, mealTagsForDay, track, parseSearch,
+  weatherInfo, addDaysISO,
 } from '../src/utils';
 import { BREAK_DUR, MEAL_DUR } from '../src/constants';
 import type { Place, Category } from '../src/types';
@@ -123,6 +124,26 @@ describe('mealTagsForDay: sequence-aware meal tags', () => {
   });
 });
 
+describe('weatherInfo: WMO code → label + emoji', () => {
+  it('buckets the common codes', () => {
+    expect(weatherInfo(0).label).toBe('Clear sky');
+    expect(weatherInfo(2).label).toBe('Partly cloudy');
+    expect(weatherInfo(3).label).toBe('Overcast');
+    expect(weatherInfo(61).label).toBe('Rain');
+    expect(weatherInfo(80).label).toBe('Rain showers');
+    expect(weatherInfo(95).label).toBe('Thunderstorm');
+  });
+  it('always returns a non-empty emoji', () => {
+    for (const c of [0, 2, 45, 51, 65, 80, 95, 999]) expect(weatherInfo(c).emoji.length).toBeGreaterThan(0);
+  });
+});
+
+describe('addDaysISO: calendar date math', () => {
+  it('adds days within a month', () => { expect(addDaysISO('2026-06-26', 15)).toBe('2026-07-11'); });
+  it('+0 is identity', () => { expect(addDaysISO('2026-06-26', 0)).toBe('2026-06-26'); });
+  it('rolls over a year boundary', () => { expect(addDaysISO('2026-12-30', 5)).toBe('2027-01-04'); });
+});
+
 describe('misc helpers', () => {
   it('esc: escapes HTML-significant characters', () => {
     expect(esc(`<a href="x">&'`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;');
@@ -145,7 +166,12 @@ describe('parseSearch: shareable-URL decoding', () => {
   const parse = (search: string) => { (globalThis as any).window = { location: { search } }; return parseSearch(); };
 
   it('empty query → empty plan', () => {
-    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null });
+    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, date: null });
+  });
+  it('decodes a valid trip date and rejects junk', () => {
+    expect(parse('?d=2026-06-28').date).toBe('2026-06-28');
+    expect(parse('?d=June').date).toBeNull();
+    expect(parse('?d=2026-6-8').date).toBeNull();   // must be zero-padded YYYY-MM-DD
   });
   it('decodes start, window and view', () => {
     const r = parse('?s=3&st=10:00&et=20:30&v=places');
