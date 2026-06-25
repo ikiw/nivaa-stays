@@ -90,16 +90,21 @@ export interface Schedule {
   tripKm: number;
 }
 
-/** A day's weather for the trip date (Open-Meteo daily forecast). Temps are rounded °C. */
+/** A day's weather for the trip date (Open-Meteo). Temps are rounded °C. `hourly` holds
+ *  24 values indexed by hour-of-day, used to tag each timeline stop at its arrival hour. */
 export interface Weather {
   date: string;       // YYYY-MM-DD
-  code: number;       // WMO weather code
+  code: number;       // WMO weather code (daily)
   tMax: number;
   tMin: number;
   precip: number;     // max precipitation probability, %
   sunrise: string;    // ISO local, e.g. "2026-06-26T05:54"
   sunset: string;
+  hourly?: { temp: number[]; code: number[]; precip: number[] };   // per hour-of-day (0–23)
 }
+
+/** Weather at one moment (a stop's arrival hour). */
+export interface HourWeather { code: number; temp: number; precip: number; }
 
 /** A curated starter itinerary (curated.ts). `plan` is one array of place names per day. */
 export interface Curated {

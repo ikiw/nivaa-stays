@@ -2,7 +2,7 @@
 // map links, the timeline role tagger, GA4 tracking and the shareable-URL parser.
 // No React — safe to import anywhere.
 import { DUR_OVERRIDE, DUR_FOOD, DUR_SUB, DUR_CAT, BREAK_DUR, MEAL_DUR } from './constants';
-import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop, Weather } from './types';
+import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop, Weather, HourWeather } from './types';
 
 /** Escape a string for safe interpolation into HTML/attributes. */
 export const esc = (s: unknown): string => {
@@ -69,20 +69,37 @@ export function weatherInfo(code: number): { label: string; emoji: string } {
  *  when the date is outside the model's range. No API key; safe to call from the browser. */
 export async function fetchWeather(date: string, signal?: AbortSignal): Promise<Weather | null> {
   const url = 'https://api.open-meteo.com/v1/forecast?latitude=11.9416&longitude=79.8083'
+    + '&hourly=temperature_2m,weather_code,precipitation_probability'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'
     + `&timezone=Asia%2FKolkata&start_date=${date}&end_date=${date}`;
   try {
     const r = await fetch(url, { signal });
     if (!r.ok) return null;
-    const d = (await r.json())?.daily;
+    const j = await r.json();
+    const d = j?.daily, h = j?.hourly;
     if (!d || !d.time?.length || d.temperature_2m_max?.[0] == null) return null;
     return {
       date, code: d.weather_code[0],
       tMax: Math.round(d.temperature_2m_max[0]), tMin: Math.round(d.temperature_2m_min[0]),
       precip: d.precipitation_probability_max?.[0] ?? 0,
       sunrise: d.sunrise?.[0] ?? '', sunset: d.sunset?.[0] ?? '',
+      hourly: h?.time?.length ? {
+        temp: (h.temperature_2m as number[]).map((v) => Math.round(v)),
+        code: h.weather_code as number[],
+        precip: (h.precipitation_probability ?? []) as number[],
+      } : undefined,
     };
   } catch { return null; }
+}
+
+/** Forecast at a stop's arrival time (minutes since midnight), from the day's hourly data.
+ *  Returns null when there's no hourly data (e.g. the fetch only had the daily summary). */
+export function weatherAtHour(w: Weather | null, minutes: number): HourWeather | null {
+  if (!w?.hourly?.temp?.length) return null;
+  const h = Math.min(w.hourly.temp.length - 1, Math.max(0, Math.floor(minutes / 60)));
+  const temp = w.hourly.temp[h];
+  if (temp == null) return null;
+  return { code: w.hourly.code[h] ?? w.code, temp, precip: w.hourly.precip[h] ?? 0 };
 }
 
 /**
