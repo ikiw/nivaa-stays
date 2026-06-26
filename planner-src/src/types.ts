@@ -106,6 +106,9 @@ export interface Weather {
 /** Weather at one moment (a stop's arrival hour). */
 export interface HourWeather { code: number; temp: number; precip: number; }
 
+/** Condition icon family a WMO code maps to (→ a coloured MUI icon in WeatherIcon). */
+export type WeatherKind = 'sun' | 'partly' | 'cloud' | 'fog' | 'drizzle' | 'rain' | 'showers' | 'snow' | 'storm';
+
 /** A curated starter itinerary (curated.ts). `plan` is one array of place names per day. */
 export interface Curated {
   id: string;

@@ -124,17 +124,20 @@ describe('mealTagsForDay: sequence-aware meal tags', () => {
   });
 });
 
-describe('weatherInfo: WMO code → label + emoji', () => {
+describe('weatherInfo: WMO code → label + icon + colour', () => {
   it('buckets the common codes', () => {
-    expect(weatherInfo(0).label).toBe('Clear sky');
-    expect(weatherInfo(2).label).toBe('Partly cloudy');
-    expect(weatherInfo(3).label).toBe('Overcast');
-    expect(weatherInfo(61).label).toBe('Rain');
-    expect(weatherInfo(80).label).toBe('Rain showers');
-    expect(weatherInfo(95).label).toBe('Thunderstorm');
+    expect(weatherInfo(0)).toMatchObject({ label: 'Clear sky', icon: 'sun' });
+    expect(weatherInfo(2)).toMatchObject({ label: 'Partly cloudy', icon: 'partly' });
+    expect(weatherInfo(3)).toMatchObject({ label: 'Overcast', icon: 'cloud' });
+    expect(weatherInfo(61)).toMatchObject({ label: 'Rain', icon: 'rain' });
+    expect(weatherInfo(80)).toMatchObject({ label: 'Rain showers', icon: 'showers' });
+    expect(weatherInfo(95)).toMatchObject({ label: 'Thunderstorm', icon: 'storm' });
   });
-  it('always returns a non-empty emoji', () => {
-    for (const c of [0, 2, 45, 51, 65, 80, 95, 999]) expect(weatherInfo(c).emoji.length).toBeGreaterThan(0);
+  it('always returns an icon key and a hex colour', () => {
+    for (const c of [0, 2, 45, 51, 65, 80, 95, 999]) {
+      expect(weatherInfo(c).icon).toBeTruthy();
+      expect(weatherInfo(c).color).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
   });
 });
 

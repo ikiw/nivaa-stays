@@ -11,9 +11,11 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
+import UmbrellaRounded from '@mui/icons-material/UmbrellaRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
 import { fmtDur, weatherInfo } from '../utils';
+import WeatherIcon from './WeatherIcon';
 import type { Category, ItineraryData, HourWeather } from '../types';
 
 export interface TimelineNodeProps {
@@ -51,12 +53,17 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
       {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (<MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>))}
     </TextField>
   );
-  // tiny forecast for this stop's arrival hour — emoji + temp, rain % only when notable
+  // tiny forecast for this stop's arrival hour — condition icon + temp, plus an umbrella +
+  // rain chance when notable (amber = likely, "carry an umbrella")
   const wxBit = wx ? (
-    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, flexShrink: 0, fontSize: '0.74rem', color: 'text.secondary' }}>
-      <Box component="span" sx={{ fontSize: 13, lineHeight: 1 }} aria-hidden>{weatherInfo(wx.code).emoji}</Box>
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35, flexShrink: 0, fontSize: '0.74rem', color: 'text.secondary' }}>
+      <WeatherIcon code={wx.code} size={14} title={`${weatherInfo(wx.code).label} at this time`} />
       <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{wx.temp}°</Box>
-      {wx.precip >= 40 && <Box component="span" sx={{ color: '#60A5FA', fontWeight: 600 }}>{wx.precip}%</Box>}
+      {wx.precip >= 40 && (
+        <Box component="span" title={`${wx.precip}% chance of rain — carry an umbrella`} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.15, fontWeight: 700, color: wx.precip >= 60 ? '#F59E0B' : '#60A5FA' }}>
+          <UmbrellaRounded sx={{ fontSize: 12 }} /> {wx.precip}%
+        </Box>
+      )}
     </Box>
   ) : null;
   if (brk || meal) {

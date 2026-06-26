@@ -2,7 +2,7 @@
 // map links, the timeline role tagger, GA4 tracking and the shareable-URL parser.
 // No React — safe to import anywhere.
 import { DUR_OVERRIDE, DUR_FOOD, DUR_SUB, DUR_CAT, BREAK_DUR, MEAL_DUR } from './constants';
-import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop, Weather, HourWeather } from './types';
+import type { Place, Stop, SchedItem, DurTriple, Pseudoable, ParsedSearch, ParsedStop, Weather, HourWeather, WeatherKind } from './types';
 
 /** Escape a string for safe interpolation into HTML/attributes. */
 export const esc = (s: unknown): string => {
@@ -50,25 +50,27 @@ export const todayISO = (): string => { const d = new Date(); return `${d.getFul
 /** Shift a "YYYY-MM-DD" date by n calendar days (handles month/year rollover). */
 export const addDaysISO = (iso: string, n: number): string => { const [y, m, d] = iso.split('-').map(Number); const t = new Date(y, m - 1, d + n); return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`; };
 
-/** WMO weather code → a short label + emoji (Open-Meteo's daily weather_code). */
-export function weatherInfo(code: number): { label: string; emoji: string } {
-  if (code === 0) return { label: 'Clear sky', emoji: '☀️' };
-  if (code <= 2) return { label: 'Partly cloudy', emoji: '🌤️' };
-  if (code === 3) return { label: 'Overcast', emoji: '☁️' };
-  if (code <= 48) return { label: 'Fog', emoji: '🌫️' };
-  if (code <= 57) return { label: 'Drizzle', emoji: '🌦️' };
-  if (code <= 67) return { label: 'Rain', emoji: '🌧️' };
-  if (code <= 77) return { label: 'Snow', emoji: '🌨️' };
-  if (code <= 82) return { label: 'Rain showers', emoji: '🌦️' };
-  if (code <= 86) return { label: 'Snow showers', emoji: '🌨️' };
-  if (code <= 99) return { label: 'Thunderstorm', emoji: '⛈️' };
-  return { label: 'Weather', emoji: '🌡️' };
+/** WMO weather code → a short label, an icon family and a colour (rendered by WeatherIcon). */
+export function weatherInfo(code: number): { label: string; icon: WeatherKind; color: string } {
+  if (code === 0) return { label: 'Clear sky', icon: 'sun', color: '#F6B73C' };
+  if (code <= 2) return { label: 'Partly cloudy', icon: 'partly', color: '#E2C275' };
+  if (code === 3) return { label: 'Overcast', icon: 'cloud', color: '#9AA7B4' };
+  if (code <= 48) return { label: 'Fog', icon: 'fog', color: '#94A3B8' };
+  if (code <= 57) return { label: 'Drizzle', icon: 'drizzle', color: '#7DD3FC' };
+  if (code <= 67) return { label: 'Rain', icon: 'rain', color: '#60A5FA' };
+  if (code <= 77) return { label: 'Snow', icon: 'snow', color: '#BAE6FD' };
+  if (code <= 82) return { label: 'Rain showers', icon: 'showers', color: '#60A5FA' };
+  if (code <= 86) return { label: 'Snow showers', icon: 'snow', color: '#BAE6FD' };
+  if (code <= 99) return { label: 'Thunderstorm', icon: 'storm', color: '#A78BFA' };
+  return { label: 'Weather', icon: 'cloud', color: '#9AA7B4' };
 }
 
 /** Pondicherry's daily forecast for `date` from Open-Meteo. Returns null on error or
  *  when the date is outside the model's range. No API key; safe to call from the browser. */
 export async function fetchWeather(date: string, signal?: AbortSignal): Promise<Weather | null> {
-  const url = 'https://api.open-meteo.com/v1/forecast?latitude=11.9416&longitude=79.8083'
+  // Pondicherry centre (White Town); hardcoded — name-geocoding "Pondicherry" is ambiguous
+  // (Open-Meteo's geocoder returns the airport, even a Cherry Mountain in New Hampshire).
+  const url = 'https://api.open-meteo.com/v1/forecast?latitude=11.934&longitude=79.83'
     + '&hourly=temperature_2m,weather_code,precipitation_probability'
     + '&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset'
     + `&timezone=Asia%2FKolkata&start_date=${date}&end_date=${date}`;

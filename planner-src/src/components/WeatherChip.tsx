@@ -1,8 +1,11 @@
-// A compact weather pill for the selected trip date: condition emoji + high/low °C,
-// a rain chance when it's worth a raincoat, the short label, and Pondicherry's sunrise
-// (a nice nudge for the Rock Beach sunrise crowd). Pure view — App feeds it the forecast.
-import { Box, Typography, CircularProgress } from '@mui/material';
+// A compact weather pill for the selected trip date: a coloured condition icon + high/low
+// °C, the condition label, and — when rain is likely — an umbrella + chance, amber as a
+// "carry an umbrella" warning. Pure view — App feeds it the forecast.
+import { Box, Typography, CircularProgress, Tooltip } from '@mui/material';
+import UmbrellaRounded from '@mui/icons-material/UmbrellaRounded';
+import WbTwilightRounded from '@mui/icons-material/WbTwilightRounded';
 import { weatherInfo } from '../utils';
+import WeatherIcon from './WeatherIcon';
 import type { Weather } from '../types';
 
 interface WeatherChipProps {
@@ -26,25 +29,35 @@ export default function WeatherChip({ weather, loading, outOfRange }: WeatherChi
   );
   if (outOfRange) return (
     <Box sx={chipSx}>
-      <span style={{ fontSize: 14 }} aria-hidden>🗓️</span>
+      <WbTwilightRounded sx={{ fontSize: 14, color: 'text.secondary' }} />
       <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }}>Forecast nearer the date</Typography>
     </Box>
   );
   if (!weather) return null;   // transient fetch error — show nothing rather than a broken chip
 
-  const { label, emoji } = weatherInfo(weather.code);
+  const { label } = weatherInfo(weather.code);
   const rise = weather.sunrise ? weather.sunrise.slice(11, 16).replace(/^0/, '') : '';
+  const rain = weather.precip;          // day's max chance of rain, %
+  const wet = rain >= 60, damp = rain >= 35;
   return (
-    <Box sx={chipSx} aria-label={`${label}, ${weather.tMax} to ${weather.tMin} degrees`}>
-      <span style={{ fontSize: 16, lineHeight: 1 }} aria-hidden>{emoji}</span>
+    <Box sx={chipSx} aria-label={`${label}, high ${weather.tMax}, low ${weather.tMin} degrees, ${rain}% chance of rain`}>
+      <WeatherIcon code={weather.code} size={17} />
       <Typography sx={{ fontWeight: 700, fontSize: '0.8rem' }}>
         {weather.tMax}°<Box component="span" sx={{ color: 'text.secondary', fontWeight: 500 }}>/{weather.tMin}°</Box>
       </Typography>
-      {weather.precip >= 30 && (
-        <Typography sx={{ fontSize: '0.72rem', color: '#60A5FA', fontWeight: 600 }}>💧{weather.precip}%</Typography>
-      )}
       <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary' }} noWrap>{label}</Typography>
-      {rise && <Typography sx={{ fontSize: '0.72rem', color: '#E6C35A' }} noWrap>🌅 {rise}</Typography>}
+      {damp && (
+        <Tooltip arrow title={`${rain}% chance of rain${wet ? ' — carry an umbrella' : ''}`}>
+          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, fontWeight: 700, color: wet ? '#F59E0B' : '#60A5FA' }}>
+            <UmbrellaRounded sx={{ fontSize: 13 }} /> {rain}%
+          </Box>
+        </Tooltip>
+      )}
+      {rise && (
+        <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.72rem', color: '#E6C35A' }}>
+          <WbTwilightRounded sx={{ fontSize: 13 }} /> {rise}
+        </Box>
+      )}
     </Box>
   );
 }
