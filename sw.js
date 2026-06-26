@@ -6,7 +6,7 @@
 //   • Apps Script API requests: never cached (always live data)
 //   • External CDN (google fonts, GSI): pass through (browser cache)
 
-const CACHE_VERSION = 'nivaa-fc2bcceb';
+const CACHE_VERSION = 'nivaa-d318622a';
 const SHELL_ASSETS = [
   '/admin.html',
   '/admin-rank.html',
