@@ -694,7 +694,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-ochre);
+  color: #A8522C;   /* deepened terracotta — WCAG AA on the cream pullquote */
   font-weight: 600;
 }
 

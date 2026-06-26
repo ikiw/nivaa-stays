@@ -186,8 +186,10 @@ h1, h2, h3, h4, .serif {
   letter-spacing: 0.22em;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--brand-ochre);
+  color: #A8522C;   /* deepened terracotta — meets WCAG AA 4.5:1 on cream/white (was --brand-ochre, ~3.5:1) */
 }
+/* On dark sections the eyebrow is gold (high contrast on the dark teal) */
+.hero .eyebrow, .bg-teal .eyebrow { color: #dbac10; }
 
 .divider-gold {
   width: 56px; height: 1px;
@@ -722,7 +724,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   font-size: 0.72rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--brand-ochre);
+  color: #A8522C;   /* deepened terracotta — WCAG AA on the cream pullquote */
   font-weight: 600;
 }
 </style><!--/inline-css-->
