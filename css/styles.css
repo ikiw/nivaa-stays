@@ -158,8 +158,8 @@ h1, h2, h3, h4, .serif {
   font-weight: 600;
   color: #A8522C;   /* deepened terracotta — meets WCAG AA 4.5:1 on cream/white (was --brand-ochre, ~3.5:1) */
 }
-/* On dark sections the eyebrow stays light/gold for contrast */
-.hero .eyebrow, .bg-teal .eyebrow { color: var(--brand-gold-soft); }
+/* On dark sections the eyebrow is gold (high contrast on the dark teal) */
+.hero .eyebrow, .bg-teal .eyebrow { color: #dbac10; }
 
 .divider-gold {
   width: 56px; height: 1px;
