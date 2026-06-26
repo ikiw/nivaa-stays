@@ -11,10 +11,12 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
+import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
-import { fmtDur } from '../utils';
-import type { Category, ItineraryData } from '../types';
+import { fmtDur, weatherInfo } from '../utils';
+import WeatherIcon from './WeatherIcon';
+import type { Category, ItineraryData, HourWeather } from '../types';
 
 export interface TimelineNodeProps {
   icon?: SvgIconComponent;
@@ -34,6 +36,7 @@ export interface TimelineNodeProps {
   downDisabled?: boolean;
   brk?: true;
   meal?: string;
+  wx?: HourWeather | null;   // forecast at this stop's arrival hour
   data: ItineraryData;
   setStay: (gi: number, v: string | number) => void;
   move: (gi: number, dir: number) => void;
@@ -42,7 +45,7 @@ export interface TimelineNodeProps {
 }
 
 /** One timeline row: a place stop, or a break/meal pseudo-row. App injects `data` + handlers. */
-export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
+export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, wx, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
   const stayField = gi != null && (
     <TextField select size="small" value={stay} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, '& .MuiSelect-select': { fontSize: '0.78rem' } }}
       InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 14, color: 'text.secondary', mr: 0.5 }} /> }}
@@ -50,6 +53,19 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
       {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (<MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>))}
     </TextField>
   );
+  // tiny forecast for this stop's arrival hour — condition icon + temp, plus an umbrella +
+  // rain chance when notable (amber = likely, "carry an umbrella")
+  const wxBit = wx ? (
+    <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.35, flexShrink: 0, fontSize: '0.74rem', color: 'text.secondary' }}>
+      <WeatherIcon code={wx.code} size={14} title={`${weatherInfo(wx.code).label} at this time`} />
+      <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{wx.temp}°</Box>
+      {wx.precip >= 40 && (
+        <Box component="span" title={`${wx.precip}% chance of rain — carry an umbrella`} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.15, fontWeight: 700, color: wx.precip >= 60 ? '#F59E0B' : '#60A5FA' }}>
+          <BeachAccessRounded sx={{ fontSize: 12 }} /> {wx.precip}%
+        </Box>
+      )}
+    </Box>
+  ) : null;
   if (brk || meal) {
     const PIcon = meal ? RestaurantRounded : SelfImprovementRounded;
     const pColor = (meal && TAG_COLOR[meal]) || '#94A3B8';   // only read on meal rows
@@ -75,7 +91,8 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               )}
             </Stack>
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
-              <span>{sub} · {meal ? 'grab a bite nearby' : 'relax or explore on your own'}</span>{stayField}
+              <span>{sub} · {meal ? 'grab a bite nearby' : 'relax or explore on your own'}</span>
+              <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0 }}>{wxBit}{stayField}</Stack>
             </Stack>
           </Paper>
           {!last && drive && (<Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}><DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}</Box>)}
@@ -122,15 +139,18 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
               {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
             </Box>
-            {gi != null && (
-              <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0, '& .MuiSelect-select': { fontSize: '0.78rem' } }}
-                InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 14, color: 'text.secondary', mr: 0.5 }} /> }}
-                SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
-                {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
-                  <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
-                ))}
-              </TextField>
-            )}
+            <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0 }}>
+              {wxBit}
+              {gi != null && (
+                <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0, '& .MuiSelect-select': { fontSize: '0.78rem' } }}
+                  InputProps={{ startAdornment: <AccessTimeRounded sx={{ fontSize: 14, color: 'text.secondary', mr: 0.5 }} /> }}
+                  SelectProps={{ MenuProps: { PaperProps: { sx: { maxHeight: 300 } } } }}>
+                  {(STAY_OPTIONS.includes(stay) ? STAY_OPTIONS : [...STAY_OPTIONS, stay].sort((a, b) => a - b)).map(m => (
+                    <MenuItem key={m} value={m}>{fmtDur(m)}</MenuItem>
+                  ))}
+                </TextField>
+              )}
+            </Stack>
           </Stack>
         </Paper>
         {!last && drive && (

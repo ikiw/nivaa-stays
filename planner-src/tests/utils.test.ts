@@ -2,9 +2,10 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
   fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, mealTagsForDay, track, parseSearch,
+  weatherInfo, addDaysISO, weatherAtHour,
 } from '../src/utils';
 import { BREAK_DUR, MEAL_DUR } from '../src/constants';
-import type { Place, Category } from '../src/types';
+import type { Place, Category, Weather } from '../src/types';
 
 /** Build a full Place from the minimal fields these pure-logic tests care about. */
 const mk = (name: string, cat: Category, sub?: string): Place => ({ name, cat, sub, lat: 0, lng: 0 });
@@ -123,6 +124,48 @@ describe('mealTagsForDay: sequence-aware meal tags', () => {
   });
 });
 
+describe('weatherInfo: WMO code → label + icon + colour', () => {
+  it('buckets the common codes', () => {
+    expect(weatherInfo(0)).toMatchObject({ label: 'Clear sky', icon: 'sun' });
+    expect(weatherInfo(2)).toMatchObject({ label: 'Partly cloudy', icon: 'partly' });
+    expect(weatherInfo(3)).toMatchObject({ label: 'Overcast', icon: 'cloud' });
+    expect(weatherInfo(61)).toMatchObject({ label: 'Rain', icon: 'rain' });
+    expect(weatherInfo(80)).toMatchObject({ label: 'Rain showers', icon: 'showers' });
+    expect(weatherInfo(95)).toMatchObject({ label: 'Thunderstorm', icon: 'storm' });
+  });
+  it('always returns an icon key and a hex colour', () => {
+    for (const c of [0, 2, 45, 51, 65, 80, 95, 999]) {
+      expect(weatherInfo(c).icon).toBeTruthy();
+      expect(weatherInfo(c).color).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    }
+  });
+});
+
+describe('addDaysISO: calendar date math', () => {
+  it('adds days within a month', () => { expect(addDaysISO('2026-06-26', 15)).toBe('2026-07-11'); });
+  it('+0 is identity', () => { expect(addDaysISO('2026-06-26', 0)).toBe('2026-06-26'); });
+  it('rolls over a year boundary', () => { expect(addDaysISO('2026-12-30', 5)).toBe('2027-01-04'); });
+});
+
+describe('weatherAtHour: forecast at a stop arrival time', () => {
+  const w: Weather = {
+    date: '2026-06-26', code: 1, tMax: 33, tMin: 26, precip: 30, sunrise: '', sunset: '',
+    hourly: { temp: Array.from({ length: 24 }, (_, h) => 20 + h), code: Array.from({ length: 24 }, (_, h) => (h < 12 ? 0 : 61)), precip: Array.from({ length: 24 }, (_, h) => h) },
+  };
+  it('reads the hour bucket from minutes-since-midnight', () => {
+    expect(weatherAtHour(w, 9 * 60)).toEqual({ code: 0, temp: 29, precip: 9 });          // 09:00 → hour 9
+    expect(weatherAtHour(w, 14 * 60 + 30)).toEqual({ code: 61, temp: 34, precip: 14 });   // 14:30 → hour 14
+  });
+  it('clamps out-of-range minutes into [0, last]', () => {
+    expect(weatherAtHour(w, -30)?.temp).toBe(20);     // before midnight → hour 0
+    expect(weatherAtHour(w, 99 * 60)?.temp).toBe(43); // past end → hour 23
+  });
+  it('returns null without hourly data', () => {
+    expect(weatherAtHour({ ...w, hourly: undefined }, 600)).toBeNull();
+    expect(weatherAtHour(null, 600)).toBeNull();
+  });
+});
+
 describe('misc helpers', () => {
   it('esc: escapes HTML-significant characters', () => {
     expect(esc(`<a href="x">&'`)).toBe('&lt;a href=&quot;x&quot;&gt;&amp;&#39;');
@@ -145,7 +188,12 @@ describe('parseSearch: shareable-URL decoding', () => {
   const parse = (search: string) => { (globalThis as any).window = { location: { search } }; return parseSearch(); };
 
   it('empty query → empty plan', () => {
-    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null });
+    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, date: null });
+  });
+  it('decodes a valid trip date and rejects junk', () => {
+    expect(parse('?d=2026-06-28').date).toBe('2026-06-28');
+    expect(parse('?d=June').date).toBeNull();
+    expect(parse('?d=2026-6-8').date).toBeNull();   // must be zero-padded YYYY-MM-DD
   });
   it('decodes start, window and view', () => {
     const r = parse('?s=3&st=10:00&et=20:30&v=places');

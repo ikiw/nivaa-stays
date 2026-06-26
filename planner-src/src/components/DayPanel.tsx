@@ -17,7 +17,7 @@ import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import { CURATED } from '../curated';
 import { LEG_COLORS, DAY_COLORS } from '../constants';
-import { isPseudo, parseTime, fmtClock, mealTagsForDay, track } from '../utils';
+import { isPseudo, parseTime, fmtClock, mealTagsForDay, weatherAtHour, track } from '../utils';
 import TimelineNode from './TimelineNode';
 import type { TimelineNodeProps } from './TimelineNode';
 import { PlanChips } from './Chips';
@@ -30,7 +30,7 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
     data, start, startTime, endTime, stops, browsing, setBrowsing, loadedId, optimize, addBreak, isMobile,
     shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, shareWhatsApp, copyShareLink, gmapsUrl,
     setStops, setActiveDay, setLoadedId, planFilter, loadCurated, dayData, curDay, tripDays, tripDrive, tripKm,
-    setStay, move, removeAt, selectPlace,
+    setStay, move, removeAt, selectPlace, weather,
   } = planner;
   if (!data) return null;
 
@@ -132,12 +132,12 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
                 ? <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', py: 1.5, textAlign: 'center' }}>No stops on Day {d.day} yet — add places.</Typography>
                 : (<>
                     {Node({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S',
-                      legColor: LEG_COLORS[0], drive: `${d.tl[0].dm} min · ${d.tl[0].dk} km` })}
+                      legColor: LEG_COLORS[0], drive: `${d.tl[0].dm} min · ${d.tl[0].dk} km`, wx: weatherAtHour(weather, parseTime(startTime)) })}
                     {(() => { let rn = 0; const dayTags = mealTagsForDay(d.tl.map(e => ({ cat: e.idx != null ? data.places[e.idx].cat : '', arrive: e.arrive }))); return d.tl.map((t, ti) => {
                       const lastStop = ti === d.tl.length - 1;
                       const legColor = lastStop ? '#64748B' : LEG_COLORS[(ti + 1) % LEG_COLORS.length];
                       const drive = lastStop ? `${d.rMin} min · ${d.rKm} km · back to start` : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
-                      if (t.brk || t.meal) return <Fragment key={t.gi}>{Node({ gi: t.gi, brk: t.brk, meal: t.meal, sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, day: d.day, upDisabled: ti === 0, downDisabled: lastStop, legColor, drive })}</Fragment>;
+                      if (t.brk || t.meal) return <Fragment key={t.gi}>{Node({ gi: t.gi, brk: t.brk, meal: t.meal, sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, day: d.day, upDisabled: ti === 0, downDisabled: lastStop, legColor, drive, wx: weatherAtHour(weather, t.arrive) })}</Fragment>;
                       rn++;
                       const place = data.places[t.idx!];
                       return <Fragment key={t.gi}>{Node({
@@ -145,6 +145,7 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
                         tag: dayTags[ti],
                         sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay,
                         upDisabled: ti === 0, downDisabled: lastStop, legColor, drive,
+                        wx: weatherAtHour(weather, t.arrive),
                       })}</Fragment>;
                     }); })()}
                     {Node({ icon: FlagRounded, title: `Back at ${data.places[start].name}`, sub: `Arrive ${fmtClock(d.clock)}`, dot: 'S', last: true })}
