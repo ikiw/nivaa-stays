@@ -2,7 +2,7 @@
 // °C, the condition label, and — when rain is likely — an umbrella + chance, amber as a
 // "carry an umbrella" warning. Pure view — App feeds it the forecast.
 import { Box, Typography, CircularProgress, Tooltip } from '@mui/material';
-import UmbrellaRounded from '@mui/icons-material/UmbrellaRounded';
+import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
 import WbTwilightRounded from '@mui/icons-material/WbTwilightRounded';
 import { weatherInfo } from '../utils';
 import WeatherIcon from './WeatherIcon';
@@ -49,7 +49,7 @@ export default function WeatherChip({ weather, loading, outOfRange }: WeatherChi
       {damp && (
         <Tooltip arrow title={`${rain}% chance of rain${wet ? ' — carry an umbrella' : ''}`}>
           <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.25, fontWeight: 700, color: wet ? '#F59E0B' : '#60A5FA' }}>
-            <UmbrellaRounded sx={{ fontSize: 13 }} /> {rain}%
+            <BeachAccessRounded sx={{ fontSize: 13 }} /> {rain}%
           </Box>
         </Tooltip>
       )}

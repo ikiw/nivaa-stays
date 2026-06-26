@@ -11,7 +11,7 @@ import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
-import UmbrellaRounded from '@mui/icons-material/UmbrellaRounded';
+import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
 import { fmtDur, weatherInfo } from '../utils';
@@ -61,7 +61,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
       <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{wx.temp}°</Box>
       {wx.precip >= 40 && (
         <Box component="span" title={`${wx.precip}% chance of rain — carry an umbrella`} sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.15, fontWeight: 700, color: wx.precip >= 60 ? '#F59E0B' : '#60A5FA' }}>
-          <UmbrellaRounded sx={{ fontSize: 12 }} /> {wx.precip}%
+          <BeachAccessRounded sx={{ fontSize: 12 }} /> {wx.precip}%
         </Box>
       )}
     </Box>
