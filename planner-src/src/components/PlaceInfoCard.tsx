@@ -8,7 +8,8 @@ import StarRounded from '@mui/icons-material/StarRounded';
 import MapRounded from '@mui/icons-material/MapRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
-import { photoCache, mapLink } from '../utils';
+import LocalActivityRounded from '@mui/icons-material/LocalActivityRounded';
+import { photoCache, mapLink, track } from '../utils';
 import { CAT_LABEL, SUB_LABEL, CAT_ICON } from '../constants';
 import type { Place } from '../types';
 
@@ -84,6 +85,15 @@ export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }:
           <Button size="small" endIcon={<OpenInNewRounded sx={{ fontSize: 15 }} />} component="a" href={gmaps} target="_blank" rel="noopener" sx={{ px: 0.6 }}>Google Maps</Button>
         </Stack>
       </Stack>
+      {place.book && (
+        <Button fullWidth size="small" variant="contained" disableElevation
+          startIcon={<LocalActivityRounded sx={{ fontSize: 16 }} />} endIcon={<OpenInNewRounded sx={{ fontSize: 14 }} />}
+          component="a" href={place.book.url} target="_blank" rel="noopener"
+          onClick={() => track('place_book', { name: place.name })}
+          sx={{ mt: 0.9, fontWeight: 700, borderRadius: '10px', bgcolor: '#FBBF24', color: '#1A1206', '&:hover': { bgcolor: '#F59E0B' } }}>
+          {place.book.label}
+        </Button>
+      )}
     </Paper>
   );
 }
