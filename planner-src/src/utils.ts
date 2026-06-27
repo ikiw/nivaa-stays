@@ -104,6 +104,19 @@ export function weatherAtHour(w: Weather | null, minutes: number): HourWeather |
   return { code: w.hourly.code[h] ?? w.code, temp, precip: w.hourly.precip[h] ?? 0 };
 }
 
+/** A day-level "carry an umbrella" call-out when it's wet (drizzle/rain/showers/storm or
+ *  a high rain chance) or very hot — else null. For the plain-text plan summary. */
+export function umbrellaAdvisory(w: Weather): string | null {
+  const { label, icon } = weatherInfo(w.code);
+  const wetIcon = icon === 'drizzle' || icon === 'rain' || icon === 'showers' || icon === 'storm';
+  const wet = wetIcon || w.precip >= 50;
+  const hot = w.tMax >= 35;
+  const bits: string[] = [];
+  if (wet) bits.push(wetIcon ? `${label.toLowerCase()} likely` : `rain possible (${w.precip}%)`);
+  if (hot) bits.push(`very hot (${w.tMax}°)`);
+  return bits.length ? `Carry an umbrella — ${bits.join(', ')}.` : null;
+}
+
 /**
  * Role tag for a timeline stop, from category + arrival time (minutes since midnight).
  * Returns e.g. 'Breakfast', 'Drinks', 'Shopping', or null.

@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   esc, placeDur, idealStay, isPseudo, stopDur,
   fmtDur, parseTime, fmtClock, toHHMM, mapLink, mealTag, mealTagsForDay, track, parseSearch,
-  weatherInfo, addDaysISO, weatherAtHour,
+  weatherInfo, addDaysISO, weatherAtHour, umbrellaAdvisory,
 } from '../src/utils';
 import { BREAK_DUR, MEAL_DUR } from '../src/constants';
 import type { Place, Category, Weather } from '../src/types';
@@ -163,6 +163,27 @@ describe('weatherAtHour: forecast at a stop arrival time', () => {
   it('returns null without hourly data', () => {
     expect(weatherAtHour({ ...w, hourly: undefined }, 600)).toBeNull();
     expect(weatherAtHour(null, 600)).toBeNull();
+  });
+});
+
+describe('umbrellaAdvisory: day-level carry-an-umbrella call-out', () => {
+  const mk = (code: number, tMax: number, precip: number): Weather => ({ date: '2026-06-27', code, tMax, tMin: 26, precip, sunrise: '', sunset: '' });
+  it('flags wet conditions by their label', () => {
+    expect(umbrellaAdvisory(mk(95, 32, 75))).toMatch(/umbrella — thunderstorm likely/i);
+    expect(umbrellaAdvisory(mk(61, 31, 40))).toMatch(/rain likely/);
+    expect(umbrellaAdvisory(mk(51, 30, 20))).toMatch(/drizzle likely/);
+    expect(umbrellaAdvisory(mk(80, 31, 30))).toMatch(/rain showers likely/);
+  });
+  it('flags a high rain chance even when the icon is dry', () => {
+    expect(umbrellaAdvisory(mk(2, 32, 60))).toMatch(/rain possible \(60%\)/);
+  });
+  it('flags very high temperature, and combines reasons', () => {
+    expect(umbrellaAdvisory(mk(0, 36, 5))).toBe('Carry an umbrella — very hot (36°).');
+    expect(umbrellaAdvisory(mk(95, 37, 80))).toBe('Carry an umbrella — thunderstorm likely, very hot (37°).');
+  });
+  it('returns null on a mild, dry day', () => {
+    expect(umbrellaAdvisory(mk(1, 31, 10))).toBeNull();
+    expect(umbrellaAdvisory(mk(3, 33, 15))).toBeNull();
   });
 });
 

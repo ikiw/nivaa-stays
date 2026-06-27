@@ -8,7 +8,7 @@ import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { DATA_URL, PICK_ORDER, BREAK_DUR, MEAL_DUR, MEAL_LABELS } from './constants';
-import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWeather, fmtClock, parseTime, fmtDur } from './utils';
+import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWeather, fmtClock, parseTime, fmtDur, weatherInfo, umbrellaAdvisory } from './utils';
 import { CURATED } from './curated';
 
 import { scheduleStays, computeSchedule } from './scheduler';
@@ -306,7 +306,13 @@ export function usePlanner() {
     const [y, mo, dd] = tripDate.split('-').map(Number);
     const niceDate = new Date(y, mo - 1, dd).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
     const total = stops.filter(s => !isPseudo(s)).length;
-    const L: string[] = [`Pondicherry itinerary — ${niceDate}`, ''];
+    const L: string[] = [`Pondicherry itinerary — ${niceDate}`];
+    if (weather) {
+      L.push(`Weather: ${weatherInfo(weather.code).label} · ${weather.tMax}°/${weather.tMin}° · ${weather.precip}% chance of rain`);
+      const adv = umbrellaAdvisory(weather);
+      if (adv) L.push(`☔ ${adv}`);
+    }
+    L.push('');
     tripDays.forEach(dn => {
       const d = dayData.find(x => x.day === dn);
       if (!d || !d.tl.length) return;
