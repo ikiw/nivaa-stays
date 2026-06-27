@@ -89,6 +89,13 @@ Rules:
 - Include a lunch and/or dinner spot when it suits the day.
 - Choose one start id from START AREAS — prefer the current/stated start, else the most central.
 - Honour the user's interests and pace; exclude anything they say to avoid.
+Pondicherry routing guidance (apply when relevant):
+- Group stops by area to avoid backtracking. The main clusters are White Town / French Quarter (Sri Aurobindo Ashram, churches, Bharathi Park, heritage cafes), Auroville (Matrimandir with its Visitor Centre and the Auroville beaches — a half-to-full day of its own), and the southern Chunnambar boat house for Paradise Beach. Avoid mixing far-apart clusters in one short day.
+- Mornings suit walkable White Town (it is cooler, and the Ashram closes midday). Save beaches and the seaside Promenade for late afternoon or sunset.
+- Paradise Beach is reached only via the Chunnambar boat house — include it and place it early in the day.
+- For Auroville, pair Matrimandir with the Auroville Visitor Centre.
+- Temples such as Manakula Vinayagar suit the evening; many reopen around 4pm.
+- Order food by time of day: a breakfast cafe early, lunch midday, dinner last.
 Respond with ONLY JSON: {"start": <id>, "stops": [<id>,...], "note": "<one short friendly sentence>"}.
 
 START AREAS:
