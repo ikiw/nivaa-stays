@@ -11,40 +11,14 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Nivaa Admin">
 <meta name="robots" content="noindex,nofollow">
-<title>Rank Tracker · Nivaa Stays</title>
+<title>Analytics · Nivaa Stays</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..700&family=Hanken+Grotesk:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/tailwind.css?v=eebcf5ac">
 <link rel="stylesheet" href="css/styles.css?v=b3b6aa37">
 <link rel="stylesheet" href="css/app.css?v=8115e0b0">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<style>
-  /* Rank tracker — page-specific bits (cards reuse .adm-* from styles.css) */
-  .rk-tabs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1.25rem; }
-  .rk-tab {
-    font-size: 0.78rem; padding: 0.4rem 0.8rem; border-radius: 999px; cursor: pointer;
-    border: 1px solid #e8ebe8; background: #fff; color: var(--brand-muted); transition: all 0.15s;
-  }
-  .rk-tab:hover { border-color: var(--brand-gold); }
-  .rk-tab.is-active { background: var(--brand-teal); color: #fff; border-color: var(--brand-teal); }
-  .rk-grid { display: grid; gap: 4px; max-width: 420px; margin: 0 auto; }
-  .rk-cell {
-    aspect-ratio: 1; border-radius: 7px; display: flex; align-items: center; justify-content: center;
-    font-size: 0.82rem; font-weight: 700; color: #fff;
-  }
-  .rk-cell.rk-none { color: #6b7975; }
-  .rk-legend { display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: center; margin-top: 0.9rem; font-size: 0.72rem; color: var(--brand-muted); }
-  .rk-legend span { display: inline-flex; align-items: center; gap: 0.35rem; }
-  .rk-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-  .rk-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-  .rk-table th, .rk-table td { text-align: left; padding: 0.6rem 0.5rem; border-bottom: 1px solid #eef1ef; }
-  .rk-table th { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--brand-gold); }
-  .rk-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  .rk-delta-up { color: #1f9d61; font-weight: 600; }
-  .rk-delta-down { color: #d9603b; font-weight: 600; }
-  .rk-delta-flat { color: var(--brand-muted); }
-  .rk-trend-wrap { max-width: 640px; margin: 0 auto; }
-</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="bg-cream">
 
@@ -54,13 +28,13 @@
       <img src="assets/logo.png" alt="Nivaa Stays" class="h-10 w-10 sm:h-12 sm:w-12 rounded-full object-cover bg-teal-dark flex-shrink-0">
       <div class="min-w-0">
         <div class="text-white serif text-base sm:text-lg leading-tight truncate">Nivaa Stays</div>
-        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Admin · Rank Tracker</div>
+        <div class="hidden sm:block text-gold text-[10px] tracking-[0.22em] uppercase">Admin · Analytics</div>
       </div>
     </a>
     <nav class="flex items-center gap-1">
-      <a href="admin-analytics.html" class="nav-link hidden md:inline">Analytics</a>
+      <a href="admin.html" class="nav-link hidden md:inline">Bookings</a>
+      <a href="admin-rank.html" class="nav-link hidden md:inline">Rank tracker</a>
       <a href="admin-competitors.html" class="nav-link hidden md:inline">Competitors</a>
-      <a href="admin.html" class="nav-link hidden md:inline">← Dashboard</a>
       <span id="admin-user-chip" class="hidden md:inline text-white/80 text-xs px-2"></span>
       <button id="logout-btn" class="nav-link hidden">Logout</button>
       <button id="refresh-btn" class="btn-gold ml-1 sm:ml-3 text-xs sm:text-sm px-3 sm:px-4 py-2 hidden">Refresh</button>
@@ -69,37 +43,48 @@
 </header>
 
 <section class="section" style="padding-top: 6rem; padding-bottom: 2rem;">
-  <div class="max-w-5xl mx-auto px-4 sm:px-5">
+  <div class="max-w-6xl mx-auto px-4 sm:px-5">
     <div class="text-center mb-6">
-      <div class="eyebrow">Local Visibility</div>
+      <div class="eyebrow">Monthly Analytics</div>
       <div class="divider-gold divider-center"></div>
-      <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Google Maps rank tracker</h1>
-      <p class="text-[color:var(--brand-muted)] text-sm" id="rank-subline">Weekly local-pack rankings across a grid around JIPMER.</p>
+      <h1 class="serif text-3xl md:text-4xl text-teal mb-2">Booking analytics</h1>
+      <p class="text-[color:var(--brand-muted)] text-sm" id="generated-line"></p>
     </div>
 
-    <!-- Login gate -->
+    <!-- Login gate (shown when not signed in as admin) -->
     <div id="admin-login" class="hidden bg-cream rounded-2xl p-8 text-center max-w-md mx-auto" style="border:1px dashed var(--brand-gold);">
       <div class="serif text-2xl text-teal mb-2">Admin sign-in</div>
-      <p class="text-[color:var(--brand-muted)] text-sm mb-6">Sign in with the Nivaa Stays Google account to view the rank tracker.</p>
+      <p class="text-[color:var(--brand-muted)] text-sm mb-6">Sign in with the Nivaa Stays Google account to view booking analytics.</p>
       <div id="g-signin-btn" class="flex justify-center"></div>
       <p id="login-error" class="text-xs mt-4" style="color:#c45a3a; min-height:1em;"></p>
     </div>
 
-    <!-- Dashboard -->
-    <div id="rank-dashboard" class="hidden">
-      <div id="rank-summary" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
-      <div id="rank-content"></div>
+    <!-- Dashboard (shown when signed in as admin) -->
+    <div id="analytics-dashboard" class="hidden">
+      <div id="kpi-cards" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8"></div>
+      <div class="grid md:grid-cols-3 gap-5 mb-8">
+        <div class="md:col-span-2 bg-white rounded-2xl p-4 sm:p-5 border border-[#e8ebe8]">
+          <div class="text-xs uppercase tracking-[0.16em] text-[color:var(--brand-muted)] mb-3">Revenue &amp; occupancy</div>
+          <div style="position:relative; height:300px;"><canvas id="chart-revenue"></canvas></div>
+        </div>
+        <div class="bg-white rounded-2xl p-4 sm:p-5 border border-[#e8ebe8]">
+          <div class="text-xs uppercase tracking-[0.16em] text-[color:var(--brand-muted)] mb-3">Channel mix (revenue)</div>
+          <div style="position:relative; height:300px;"><canvas id="chart-channel"></canvas></div>
+        </div>
+      </div>
+      <div id="extra-cards" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8"></div>
+      <div id="monthly-table"></div>
     </div>
   </div>
 </section>
 
 <footer class="bg-teal-dark text-white/70 text-xs py-6" style="background: #082623;">
-  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="admin.html" class="underline">Dashboard</a> · <a href="index.html" class="underline">Site</a></div>
+  <div class="max-w-7xl mx-auto px-5 text-center">© <span id="y"></span> Nivaa Stays · <a href="admin.html" class="underline">Bookings</a> · <a href="index.html" class="underline">Site</a></div>
 </footer>
 
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/auth.js?v=4aee52df"></script>
-<script src="js/rank.js?v=39f6b53e"></script>
+<script src="js/analytics.js?v=f3457253"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

@@ -90,6 +90,7 @@
     const params = (e && e.parameter) || {};
     if (params.hub) return hubData_(params.hub);
     if (params.activeBookings != null) return activeBookings_(params.activeBookings);
+    if (params.analytics != null) return analyticsData_();
     const lookup = params.lookup || '';
     if (!lookup) return jsonOut_({ found: false, error: 'no lookup id' });
     const m = lookup.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);                                                                                                   
@@ -456,6 +457,99 @@
     }
 
     return jsonOut_(Object.assign({ date: today, horizon: upcomingHorizon }, buckets));
+  }
+
+  // ---------- doGet?analytics=1 — monthly booking analytics (room bookings only) ----------
+  function analyticsData_() {
+    const ROOMS = 2;
+    const num_ = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+    const monthKey_ = (y, m) => y + '-' + ('0' + m).slice(-2);
+    const daysInMonth_ = (y, m) => new Date(y, m, 0).getDate();
+
+    const M = {};            // 'YYYY-MM' -> { bookings, nights, revenue }
+    const channels = {};     // platform -> { bookings, revenue, nights }
+    const roomSplit = {};    // room -> nights
+    const guestBookings = {}; // phone -> count (repeat detection)
+    let weekdayNights = 0, weekendNights = 0;
+    let totalAmount = 0, totalAdvance = 0, totalNights = 0, totalBookings = 0, guestsSum = 0, guestsCount = 0;
+    const bump_ = (key, field, val) => { (M[key] = M[key] || { bookings: 0, nights: 0, revenue: 0 })[field] += val; };
+
+    for (const sh of getBookingTabs_()) {
+      const data = sh.getDataRange().getValues();
+      const headers = data[0].map(c => String(c).trim());
+      const nameIdx = headers.indexOf('Name');
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row[nameIdx]) continue;
+        const b = rowToBooking_(headers, row);
+        if (!b.phone || !b.checkin || !b.checkout) continue;
+        const ci = b.checkin.split('-').map(Number), co = b.checkout.split('-').map(Number);
+        const ciDate = new Date(ci[0], ci[1] - 1, ci[2]), coDate = new Date(co[0], co[1] - 1, co[2]);
+        const nights = Math.round((coDate - ciDate) / 86400000);
+        if (nights < 1 || nights > 60) continue;                 // skip blank/garbled rows
+        const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
+
+        bump_(monthKey_(ci[0], ci[1]), 'bookings', 1);           // a booking belongs to its check-in month
+        for (let n = 0; n < nights; n++) {                       // nights + revenue split across the months they fall in
+          const d = new Date(ciDate.getTime() + n * 86400000);
+          const key = monthKey_(d.getFullYear(), d.getMonth() + 1);
+          bump_(key, 'nights', 1);
+          bump_(key, 'revenue', perNight);
+          const dow = d.getDay();                                // 0 Sun .. 6 Sat; weekend = Fri/Sat/Sun
+          if (dow === 5 || dow === 6 || dow === 0) weekendNights++; else weekdayNights++;
+        }
+
+        const plat = (String(b.platform || b.onlineOffline || 'Direct').trim()) || 'Direct';
+        const c = channels[plat] = channels[plat] || { bookings: 0, revenue: 0, nights: 0 };
+        c.bookings++; c.revenue += amount; c.nights += nights;
+        const rm = b.room || '—'; roomSplit[rm] = (roomSplit[rm] || 0) + nights;
+        guestBookings[b.phone] = (guestBookings[b.phone] || 0) + 1;
+        totalAmount += amount; totalAdvance += advance; totalNights += nights; totalBookings++;
+        const g = parseInt(b.num_guests); if (g > 0) { guestsSum += g; guestsCount++; }
+      }
+    }
+
+    // continuous month series: earliest data month -> current month (gaps filled with zeros)
+    const now = new Date();
+    const curKey = monthKey_(now.getFullYear(), now.getMonth() + 1);
+    const keys = Object.keys(M).sort();
+    let startKey = keys.length ? keys[0] : curKey;
+    if (startKey > curKey) startKey = curKey;
+    const months = [];
+    let sy = +startKey.split('-')[0], sm = +startKey.split('-')[1], guard = 0;
+    while (guard++ < 240) {
+      const key = monthKey_(sy, sm);
+      const rec = M[key] || { bookings: 0, nights: 0, revenue: 0 };
+      const avail = ROOMS * daysInMonth_(sy, sm);
+      months.push({
+        month: key, bookings: rec.bookings, nights: rec.nights, revenue: Math.round(rec.revenue),
+        availNights: avail,
+        occupancy: avail ? Math.round(rec.nights / avail * 1000) / 10 : 0,
+        adr: rec.nights ? Math.round(rec.revenue / rec.nights) : 0,
+        revpar: avail ? Math.round(rec.revenue / avail) : 0
+      });
+      if (key === curKey) break;
+      sm++; if (sm > 12) { sm = 1; sy++; }
+    }
+
+    const uniqueGuests = Object.keys(guestBookings).length;
+    const returning = Object.keys(guestBookings).filter(p => guestBookings[p] > 1).length;
+
+    return jsonOut_({
+      generated: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
+      rooms: ROOMS,
+      months: months,
+      channels: Object.keys(channels).map(k => Object.assign({ name: k }, channels[k])).sort((a, b) => b.revenue - a.revenue),
+      roomSplit: roomSplit,
+      weekday: { weekday: weekdayNights, weekend: weekendNights },
+      payments: { revenue: Math.round(totalAmount), collected: Math.round(totalAdvance), pending: Math.round(Math.max(0, totalAmount - totalAdvance)) },
+      repeat: { guests: uniqueGuests, returning: returning, rate: uniqueGuests ? Math.round(returning / uniqueGuests * 1000) / 10 : 0 },
+      totals: {
+        bookings: totalBookings, nights: totalNights, revenue: Math.round(totalAmount),
+        alos: totalBookings ? Math.round(totalNights / totalBookings * 10) / 10 : 0,
+        avgGuests: guestsCount ? Math.round(guestsSum / guestsCount * 10) / 10 : 0
+      }
+    });
   }
 
   function recordRental_(p) {
