@@ -12,9 +12,10 @@ import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
+import LocalActivityRounded from '@mui/icons-material/LocalActivityRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
-import { fmtDur, weatherInfo } from '../utils';
+import { fmtDur, weatherInfo, track } from '../utils';
 import WeatherIcon from './WeatherIcon';
 import type { Category, ItineraryData, HourWeather } from '../types';
 
@@ -117,6 +118,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
             <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
               {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
               {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
+              {p?.book && <Box component="a" href={p.book.url} target="_blank" rel="noopener" title={p.book.label} onClick={(e) => { e.stopPropagation(); track('place_book', { name: title, source: 'timeline' }); }} sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: 'rgba(251,191,36,0.18)', color: '#FBBF24', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(251,191,36,0.32)' } }}><LocalActivityRounded sx={{ fontSize: 11 }} /> Book</Box>}
               {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
             </Typography>
             {gi != null && (

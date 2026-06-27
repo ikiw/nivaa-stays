@@ -17,6 +17,7 @@ export interface Place {
   placeId?: string;
   rating?: number;
   reviews?: number;
+  book?: { url: string; label: string };   // optional booking / tickets / visit-info link
 }
 
 /** The baked catalog + driving matrices. `minutes[a][b]` / `km[a][b]` are indexed by
