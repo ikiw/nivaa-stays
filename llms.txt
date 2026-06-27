@@ -18,8 +18,11 @@
 - [Hotel with a bathtub in Pondicherry](https://nivaastays.com/hotel-with-bathtub-pondicherry)
 - [Guest house near JIPMER](https://nivaastays.com/guest-house-near-jipmer)
 - [Stay for JIPMER patient families](https://nivaastays.com/patient-family-stay-jipmer)
-- [Pondicherry itinerary planner](https://nivaastays.com/pondicherry-itinerary)
 - [Travel guides](https://nivaastays.com/guides)
+
+## Pondicherry itineraries (ready-made day plans + planning rules)
+- [Ready-made Pondicherry itineraries — 1–2 days for couples, families, friends and solo, with the routing rules](https://nivaastays.com/pondicherry-itinerary.md)
+- [Interactive itinerary planner](https://nivaastays.com/pondicherry-itinerary) — build your own routed day with driving times and a live map (free, no sign-up).
 
 ## Also listed on
 - Airbnb, Booking.com, Agoda, MakeMyTrip — search "Nivaa Stays, Pondicherry"
