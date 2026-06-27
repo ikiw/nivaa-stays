@@ -9,6 +9,7 @@ import ShareRounded from '@mui/icons-material/ShareRounded';
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
 import WhatsApp from '@mui/icons-material/WhatsApp';
 import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
+import NotesRounded from '@mui/icons-material/NotesRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import LightbulbOutlinedRounded from '@mui/icons-material/LightbulbOutlined';
@@ -28,7 +29,7 @@ type NodeProps = Omit<TimelineNodeProps, 'data' | 'setStay' | 'move' | 'removeAt
 export default function DayPanel({ planner, hideBack }: { planner: Planner; hideBack?: boolean }) {
   const {
     data, start, startTime, endTime, stops, browsing, setBrowsing, loadedId, optimize, addBreak, isMobile,
-    shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, shareWhatsApp, copyShareLink, gmapsUrl,
+    shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, shareWhatsApp, copyShareLink, copyPlanText, gmapsUrl,
     setStops, setActiveDay, setLoadedId, planFilter, loadCurated, dayData, curDay, tripDays, tripDrive, tripKm,
     setStay, move, removeAt, selectPlace, weather,
   } = planner;
@@ -55,10 +56,12 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
             <MenuItem onClick={shareWhatsApp}><WhatsApp sx={{ fontSize: 18, mr: 1, color: '#25D366' }} /> Share on WhatsApp</MenuItem>
             <MenuItem onClick={copyShareLink}><ContentCopyRounded sx={{ fontSize: 17, mr: 1 }} /> Copy link</MenuItem>
+            <MenuItem onClick={copyPlanText}><NotesRounded sx={{ fontSize: 18, mr: 1 }} /> Copy as text</MenuItem>
           </Menu>
           <Menu anchorEl={moreAnchor} open={!!moreAnchor} onClose={() => setMoreAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
             <MenuItem component="a" href={gmapsUrl()} target="_blank" rel="noopener" onClick={() => { track('plan_open_maps', { stops: stops.filter(s => !isPseudo(s)).length }); setMoreAnchor(null); }}><OpenInNewRounded sx={{ fontSize: 17, mr: 1 }} /> Open in Google Maps</MenuItem>
+            {isMobile && <MenuItem onClick={copyPlanText}><NotesRounded sx={{ fontSize: 17, mr: 1 }} /> Copy as text</MenuItem>}
             <MenuItem onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); setMoreAnchor(null); }}><DeleteOutlineRounded sx={{ fontSize: 17, mr: 1 }} /> Clear itinerary</MenuItem>
           </Menu>
         </Stack>

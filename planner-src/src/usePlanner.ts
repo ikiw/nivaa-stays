@@ -8,7 +8,7 @@ import { Map } from '@vis.gl/react-google-maps';
 
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { DATA_URL, PICK_ORDER, BREAK_DUR, MEAL_DUR, MEAL_LABELS } from './constants';
-import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWeather } from './utils';
+import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWeather, fmtClock, parseTime, fmtDur, weatherInfo, umbrellaAdvisory } from './utils';
 import { CURATED } from './curated';
 
 import { scheduleStays, computeSchedule } from './scheduler';
@@ -299,7 +299,46 @@ export function usePlanner() {
   const curDay = tripDays.includes(activeDay) ? activeDay : tripDays[0];   // active day tab
   const mapStops = stops.filter((s): s is PlaceStop => !isPseudo(s) && (s.day || 1) === curDay);   // map = active day's real stops
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  // Render the whole plan as clean plain text — for pasting into WhatsApp / notes / email.
+  const planText = (): string => {
+    if (!data) return '';
+    const home = data.places[start].name;
+    const [y, mo, dd] = tripDate.split('-').map(Number);
+    const niceDate = new Date(y, mo - 1, dd).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const total = stops.filter(s => !isPseudo(s)).length;
+    const L: string[] = [`Pondicherry itinerary — ${niceDate}`];
+    if (weather) {
+      L.push(`Weather: ${weatherInfo(weather.code).label} · ${weather.tMax}°/${weather.tMin}° · ${weather.precip}% chance of rain`);
+      const adv = umbrellaAdvisory(weather);
+      if (adv) L.push(`☔ ${adv}`);
+    }
+    L.push('');
+    tripDays.forEach(dn => {
+      const d = dayData.find(x => x.day === dn);
+      if (!d || !d.tl.length) return;
+      if (tripDays.length > 1) L.push(`— Day ${dn} —`);
+      L.push(`${fmtClock(parseTime(startTime))}  Depart ${home}`);
+      let rn = 0;
+      d.tl.forEach(t => {
+        const time = fmtClock(t.arrive);
+        if (t.brk) L.push(`${time}  Free time · ${fmtDur(t.stay)}`);
+        else if (t.meal) L.push(`${time}  ${t.meal} · ${fmtDur(t.stay)}`);
+        else { rn++; L.push(`${time}  ${rn}. ${data.places[t.idx!].name} · ${fmtDur(t.stay)}`); }
+      });
+      L.push(`${fmtClock(d.clock)}  Back at ${home}`, '');
+    });
+    L.push(`${total} stop${total === 1 ? '' : 's'} · ${tripDrive} min drive · ${tripKm.toFixed(1)} km`);
+    L.push(`Plan & customise: ${window.location.href}`);
+    return L.join('\n');
+  };
+  const copyPlanText = async () => {
+    track('plan_share', { method: 'copy_text' });
+    try { await navigator.clipboard.writeText(planText()); setSnack('Itinerary copied as text ✓'); }
+    catch { setSnack('Couldn’t copy — try again.'); }
+    setShareAnchor(null); setMoreAnchor(null);
+  };
+
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */
