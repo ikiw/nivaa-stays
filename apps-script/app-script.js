@@ -11,7 +11,10 @@
   const TZ           = 'Asia/Kolkata';                                                                                                                       
                                                                                                                                                              
   // Tabs are detected automatically: any sheet whose row 1 contains all of these.                                                                           
-  const REQ_HEADERS = ['Name', 'Check-In', 'Check-Out', 'Mobile'];
+  // 'Amount' (not 'Mobile') is the discriminator: older monthly tabs predate the
+  // Mobile column, while the Check-ins / Orders / Rentals logs have Name+Check-In
+  // but no Amount — so the revenue ledgers are detected and the logs are excluded.
+  const REQ_HEADERS = ['Name', 'Check-In', 'Check-Out', 'Amount'];
                                                                                                                                                              
   // ---------- helpers ----------                             
                                                                                                                                                              
@@ -90,6 +93,8 @@
     const params = (e && e.parameter) || {};
     if (params.hub) return hubData_(params.hub);
     if (params.activeBookings != null) return activeBookings_(params.activeBookings);
+    if (params.analytics != null) return analyticsData_();
+    if (params.tabsdebug != null) return tabsDebug_();
     const lookup = params.lookup || '';
     if (!lookup) return jsonOut_({ found: false, error: 'no lookup id' });
     const m = lookup.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);                                                                                                   
@@ -456,6 +461,181 @@
     }
 
     return jsonOut_(Object.assign({ date: today, horizon: upcomingHorizon }, buckets));
+  }
+
+  // ---------- doGet?analytics=1 — monthly booking analytics (room bookings only) ----------
+  // Robust date parse — real Date cells AND text ("1-Jun-2026" / "28/06/2026" / "2026-06-28").
+  // Top-level so analyticsData_ AND the ?tabsdebug probe share one implementation.
+  const MON_ = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  function parseDate_(v) {
+    if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? null : v;
+    const s = String(v == null ? '' : v).trim(); if (!s) return null;
+    let m;
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(+m[1], +m[2] - 1, +m[3]);
+    if ((m = s.match(/^(\d{1,2})[\-\/ ]([A-Za-z]{3,})[\-\/ ](\d{4})/)) && MON_[m[2].slice(0, 3).toLowerCase()] != null)
+      return new Date(+m[3], MON_[m[2].slice(0, 3).toLowerCase()], +m[1]);
+    if ((m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/))) return new Date(+m[3], +m[2] - 1, +m[1]);
+    const d = new Date(s); return isNaN(d.getTime()) ? null : d;
+  }
+
+  function analyticsData_() {
+    const ROOMS = 2;
+    const num_ = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
+    const monthKey_ = (y, m) => y + '-' + ('0' + m).slice(-2);
+    const daysInMonth_ = (y, m) => new Date(y, m, 0).getDate();
+    // parseDate_ + MON_ are defined at top level (shared with the ?tabsdebug probe).
+
+    const now = new Date();
+    const curY = now.getFullYear(), curM = now.getMonth() + 1, curKey = monthKey_(curY, curM);
+    const daysInCur = daysInMonth_(curY, curM);
+    const curDayRooms = {};   // 'YYYY-MM-DD' -> rooms booked that night (current month)
+    const curWeeks = [];      // 7-day chunks of the current month
+    for (let wi = 0; wi <= Math.floor((daysInCur - 1) / 7); wi++) curWeeks.push({ nights: 0, revenue: 0, bookings: 0 });
+
+    const M = {};            // 'YYYY-MM' -> { bookings, nights, revenue }
+    const channels = {};     // platform -> { bookings, revenue, nights }
+    const roomSplit = {};    // room -> nights
+    const guestBookings = {}; // phone -> count (repeat detection)
+    let weekdayNights = 0, weekendNights = 0;
+    let totalAmount = 0, totalAdvance = 0, totalNights = 0, totalBookings = 0, guestsSum = 0, guestsCount = 0;
+    const bump_ = (key, field, val) => { (M[key] = M[key] || { bookings: 0, nights: 0, revenue: 0 })[field] += val; };
+
+    for (const sh of getBookingTabs_()) {
+      const data = sh.getDataRange().getValues();
+      const headers = data[0].map(c => String(c).trim());
+      const nameIdx = headers.indexOf('Name'), ciIdx = headers.indexOf('Check-In'), coIdx = headers.indexOf('Check-Out');
+      for (let i = 1; i < data.length; i++) {
+        const row = data[i];
+        if (!row[nameIdx]) continue;
+        const b = rowToBooking_(headers, row);
+        const ciDate = parseDate_(row[ciIdx]), coDate = parseDate_(row[coIdx]);
+        if (!ciDate || !coDate) continue;            // phone optional — older tabs had no Mobile column
+        const nights = Math.round((coDate.getTime() - ciDate.getTime()) / 86400000);
+        if (!(nights >= 1 && nights <= 60)) continue;            // also drops NaN / garbled rows
+        const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
+
+        bump_(monthKey_(ciDate.getFullYear(), ciDate.getMonth() + 1), 'bookings', 1);   // booking -> its check-in month
+        if (ciDate.getFullYear() === curY && (ciDate.getMonth() + 1) === curM) {
+          const cwi = Math.floor((ciDate.getDate() - 1) / 7); if (curWeeks[cwi]) curWeeks[cwi].bookings++;
+        }
+        for (let n = 0; n < nights; n++) {                       // nights + revenue split across the months they fall in
+          const d = new Date(ciDate.getTime() + n * 86400000);
+          const key = monthKey_(d.getFullYear(), d.getMonth() + 1);
+          bump_(key, 'nights', 1);
+          bump_(key, 'revenue', perNight);
+          const dow = d.getDay();                                // 0 Sun .. 6 Sat; weekend = Fri/Sat/Sun
+          if (dow === 5 || dow === 6 || dow === 0) weekendNights++; else weekdayNights++;
+          if (key === curKey) {                                  // current-month day grid + weekly split
+            const ds = Utilities.formatDate(d, TZ, 'yyyy-MM-dd');
+            curDayRooms[ds] = (curDayRooms[ds] || 0) + 1;
+            const wi = Math.floor((d.getDate() - 1) / 7);
+            if (curWeeks[wi]) { curWeeks[wi].nights++; curWeeks[wi].revenue += perNight; }
+          }
+        }
+
+        const plat = (String(b.platform || b.onlineOffline || 'Direct').trim()) || 'Direct';
+        const c = channels[plat] = channels[plat] || { bookings: 0, revenue: 0, nights: 0 };
+        c.bookings++; c.revenue += amount; c.nights += nights;
+        const rm = b.room || '—'; roomSplit[rm] = (roomSplit[rm] || 0) + nights;
+        if (b.phone) guestBookings[b.phone] = (guestBookings[b.phone] || 0) + 1;   // repeat-guest needs a phone
+        totalAmount += amount; totalAdvance += advance; totalNights += nights; totalBookings++;
+        const g = parseInt(b.num_guests); if (g > 0) { guestsSum += g; guestsCount++; }
+      }
+    }
+
+    // continuous month series: earliest data month -> current month (gaps filled with zeros)
+    const keys = Object.keys(M).sort();
+    const minKey = monthKey_(curY - 3, curM);                              // cap history at ~3y so a stray date can't explode the series
+    let startKey = keys.length ? keys[0] : curKey;
+    if (startKey < minKey) startKey = minKey;
+    if (startKey > curKey) startKey = curKey;
+    const months = [];
+    let sy = +startKey.split('-')[0], sm = +startKey.split('-')[1], guard = 0;
+    while (guard++ < 240) {
+      const key = monthKey_(sy, sm);
+      const rec = M[key] || { bookings: 0, nights: 0, revenue: 0 };
+      const avail = ROOMS * daysInMonth_(sy, sm);
+      months.push({
+        month: key, bookings: rec.bookings, nights: rec.nights, revenue: Math.round(rec.revenue),
+        availNights: avail,
+        occupancy: avail ? Math.round(rec.nights / avail * 1000) / 10 : 0,
+        adr: rec.nights ? Math.round(rec.revenue / rec.nights) : 0,
+        revpar: avail ? Math.round(rec.revenue / avail) : 0
+      });
+      if (key === curKey) break;
+      sm++; if (sm > 12) { sm = 1; sy++; }
+    }
+
+    const uniqueGuests = Object.keys(guestBookings).length;
+    const returning = Object.keys(guestBookings).filter(p => guestBookings[p] > 1).length;
+
+    // current running month — day grid (open slots) + weekly split
+    const curDays = [];
+    for (let day = 1; day <= daysInCur; day++) {
+      const dt = new Date(curY, curM - 1, day);
+      const ds = Utilities.formatDate(dt, TZ, 'yyyy-MM-dd');
+      const booked = Math.min(ROOMS, curDayRooms[ds] || 0);
+      curDays.push({ date: ds, day: day, dow: dt.getDay(), booked: booked, free: ROOMS - booked });
+    }
+    const curWeeksOut = curWeeks.map((w, i) => {
+      const from = i * 7 + 1, to = Math.min(daysInCur, from + 6);
+      return { from: from, to: to, nights: w.nights, revenue: Math.round(w.revenue), bookings: w.bookings, availNights: ROOMS * (to - from + 1) };
+    });
+    const curRec = M[curKey] || { bookings: 0, nights: 0, revenue: 0 };
+    const current = {
+      month: curKey, today: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
+      dayOfMonth: now.getDate(), daysInMonth: daysInCur, daysRemaining: daysInCur - now.getDate(),
+      bookings: curRec.bookings, nights: curRec.nights, revenue: Math.round(curRec.revenue),
+      availNights: ROOMS * daysInCur, days: curDays, weeks: curWeeksOut
+    };
+
+    return jsonOut_({
+      generated: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
+      rooms: ROOMS,
+      revenueTarget: 100000,
+      current: current,
+      months: months,
+      channels: Object.keys(channels).map(k => Object.assign({ name: k }, channels[k])).sort((a, b) => b.revenue - a.revenue),
+      roomSplit: roomSplit,
+      weekday: { weekday: weekdayNights, weekend: weekendNights },
+      payments: { revenue: Math.round(totalAmount), collected: Math.round(totalAdvance), pending: Math.round(Math.max(0, totalAmount - totalAdvance)) },
+      repeat: { guests: uniqueGuests, returning: returning, rate: uniqueGuests ? Math.round(returning / uniqueGuests * 1000) / 10 : 0 },
+      totals: {
+        bookings: totalBookings, nights: totalNights, revenue: Math.round(totalAmount),
+        alos: totalBookings ? Math.round(totalNights / totalBookings * 10) / 10 : 0,
+        avgGuests: guestsCount ? Math.round(guestsSum / guestsCount * 10) / 10 : 0
+      }
+    });
+  }
+
+  // ?tabsdebug=1 — diagnostics for "missing months": lists every sheet, whether it's
+  // detected as a booking tab, its header row, and how many Check-In cells parse.
+  // Read-only and safe to leave deployed.
+  function tabsDebug_() {
+    const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const reqNorm = REQ_HEADERS.map(norm);
+    const ciAliases = ['Check-In', 'Check In', 'Checkin', 'Arrival', 'From', 'Date'].map(norm);
+    const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().map(sh => {
+      const lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+      if (lastCol < 1 || lastRow < 1) return { name: sh.getName(), lastRow: lastRow, lastCol: lastCol, header: [], detected: false, rows: 0, parsed: 0, skipped: 0, samples: [] };
+      const header = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(c => String(c).trim());
+      const hNorm = header.map(norm);
+      const detected = reqNorm.every(r => hNorm.indexOf(r) >= 0);
+      let ciIdx = header.indexOf('Check-In');
+      if (ciIdx < 0) ciIdx = hNorm.findIndex(h => ciAliases.indexOf(h) >= 0);
+      let parsed = 0, skipped = 0; const samples = [];
+      if (ciIdx >= 0 && lastRow > 1) {
+        const col = sh.getRange(2, ciIdx + 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < col.length; i++) {
+          const v = col[i][0];
+          if (v === '' || v == null) continue;
+          if (parseDate_(v)) parsed++; else skipped++;
+          if (samples.length < 5) samples.push({ raw: String(v).slice(0, 30), type: Object.prototype.toString.call(v) });
+        }
+      }
+      return { name: sh.getName(), lastRow: lastRow, lastCol: lastCol, header: header, detected: detected, ciHeader: ciIdx >= 0 ? header[ciIdx] : null, rows: lastRow - 1, parsed: parsed, skipped: skipped, samples: samples };
+    });
+    return jsonOut_({ requiredHeaders: REQ_HEADERS, detectedTabs: getBookingTabs_().map(s => s.getName()), sheets: sheets });
   }
 
   function recordRental_(p) {
