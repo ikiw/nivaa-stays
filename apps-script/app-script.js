@@ -465,6 +465,18 @@
     const num_ = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
     const monthKey_ = (y, m) => y + '-' + ('0' + m).slice(-2);
     const daysInMonth_ = (y, m) => new Date(y, m, 0).getDate();
+    // Robust date parse: handles real Date cells AND text like "1-Jun-2026" / "28/06/2026" / "2026-06-28".
+    const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+    const parseDate_ = v => {
+      if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? null : v;
+      const s = String(v == null ? '' : v).trim(); if (!s) return null;
+      let m;
+      if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(+m[1], +m[2] - 1, +m[3]);
+      if ((m = s.match(/^(\d{1,2})[\-\/ ]([A-Za-z]{3,})[\-\/ ](\d{4})/)) && MON[m[2].slice(0, 3).toLowerCase()] != null)
+        return new Date(+m[3], MON[m[2].slice(0, 3).toLowerCase()], +m[1]);
+      if ((m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/))) return new Date(+m[3], +m[2] - 1, +m[1]);
+      const d = new Date(s); return isNaN(d.getTime()) ? null : d;
+    };
 
     const M = {};            // 'YYYY-MM' -> { bookings, nights, revenue }
     const channels = {};     // platform -> { bookings, revenue, nights }
@@ -477,19 +489,18 @@
     for (const sh of getBookingTabs_()) {
       const data = sh.getDataRange().getValues();
       const headers = data[0].map(c => String(c).trim());
-      const nameIdx = headers.indexOf('Name');
+      const nameIdx = headers.indexOf('Name'), ciIdx = headers.indexOf('Check-In'), coIdx = headers.indexOf('Check-Out');
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
         if (!row[nameIdx]) continue;
         const b = rowToBooking_(headers, row);
-        if (!b.phone || !b.checkin || !b.checkout) continue;
-        const ci = b.checkin.split('-').map(Number), co = b.checkout.split('-').map(Number);
-        const ciDate = new Date(ci[0], ci[1] - 1, ci[2]), coDate = new Date(co[0], co[1] - 1, co[2]);
-        const nights = Math.round((coDate - ciDate) / 86400000);
-        if (nights < 1 || nights > 60) continue;                 // skip blank/garbled rows
+        const ciDate = parseDate_(row[ciIdx]), coDate = parseDate_(row[coIdx]);
+        if (!b.phone || !ciDate || !coDate) continue;
+        const nights = Math.round((coDate.getTime() - ciDate.getTime()) / 86400000);
+        if (!(nights >= 1 && nights <= 60)) continue;            // also drops NaN / garbled rows
         const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
 
-        bump_(monthKey_(ci[0], ci[1]), 'bookings', 1);           // a booking belongs to its check-in month
+        bump_(monthKey_(ciDate.getFullYear(), ciDate.getMonth() + 1), 'bookings', 1);   // booking -> its check-in month
         for (let n = 0; n < nights; n++) {                       // nights + revenue split across the months they fall in
           const d = new Date(ciDate.getTime() + n * 86400000);
           const key = monthKey_(d.getFullYear(), d.getMonth() + 1);
@@ -513,7 +524,9 @@
     const now = new Date();
     const curKey = monthKey_(now.getFullYear(), now.getMonth() + 1);
     const keys = Object.keys(M).sort();
+    const minKey = monthKey_(now.getFullYear() - 3, now.getMonth() + 1);   // cap history at ~3y so a stray date can't explode the series
     let startKey = keys.length ? keys[0] : curKey;
+    if (startKey < minKey) startKey = minKey;
     if (startKey > curKey) startKey = curKey;
     const months = [];
     let sy = +startKey.split('-')[0], sm = +startKey.split('-')[1], guard = 0;
