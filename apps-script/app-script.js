@@ -478,6 +478,13 @@
       const d = new Date(s); return isNaN(d.getTime()) ? null : d;
     };
 
+    const now = new Date();
+    const curY = now.getFullYear(), curM = now.getMonth() + 1, curKey = monthKey_(curY, curM);
+    const daysInCur = daysInMonth_(curY, curM);
+    const curDayRooms = {};   // 'YYYY-MM-DD' -> rooms booked that night (current month)
+    const curWeeks = [];      // 7-day chunks of the current month
+    for (let wi = 0; wi <= Math.floor((daysInCur - 1) / 7); wi++) curWeeks.push({ nights: 0, revenue: 0, bookings: 0 });
+
     const M = {};            // 'YYYY-MM' -> { bookings, nights, revenue }
     const channels = {};     // platform -> { bookings, revenue, nights }
     const roomSplit = {};    // room -> nights
@@ -501,6 +508,9 @@
         const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
 
         bump_(monthKey_(ciDate.getFullYear(), ciDate.getMonth() + 1), 'bookings', 1);   // booking -> its check-in month
+        if (ciDate.getFullYear() === curY && (ciDate.getMonth() + 1) === curM) {
+          const cwi = Math.floor((ciDate.getDate() - 1) / 7); if (curWeeks[cwi]) curWeeks[cwi].bookings++;
+        }
         for (let n = 0; n < nights; n++) {                       // nights + revenue split across the months they fall in
           const d = new Date(ciDate.getTime() + n * 86400000);
           const key = monthKey_(d.getFullYear(), d.getMonth() + 1);
@@ -508,6 +518,12 @@
           bump_(key, 'revenue', perNight);
           const dow = d.getDay();                                // 0 Sun .. 6 Sat; weekend = Fri/Sat/Sun
           if (dow === 5 || dow === 6 || dow === 0) weekendNights++; else weekdayNights++;
+          if (key === curKey) {                                  // current-month day grid + weekly split
+            const ds = Utilities.formatDate(d, TZ, 'yyyy-MM-dd');
+            curDayRooms[ds] = (curDayRooms[ds] || 0) + 1;
+            const wi = Math.floor((d.getDate() - 1) / 7);
+            if (curWeeks[wi]) { curWeeks[wi].nights++; curWeeks[wi].revenue += perNight; }
+          }
         }
 
         const plat = (String(b.platform || b.onlineOffline || 'Direct').trim()) || 'Direct';
@@ -521,10 +537,8 @@
     }
 
     // continuous month series: earliest data month -> current month (gaps filled with zeros)
-    const now = new Date();
-    const curKey = monthKey_(now.getFullYear(), now.getMonth() + 1);
     const keys = Object.keys(M).sort();
-    const minKey = monthKey_(now.getFullYear() - 3, now.getMonth() + 1);   // cap history at ~3y so a stray date can't explode the series
+    const minKey = monthKey_(curY - 3, curM);                              // cap history at ~3y so a stray date can't explode the series
     let startKey = keys.length ? keys[0] : curKey;
     if (startKey < minKey) startKey = minKey;
     if (startKey > curKey) startKey = curKey;
@@ -548,9 +562,31 @@
     const uniqueGuests = Object.keys(guestBookings).length;
     const returning = Object.keys(guestBookings).filter(p => guestBookings[p] > 1).length;
 
+    // current running month — day grid (open slots) + weekly split
+    const curDays = [];
+    for (let day = 1; day <= daysInCur; day++) {
+      const dt = new Date(curY, curM - 1, day);
+      const ds = Utilities.formatDate(dt, TZ, 'yyyy-MM-dd');
+      const booked = Math.min(ROOMS, curDayRooms[ds] || 0);
+      curDays.push({ date: ds, day: day, dow: dt.getDay(), booked: booked, free: ROOMS - booked });
+    }
+    const curWeeksOut = curWeeks.map((w, i) => {
+      const from = i * 7 + 1, to = Math.min(daysInCur, from + 6);
+      return { from: from, to: to, nights: w.nights, revenue: Math.round(w.revenue), bookings: w.bookings, availNights: ROOMS * (to - from + 1) };
+    });
+    const curRec = M[curKey] || { bookings: 0, nights: 0, revenue: 0 };
+    const current = {
+      month: curKey, today: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
+      dayOfMonth: now.getDate(), daysInMonth: daysInCur, daysRemaining: daysInCur - now.getDate(),
+      bookings: curRec.bookings, nights: curRec.nights, revenue: Math.round(curRec.revenue),
+      availNights: ROOMS * daysInCur, days: curDays, weeks: curWeeksOut
+    };
+
     return jsonOut_({
       generated: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
       rooms: ROOMS,
+      revenueTarget: 100000,
+      current: current,
       months: months,
       channels: Object.keys(channels).map(k => Object.assign({ name: k }, channels[k])).sort((a, b) => b.revenue - a.revenue),
       roomSplit: roomSplit,

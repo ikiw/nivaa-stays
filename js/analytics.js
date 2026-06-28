@@ -20,6 +20,12 @@ function monthLabel(ym) {
   const [y, m] = String(ym).split('-').map(Number);
   return new Date(y, m - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
 }
+function dateLabelShort(ymd) {
+  const [y, m, d] = String(ymd).split('-').map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric' });
+}
+function completedMonths(data) { const ms = data.months || []; return ms.length > 1 ? ms.slice(0, -1) : ms; }
+function avgField(ms, f) { return (!ms || !ms.length) ? 0 : ms.reduce((a, m) => a + (Number(m[f]) || 0), 0) / ms.length; }
 
 async function fetchAnalytics() {
   const res = await fetch(APPS_SCRIPT_URL + '?analytics=1');
@@ -36,29 +42,102 @@ function kpiCard(label, value, subText, subCls) {
   </div>`;
 }
 
-function delta(cur, prev, isPct) {
-  if (prev == null || prev === 0) return { text: 'Last mo: —', cls: 'text-[color:var(--brand-muted)]' };
-  const d = cur - prev;
-  const pct = Math.round((d / prev) * 100);
-  const up = d >= 0;
-  const arrow = up ? '▲' : '▼';
-  const cls = up ? 'text-[#1a7a44]' : 'text-[#c45a3a]';
-  const prevStr = isPct ? prev + '%' : (isPct === 'inr' ? fmtINR(prev) : prev);
-  return { text: `${arrow} ${Math.abs(pct)}% vs last mo (${prevStr})`, cls };
-}
-
 function renderKpis(data) {
   const ms = data.months || [];
   const cur = ms[ms.length - 1] || {};
-  const prev = ms[ms.length - 2] || {};
-  const el = document.getElementById('kpi-cards');
-  el.innerHTML = [
-    kpiCard('Bookings · ' + monthLabel(cur.month), cur.bookings || 0, delta(cur.bookings, prev.bookings).text, delta(cur.bookings, prev.bookings).cls),
-    kpiCard('Revenue', fmtINR(cur.revenue), delta(cur.revenue, prev.revenue, 'inr').text, delta(cur.revenue, prev.revenue).cls),
-    kpiCard('Occupancy', (cur.occupancy || 0) + '%', delta(cur.occupancy, prev.occupancy, true).text, delta(cur.occupancy, prev.occupancy).cls),
-    kpiCard('ADR', fmtINR(cur.adr), 'avg nightly rate · last mo ' + fmtINR(prev.adr)),
-    kpiCard('RevPAR', fmtINR(cur.revpar), 'rev ÷ avail nights · last mo ' + fmtINR(prev.revpar))
+  const comp = completedMonths(data);   // all completed months — the comparison baseline (excludes the partial current month)
+  const card = (label, displayVal, curN, field, fmt) => {
+    const avg = avgField(comp, field);
+    let sub = 'no prior months', cls = 'text-[color:var(--brand-muted)]';
+    if (avg) {
+      const up = curN >= avg, d = Math.round((curN - avg) / avg * 100);
+      sub = `${up ? '▲' : '▼'} ${Math.abs(d)}% vs avg (${fmt(avg)})`;
+      cls = up ? 'text-[#1a7a44]' : 'text-[#c45a3a]';
+    }
+    return kpiCard(label, displayVal, sub, cls);
+  };
+  document.getElementById('kpi-cards').innerHTML = [
+    card('Bookings · ' + monthLabel(cur.month), cur.bookings || 0, cur.bookings || 0, 'bookings', v => Math.round(v)),
+    card('Revenue', fmtINR(cur.revenue), cur.revenue || 0, 'revenue', fmtINR),
+    card('Occupancy', (cur.occupancy || 0) + '%', cur.occupancy || 0, 'occupancy', v => (Math.round(v * 10) / 10) + '%'),
+    card('ADR', fmtINR(cur.adr), cur.adr || 0, 'adr', fmtINR),
+    card('RevPAR', fmtINR(cur.revpar), cur.revpar || 0, 'revpar', fmtINR)
   ].join('');
+}
+
+function renderCurrentMonth(data) {
+  const c = data.current, host = document.getElementById('current-month');
+  if (!c) { host.innerHTML = ''; return; }
+  const target = data.revenueTarget || 100000;
+  const pct = Math.round((c.revenue / target) * 100);
+  const gap = Math.max(0, target - c.revenue);
+  const elapsed = Math.max(1, c.dayOfMonth || 1);
+  const projected = Math.round(c.revenue / elapsed * c.daysInMonth);
+  const projPct = Math.round(projected / target * 100);
+  const occ = c.availNights ? Math.round(c.nights / c.availNights * 1000) / 10 : 0;
+  const upcoming = (c.days || []).filter(d => d.date >= c.today && d.free > 0);
+  const openNights = upcoming.reduce((s, d) => s + d.free, 0);
+  const openWknd = upcoming.filter(d => d.dow === 5 || d.dow === 6 || d.dow === 0);
+  const openWkndNights = openWknd.reduce((s, d) => s + d.free, 0);
+  const adr = Math.round(avgField(completedMonths(data), 'adr')) || (data.totals && data.totals.adr) || 2000;
+  const nightsNeeded = adr ? Math.ceil(gap / adr) : 0;
+
+  const tips = [];
+  if (gap > 0) tips.push(`<b>${fmtFull(gap)}</b> to hit the ${fmtINR(target)} target — about <b>${nightsNeeded}</b> more room-night${nightsNeeded === 1 ? '' : 's'} at ~${fmtINR(adr)}/night.`);
+  else tips.push(`🎉 Target met — <b>${fmtFull(c.revenue)}</b> vs ${fmtINR(target)}.`);
+  if (c.revenue > 0) tips.push(projected >= target ? `On pace for <b>${fmtFull(projected)}</b> (${projPct}% of target).` : `At the current pace you'll land ~<b>${fmtFull(projected)}</b> (${projPct}%) — close the gap below.`);
+  if (openWkndNights > 0) tips.push(`<b>${openWkndNights}</b> weekend room-night${openWkndNights === 1 ? '' : 's'} open (premium rate) — fill ${openWknd.slice(0, 3).map(d => dateLabelShort(d.date)).join(', ')} first.`);
+  if (openNights > 0) tips.push(`<b>${openNights}</b> room-night${openNights === 1 ? '' : 's'} still open this month — push direct bookings (code NIVAA10) and refresh OTA calendars.`);
+  else tips.push(`Rest of the month is fully booked 🙌`);
+
+  const monShort = monthLabel(c.month).split(' ')[0];
+  const curWeekIdx = Math.floor((elapsed - 1) / 7);
+  const weeks = (c.weeks || []).map((w, i) => {
+    const wocc = w.availNights ? Math.round(w.nights / w.availNights * 100) : 0;
+    const active = i === curWeekIdx;
+    return `<div class="rounded-xl p-3 border ${active ? 'border-gold bg-[#FBF7EC]' : 'border-[#eef0ee] bg-white'}">
+      <div class="text-[11px] text-[color:var(--brand-muted)]">W${i + 1} · ${monShort} ${w.from}–${w.to}${active ? ' · now' : ''}</div>
+      <div class="text-sm font-semibold text-teal mt-1">${fmtINR(w.revenue)}</div>
+      <div class="text-[11px] text-[color:var(--brand-muted)]">${w.nights}/${w.availNights} nts · ${wocc}%</div>
+    </div>`;
+  }).join('');
+
+  const chips = upcoming.slice(0, 18).map(d => {
+    const wknd = d.dow === 5 || d.dow === 6 || d.dow === 0;
+    return `<span class="inline-block text-xs px-2 py-1 rounded-lg ${wknd ? 'bg-[rgba(201,162,39,0.18)] text-[#8a6d12] font-semibold' : 'bg-[#eef2f0] text-teal'}">${dateLabelShort(d.date)}${d.free === 2 ? ' ·2' : ''}</span>`;
+  }).join(' ');
+
+  const stat = (label, val) => `<div class="bg-cream rounded-xl py-2"><div class="serif text-lg text-teal">${val}</div><div class="text-[10px] uppercase tracking-wide text-[color:var(--brand-muted)]">${label}</div></div>`;
+
+  host.innerHTML = `
+    <div class="bg-white rounded-2xl p-5" style="border:2px solid rgba(14,59,53,0.15)">
+      <div class="flex flex-wrap justify-between items-baseline gap-2 mb-3">
+        <div class="serif text-xl text-teal">This month · ${monthLabel(c.month)}</div>
+        <div class="text-xs text-[color:var(--brand-muted)]">Day ${c.dayOfMonth} of ${c.daysInMonth} · ${c.daysRemaining} days left</div>
+      </div>
+      <div class="flex flex-wrap justify-between items-baseline gap-2 text-sm mb-1">
+        <span><b class="text-teal text-lg">${fmtFull(c.revenue)}</b> <span class="text-[color:var(--brand-muted)]">/ ${fmtINR(target)} (${pct}%)</span></span>
+        <span class="text-xs ${projected >= target ? 'text-[#1a7a44]' : 'text-[#c45a3a]'}">projected ${fmtINR(projected)} · ${projPct}%</span>
+      </div>
+      <div class="h-3 rounded-full bg-[#eef0ee] overflow-hidden">
+        <div class="h-full rounded-full" style="width:${Math.min(100, Math.max(0, pct))}%; background:linear-gradient(90deg,#0E3B35,#14524a)"></div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-center">
+        ${stat('Occupancy', occ + '%')}${stat('Open nights', openNights)}${stat('Open weekend', openWkndNights)}${stat('Bookings', c.bookings)}
+      </div>
+      <div class="mt-5">
+        <div class="text-[11px] uppercase tracking-[0.14em] text-[color:var(--brand-muted)] mb-2">Weekly</div>
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">${weeks}</div>
+      </div>
+      ${upcoming.length ? `<div class="mt-4">
+        <div class="text-[11px] uppercase tracking-[0.14em] text-[color:var(--brand-muted)] mb-2">Open slots to fill (today →) · weekends in gold</div>
+        <div class="flex flex-wrap gap-1.5">${chips}</div>
+      </div>` : ''}
+      <div class="mt-4 rounded-xl p-3 bg-[#FBF7EC] border border-[#EADFC0]">
+        <div class="text-[11px] uppercase tracking-[0.14em] text-[#8a6d12] mb-1.5 font-semibold">Suggestions</div>
+        <ul class="text-sm text-[color:var(--brand-ink)] space-y-1 list-disc pl-4">${tips.map(t => `<li>${t}</li>`).join('')}</ul>
+      </div>
+    </div>`;
 }
 
 function renderExtra(data) {
@@ -156,6 +235,7 @@ function render(data) {
     return;
   }
   document.getElementById('generated-line').textContent = 'As of ' + (data.generated || '') + ' · ' + data.rooms + ' rooms';
+  renderCurrentMonth(data);
   renderKpis(data);
   renderExtra(data);
   renderCharts(data);

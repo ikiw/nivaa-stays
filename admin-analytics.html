@@ -61,6 +61,8 @@
 
     <!-- Dashboard (shown when signed in as admin) -->
     <div id="analytics-dashboard" class="hidden">
+      <div id="current-month" class="mb-8"></div>
+      <h2 class="text-xs uppercase tracking-[0.16em] text-[color:var(--brand-muted)] mb-2">This month vs your monthly average</h2>
       <div id="kpi-cards" class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-8"></div>
       <div class="grid md:grid-cols-3 gap-5 mb-8">
         <div class="md:col-span-2 bg-white rounded-2xl p-4 sm:p-5 border border-[#e8ebe8]">
@@ -84,7 +86,7 @@
 
 <script>document.getElementById('y').textContent=new Date().getFullYear();</script>
 <script src="js/auth.js?v=4aee52df"></script>
-<script src="js/analytics.js?v=f3457253"></script>
+<script src="js/analytics.js?v=57409740"></script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
