@@ -23,7 +23,9 @@ export default function CurrentMonth({ data }: { data: AnalyticsData }) {
   const pct = Math.round((c.revenue / target) * 100);
   const gap = Math.max(0, target - c.revenue);
   const elapsed = Math.max(1, c.dayOfMonth);
-  const projected = Math.round((c.revenue / elapsed) * c.daysInMonth);
+  // pace-based forecast (from booking-lead history) when reliable, else naive linear
+  const usePace = data.pace && data.pace.forecast.expected > 0 && data.pace.coverage >= 0.5;
+  const projected = usePace ? data.pace.forecast.expected : Math.round((c.revenue / elapsed) * c.daysInMonth);
   const projPct = Math.round((projected / target) * 100);
   const occ = c.availNights ? Math.round((c.nights / c.availNights) * 1000) / 10 : 0;
   const upcoming = c.days.filter((d) => d.date >= c.today && d.free > 0);
