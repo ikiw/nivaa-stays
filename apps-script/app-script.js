@@ -11,7 +11,10 @@
   const TZ           = 'Asia/Kolkata';                                                                                                                       
                                                                                                                                                              
   // Tabs are detected automatically: any sheet whose row 1 contains all of these.                                                                           
-  const REQ_HEADERS = ['Name', 'Check-In', 'Check-Out', 'Mobile'];
+  // 'Amount' (not 'Mobile') is the discriminator: older monthly tabs predate the
+  // Mobile column, while the Check-ins / Orders / Rentals logs have Name+Check-In
+  // but no Amount — so the revenue ledgers are detected and the logs are excluded.
+  const REQ_HEADERS = ['Name', 'Check-In', 'Check-Out', 'Amount'];
                                                                                                                                                              
   // ---------- helpers ----------                             
                                                                                                                                                              
@@ -506,7 +509,7 @@
         if (!row[nameIdx]) continue;
         const b = rowToBooking_(headers, row);
         const ciDate = parseDate_(row[ciIdx]), coDate = parseDate_(row[coIdx]);
-        if (!b.phone || !ciDate || !coDate) continue;
+        if (!ciDate || !coDate) continue;            // phone optional — older tabs had no Mobile column
         const nights = Math.round((coDate.getTime() - ciDate.getTime()) / 86400000);
         if (!(nights >= 1 && nights <= 60)) continue;            // also drops NaN / garbled rows
         const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
@@ -534,7 +537,7 @@
         const c = channels[plat] = channels[plat] || { bookings: 0, revenue: 0, nights: 0 };
         c.bookings++; c.revenue += amount; c.nights += nights;
         const rm = b.room || '—'; roomSplit[rm] = (roomSplit[rm] || 0) + nights;
-        guestBookings[b.phone] = (guestBookings[b.phone] || 0) + 1;
+        if (b.phone) guestBookings[b.phone] = (guestBookings[b.phone] || 0) + 1;   // repeat-guest needs a phone
         totalAmount += amount; totalAdvance += advance; totalNights += nights; totalBookings++;
         const g = parseInt(b.num_guests); if (g > 0) { guestsSum += g; guestsCount++; }
       }

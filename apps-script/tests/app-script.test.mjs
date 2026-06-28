@@ -130,6 +130,26 @@ test('getBookingTabs_ ignores sheets that lack the required headers', () => {
   assert.equal(d.totals.bookings, 1);                             // the Orders row is not mistaken for a booking
 });
 
+test('analytics: older tabs (no Mobile column) aggregate; Check-ins-style logs ignored', () => {
+  // Older monthly tab schema — has Amount but NO Mobile column, phone-less rows.
+  const OLD = ['Date', 'Name', 'Check-In', 'Check-Out', 'Room Number', 'Amount', 'Online/Offline', 'Platform', 'Paid To Manju'];
+  const orow = (o) => OLD.map((h) => (o[h] != null ? o[h] : ''));
+  const janTab = mockSheet('Jan 2026', OLD, [
+    orow({ Name: 'Old', 'Check-In': Dlm(5), 'Check-Out': Dlm(7), Amount: '4000', Platform: 'Direct', 'Room Number': '1' }),
+  ]);
+  // Self-check-in log: Name/Check-In/Check-Out but NO Amount -> must NOT be counted as bookings.
+  const checkins = mockSheet('Check-ins', ['Submitted At', 'Name', 'Phone', 'Check-In', 'Check-Out', 'Room'], [
+    ['x', 'Walkin', '9000000000', Dlm(6), Dlm(8), '2'],
+  ]);
+  const app = loadAppScript({ SpreadsheetApp: makeSpreadsheetApp([janTab, checkins]), Utilities, ContentService });
+  const d = JSON.parse(app.doGet({ parameter: { analytics: '1' } }).getContent());
+  const lm = d.months.find((m) => m.month === lmKey);
+  assert.equal(lm.bookings, 1);       // old-tab booking counted despite missing phone
+  assert.equal(lm.revenue, 4000);
+  assert.equal(d.totals.bookings, 1); // Check-ins log excluded (no Amount column)
+  assert.equal(d.repeat.guests, 0);   // phone-less booking adds no repeat-guest entry
+});
+
 test('activeBookings: arriving / in-house / leaving / upcoming buckets', () => {
   const today = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate());
   const plus = n => new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() + n);
