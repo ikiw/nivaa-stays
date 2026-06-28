@@ -111,6 +111,26 @@ test('analytics: parses ISO / D-MMM-YYYY / DD-MM-YYYY / Date cells alike', () =>
   assert.equal(lm.revenue, 4000);
 });
 
+test('analytics: lead time + pace from the booking-made Date column', () => {
+  const H = ['Date', 'Name', 'Check-In', 'Check-Out', 'Room Number', 'Amount', 'Online/Offline', 'Platform', 'Mobile'];
+  const r = (o) => H.map((h) => (o[h] != null ? o[h] : ''));
+  const made = (ci, lead) => new Date(ci.getFullYear(), ci.getMonth(), ci.getDate() - lead);   // booking-made date
+  const rows = [
+    r({ Date: made(Dlm(15), 10), Name: 'A', 'Check-In': Dlm(15), 'Check-Out': Dlm(16), Amount: '3000', Platform: 'Direct', Mobile: '1', 'Room Number': '1' }),
+    r({ Date: made(Dlm(20), 2),  Name: 'B', 'Check-In': Dlm(20), 'Check-Out': Dlm(21), Amount: '3000', Platform: 'Direct', Mobile: '2', 'Room Number': '1' }),
+    r({ Date: made(Dlm(25), 0),  Name: 'C', 'Check-In': Dlm(25), 'Check-Out': Dlm(26), Amount: '3000', Platform: 'Direct', Mobile: '3', 'Room Number': '1' }),
+  ];
+  const app = loadAppScript({ SpreadsheetApp: makeSpreadsheetApp([mockSheet('Apr 2026', H, rows)]), Utilities, ContentService });
+  const d = JSON.parse(app.doGet({ parameter: { analytics: '1' } }).getContent());
+  assert.equal(d.leadTime.coverage, 1);                                       // all 3 have a valid made-date
+  assert.equal(d.leadTime.sampleSize, 3);
+  assert.equal(d.leadTime.median, 2);                                          // [0,2,10] -> 2
+  assert.equal(d.leadTime.buckets.find((b) => b.label === 'Same day').count, 1);
+  assert.ok(d.pace && Array.isArray(d.pace.months));
+  const pm = d.pace.months.find((m) => m.month === lmKey);
+  assert.ok(pm && pm.coverage === 1);                                          // last month fully dated
+});
+
 test('analytics: current-month block + target shape', () => {
   const d = get(appWith([]), { analytics: '1' });
   assert.equal(d.revenueTarget, 100000);
