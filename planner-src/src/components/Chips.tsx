@@ -7,7 +7,7 @@ import type { Planner } from '../usePlanner';
 
 /** Category filter chips (All + each category with a count). */
 export function CategoryChips({ planner }: { planner: Planner }) {
-  const { byCat, filter, setFilter, setSubFilter } = planner;
+  const { byCat, filter, selectFilter } = planner;
   const rows: [string, string, number][] = [
     ['All', 'All places', Object.values(byCat).reduce((a, b) => a + b.length, 0)],
     ...PICK_ORDER.filter(c => byCat[c]).map((c): [string, string, number] => [c, CAT_LABEL[c] || c, byCat[c].length]),
@@ -19,7 +19,7 @@ export function CategoryChips({ planner }: { planner: Planner }) {
         return (
           <Chip key={key} label={`${label} ${n}`} icon={Icon ? <Icon /> : undefined} size="small"
             color={filter === key ? 'primary' : 'default'} variant={filter === key ? 'filled' : 'outlined'}
-            onClick={() => { setFilter(key); setSubFilter('All'); }} sx={{ fontWeight: 600 }} />
+            onClick={() => selectFilter(key)} sx={{ fontWeight: 600 }} />
         );
       })}
     </Stack>
@@ -43,7 +43,7 @@ export function PlanChips({ planner }: { planner: Planner }) {
 
 /** Sub-type filter chips for the active category — null when the category has no sub-types. */
 export function SubChips({ planner }: { planner: Planner }) {
-  const { data, byCat, filter, subFilter, setSubFilter } = planner;
+  const { data, byCat, filter, subFilter, selectSubFilter } = planner;
   const subOrder = SUB_ORDER[filter];
   if (!subOrder || !data) return null;
   const counts: Record<string, number> = {}; (byCat[filter] || []).forEach(i => { const sub = data.places[i].sub || ''; counts[sub] = (counts[sub] || 0) + 1; });
@@ -52,7 +52,7 @@ export function SubChips({ planner }: { planner: Planner }) {
   return (
     <Stack direction="row" spacing={0.6} useFlexGap flexWrap="wrap">
       {rows.map(([key, label, n]) => (
-        <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => setSubFilter(key)}
+        <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => selectSubFilter(key)}
           color={subFilter === key ? 'primary' : 'default'} variant={subFilter === key ? 'filled' : 'outlined'}
           sx={{ fontWeight: 600, fontSize: '0.7rem' }} />
       ))}

@@ -54,6 +54,8 @@ To add a new dynamic endpoint, add another `if (url.pathname === '/api/xyz') { .
 **Admin pages** (`<meta robots="noindex">`):
 
 - `admin.html` + `js/admin.js` — Google Sign-In gated dashboard. Lists active bookings (Leaving today / Arriving today / In-house / Upcoming). Each row links to hub / add food / receipt / printable invoice.
+- `/admin-analytics/` — booking analytics dashboard, a **standalone React + MUI SPA** (source `analytics-src/`, built into the served `admin-analytics/` folder). See **Admin analytics dashboard** below.
+- `admin-rank.html`, `admin-competitors.html` — local-rank + competitor tools (see **Local rank tracker**).
 - PWA-installable on Android Chrome and via Safari Share→Add to Home Screen.
 
 ## Cloudflare — `.html` stripping convention
@@ -99,6 +101,8 @@ The script lives in a Google Apps Script project bound to the Bookings Google Sh
 - `lookup` — find a booking by `?id=` for the check-in form
 - `hub` — full guest hub data (booking + invoice + food/rentals/add-ons) for `welcome.html?id=`
 - `activeBookings` — host dashboard feed for `admin.html` (Leaving today / Arriving today / In-house / Upcoming)
+- `analytics` (`?analytics=1`) — booking-analytics JSON for `/admin-analytics/`: per-month occupancy/ADR/RevPAR (night-accurate, stays split across month boundaries), channel mix, repeat guests, payments, current-month day-grid + ₹1L target, and `leadTime` + `pace` (lead-time distribution + pickup-pace forecast from the booking-made `Date` column)
+- `tabsdebug` (`?tabsdebug=1`) — read-only probe (every sheet: detected-as-booking-tab? header row? Check-In parse stats) to debug "missing months"
 
 **Endpoints exposed (`doPost?action=...`):**
 
@@ -116,6 +120,8 @@ The script lives in a Google Apps Script project bound to the Bookings Google Sh
 - `doPost` returns a 302 to `script.googleusercontent.com/macros/echo` with a single-use `user_content_key`. Some clients re-fire the GET and the second one 404s — **the data is already in the sheet, so clients treat a 404/unreadable response as success**.
 - Sheets parses cell values starting with `=`, `+`, `-`, `@` as formulas. The `safeForSheet_()` helper prefixes any such user-provided string with an apostrophe. Use it for every guest-supplied field.
 - The Drive upload `ID_FOLDER_ID` must be shared with the deployment's "Execute as" identity. If you redeploy from a different Google account, re-share the folder.
+
+**Booking-tab detection + tests:** booking tabs are auto-detected by row 1 containing `Name` + `Check-In` + `Check-Out` + **`Amount`** (`REQ_HEADERS`). `Amount` (not `Mobile`) is the discriminator — older monthly tabs predate the `Mobile` column, and the `Check-ins`/`Orders`/`Rentals` logs have no `Amount`, so the revenue ledgers are detected and the logs excluded. Check-In/out are stored as **text** like `1-Jun-2026`; the top-level `parseDate_` handles Date cells + `1-Jun-2026` / `2026-06-01` / `1/6/2026`. **`npm run test:apps-script`** (Node's built-in runner, no deps) loads the *unmodified* `app-script.js` in a `vm` sandbox with mocked GAS globals and asserts the `doGet` read paths — run it before re-pasting an edited script. See `apps-script/tests/`. **Apps Script edits require a manual redeploy** (paste into the project → Manage deployments → ✏️ → New version → Deploy); the `/exec` URL stays stable.
 
 ## Brand
 
@@ -199,7 +205,7 @@ Caveats:
 
 Assets are **content-hash versioned** to defeat browser + service-worker caching (the SW serves JS/CSS stale-while-revalidate, which otherwise needs a hard refresh after each deploy). `npm run cache-bust` (`scripts/cache-bust.mjs`) stamps `?v=<hash>` on every local `js/`/`css/` reference across all HTML and sets `sw.js`'s `CACHE_VERSION` to a global build hash. It's **idempotent** — re-running with no asset changes makes no diff.
 
-- **`npm run build`** = `build:css` then `cache-bust`. **Run it before committing whenever you change any `js/*.js` or `css/*` (or add a new utility class).** Then commit the restamped HTML + `sw.js` alongside the asset change.
+- **`npm run build`** = `build:css` → `build:planner` → `build:analytics` → `cache-bust` → `inline-css`. ⚠️ **Avoid a full `npm run build` for a focused change** — `build:css` rewrites `tailwind.css` with non-semantic churn, and `build:planner`/`build:analytics` reinstall + rebuild the React apps. Instead: for a `js/*.js` or `css/*` change run just **`npm run cache-bust`** (+ `inline-css` if `styles.css` changed); for a React-app change run just **`npm run build:analytics`** (or `build:planner`) and commit the content-hashed output folder.
 - A file's `?v=` only changes when its bytes change, so unchanged assets stay cached.
 
 ## Deploy / push checklist
@@ -234,6 +240,17 @@ Admin-only Google Maps local-rank tracker — geo-grid method (à la Local Falco
 - **ARP** = Average Rank Position across the grid (not-found counts as 21). Lower is better.
 - **Competitor Share of Voice** (`admin-competitors.html` + `js/competitors.js`): `rankScan()` stores the top-N ranked place ids per cell in the `Top IDs` column (near-zero extra cost — we already fetch them). `resolveCompetitors()` resolves the most-common ids → names/ratings via Place Details into a `Competitors` sheet (run after `rankScan()`). `compData_()` (`doGet?compData=1`) computes SoV (% of grid points × keywords each business is top-3 / top-10) + per-competitor grids. The page shows a SoV leaderboard (Nivaa highlighted) + a per-competitor heatmap. **Setup:** after pasting the updated script, re-run `rankScan()` (adds the `Top IDs` column), then `resolveCompetitors()`.
 
+## Admin analytics dashboard
+
+Booking analytics for the host — a **standalone React + MUI SPA**, deliberately separate from the static site (mirrors how the planner is built/isolated).
+
+- **Source:** `analytics-src/` — Vite + React 18 + MUI 6 + Chart.js, TypeScript. Mirrors `planner-src/` (same toolchain/tsconfig).
+- **Build:** `npm run build:analytics` (Vite `base: '/admin-analytics/'`, `outDir: '../admin-analytics'`) → emits the served `admin-analytics/` folder. **Both source and build output are committed.** `analytics-src/` is in `.assetsignore` (source not uploaded); Cloudflare serves the built `admin-analytics/index.html` + Vite-content-hashed `admin-analytics/assets/` at **`/admin-analytics/`**. There is no `admin-analytics.html` — the folder index is the page.
+- **Isolation (keep it this way):** `noindex`, not in `sitemap.xml`, untouched by `cache-bust`/`inline-css` (scoped to root + `guides/` / an explicit page list), no service-worker registration, and **never referenced by the public pages**. The 11 public pages load none of its bytes.
+- **Auth:** reuses the shared `/js/auth.js` (`window.NivaaAuth`) — same Google Sign-In admin gate as `admin.html`. `analytics-src/index.html` injects `/js/auth.js` + the GSI client at runtime via an inline script (root-absolute paths, so Vite's base-rewrite can't touch them); `src/useAuth.ts` reads `NivaaAuth` + listens for `nivaa-auth-change`. Sign-in only completes on the live domain (OAuth authorized origins).
+- **Data:** the Bookings Apps Script `?analytics=1` (same `APPS_SCRIPT_URL` as `admin.js`). Views (switcher, default = This month): **This month** (₹1L target deep-dive + weekly split + open slots + suggestions), **Insights** (pace forecast + lead-time profile + fill-this-month action plan, from `leadTime`/`pace`), **each past month**, **All months** (revenue/occupancy + channel-mix charts + month table). KPIs compare to the all-months average; values colour-coded by occupancy + revenue-target thresholds (`src/lib.ts` `occLevel`/`tgtLevel`).
+- **Dev / checks:** `npm --prefix analytics-src run dev` (proxies `/js` → production for auth) · `npm --prefix analytics-src run typecheck`. For an analytics-only change, just `npm run build:analytics` + commit the `admin-analytics/` output (no `cache-bust` needed — assets are already content-hashed).
+
 ## Conventions for the user
 
 - The user pushes via the **`ikiw`** GitHub account (not `selango_LinkedIn`). Always `gh auth switch --user ikiw` before pushing if status shows a different active account.
@@ -250,12 +267,13 @@ These were discussed and partially set up; resume when the user comes back to th
 
 In rough priority order:
 
-1. **Admin analytics dashboard** — `admin-analytics.html` showing occupancy %, ADR, source mix (Direct / Airbnb / Booking / MMT / Agoda), lead time, repeat-guest rate, 90-day calendar heat-map. Reads existing Bookings + Orders + Rentals + Add-ons sheets via a new Apps Script `?action=analytics` JSON endpoint. Charts via Chart.js.
-2. **Public availability calendar** — live read-only calendar on `booking.html` showing 90-day greens/reds from the Bookings sheet, to cut the "is the room free on Dec 15?" WhatsApp pings.
-3. **Gmail OTA importer** — Apps Script trigger that parses Airbnb / Booking.com / MMT / Agoda confirmation emails and appends rows to the Bookings sheet. Replaces the manual re-entry step (and obsoletes the Chrome-extension idea).
-4. **Sitemap `<lastmod>` entries** — currently bare; adding ISO dates helps Google re-crawl after edits.
+1. **Public availability calendar** — live read-only calendar on `booking.html` showing 90-day greens/reds from the Bookings sheet, to cut the "is the room free on Dec 15?" WhatsApp pings.
+2. **Gmail OTA importer** — Apps Script trigger that parses Airbnb / Booking.com / MMT / Agoda confirmation emails and appends rows to the Bookings sheet. Replaces the manual re-entry step (and obsoletes the Chrome-extension idea).
+3. **Sitemap `<lastmod>` entries** — currently bare; adding ISO dates helps Google re-crawl after edits.
+4. **Analytics — demand-pattern + channel/pricing modules** — deferred extensions to the analytics dashboard: occupancy/ADR by day-of-week + seasonality, per-channel lead time, weekend-vs-weekday pricing/underpricing flags. Needs one more `?analytics=1` backend pass + redeploy.
 
 ## Done (was "Future ideas")
 
 - **Pre-compiled Tailwind to static CSS** — dropped the 273 KB `js/tailwind.js` runtime; biggest LCP win. See the Tailwind bullet under **Stack**.
 - **Security headers** — HSTS / X-Content-Type-Options / X-Frame-Options / Referrer-Policy / Permissions-Policy are set in `_worker.js` via `withSecurityHeaders()` (Workers + Assets ignores a `_headers` file, so they're applied in code on every response).
+- **Admin analytics dashboard** — built as a standalone React + MUI SPA at `/admin-analytics/` (Chart.js), with a pace/lead-time **Insights** view and an Apps Script test harness. See **Admin analytics dashboard** + the `analytics`/`tabsdebug` endpoints under **Backend**.

@@ -42,7 +42,7 @@ export interface TimelineNodeProps {
   setStay: (gi: number, v: string | number) => void;
   move: (gi: number, dir: number) => void;
   removeAt: (gi: number) => void;
-  selectPlace: (idx: number) => void;
+  selectPlace: (idx: number, source?: string) => void;
 }
 
 /** One timeline row: a place stop, or a break/meal pseudo-row. App injects `data` + handlers. */
@@ -112,7 +112,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
         {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
-        <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx) : undefined}
+        <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx, 'timeline') : undefined}
           sx={{ p: 1, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.22)' }, '&:active': { bgcolor: 'rgba(255,255,255,0.09)' } }) }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
