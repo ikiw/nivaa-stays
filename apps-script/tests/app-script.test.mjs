@@ -40,6 +40,16 @@ test('helpers: normalizePhone_, ymd_, rowToBooking_', () => {
   assert.equal(b.platform, 'Airbnb');
 });
 
+test('parseDate_: Date / ISO / D-MMM-YYYY / DD-MM-YYYY parse; junk rejected', () => {
+  const p = appWith([]).parseDate_;
+  assert.equal(p('2026-01-15').getMonth(), 0);          // ISO
+  assert.equal(p('15-Jan-2026').getMonth(), 0);          // D-MMM-YYYY (text)
+  assert.equal(p('15/1/2026').getMonth(), 0);            // DD/MM/YYYY
+  assert.ok(p(new Date(2026, 0, 15)) instanceof Date);   // real Date cell
+  assert.equal(p('garbage'), null);
+  assert.equal(p(''), null);
+});
+
 test('analytics: monthly aggregation, channels, repeat, totals', () => {
   const rows = [
     mkRow({ Name: 'A', Mobile: '1111111111', 'Check-In': dmy(Dlm(5)),  'Check-Out': dmy(Dlm(7)),  Platform: 'Direct',  Amount: '₹4,000', Advance: '2000', 'Room Number': '1' }), // 2 nights

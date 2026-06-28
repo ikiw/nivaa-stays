@@ -91,6 +91,7 @@
     if (params.hub) return hubData_(params.hub);
     if (params.activeBookings != null) return activeBookings_(params.activeBookings);
     if (params.analytics != null) return analyticsData_();
+    if (params.tabsdebug != null) return tabsDebug_();
     const lookup = params.lookup || '';
     if (!lookup) return jsonOut_({ found: false, error: 'no lookup id' });
     const m = lookup.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);                                                                                                   
@@ -460,23 +461,26 @@
   }
 
   // ---------- doGet?analytics=1 — monthly booking analytics (room bookings only) ----------
+  // Robust date parse — real Date cells AND text ("1-Jun-2026" / "28/06/2026" / "2026-06-28").
+  // Top-level so analyticsData_ AND the ?tabsdebug probe share one implementation.
+  const MON_ = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  function parseDate_(v) {
+    if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? null : v;
+    const s = String(v == null ? '' : v).trim(); if (!s) return null;
+    let m;
+    if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(+m[1], +m[2] - 1, +m[3]);
+    if ((m = s.match(/^(\d{1,2})[\-\/ ]([A-Za-z]{3,})[\-\/ ](\d{4})/)) && MON_[m[2].slice(0, 3).toLowerCase()] != null)
+      return new Date(+m[3], MON_[m[2].slice(0, 3).toLowerCase()], +m[1]);
+    if ((m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/))) return new Date(+m[3], +m[2] - 1, +m[1]);
+    const d = new Date(s); return isNaN(d.getTime()) ? null : d;
+  }
+
   function analyticsData_() {
     const ROOMS = 2;
     const num_ = v => { const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.]/g, '')); return isNaN(n) ? 0 : n; };
     const monthKey_ = (y, m) => y + '-' + ('0' + m).slice(-2);
     const daysInMonth_ = (y, m) => new Date(y, m, 0).getDate();
-    // Robust date parse: handles real Date cells AND text like "1-Jun-2026" / "28/06/2026" / "2026-06-28".
-    const MON = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
-    const parseDate_ = v => {
-      if (Object.prototype.toString.call(v) === '[object Date]') return isNaN(v.getTime()) ? null : v;
-      const s = String(v == null ? '' : v).trim(); if (!s) return null;
-      let m;
-      if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return new Date(+m[1], +m[2] - 1, +m[3]);
-      if ((m = s.match(/^(\d{1,2})[\-\/ ]([A-Za-z]{3,})[\-\/ ](\d{4})/)) && MON[m[2].slice(0, 3).toLowerCase()] != null)
-        return new Date(+m[3], MON[m[2].slice(0, 3).toLowerCase()], +m[1]);
-      if ((m = s.match(/^(\d{1,2})[\-\/](\d{1,2})[\-\/](\d{4})/))) return new Date(+m[3], +m[2] - 1, +m[1]);
-      const d = new Date(s); return isNaN(d.getTime()) ? null : d;
-    };
+    // parseDate_ + MON_ are defined at top level (shared with the ?tabsdebug probe).
 
     const now = new Date();
     const curY = now.getFullYear(), curM = now.getMonth() + 1, curKey = monthKey_(curY, curM);
@@ -599,6 +603,36 @@
         avgGuests: guestsCount ? Math.round(guestsSum / guestsCount * 10) / 10 : 0
       }
     });
+  }
+
+  // ?tabsdebug=1 — diagnostics for "missing months": lists every sheet, whether it's
+  // detected as a booking tab, its header row, and how many Check-In cells parse.
+  // Read-only and safe to leave deployed.
+  function tabsDebug_() {
+    const norm = s => String(s == null ? '' : s).toLowerCase().replace(/[^a-z0-9]/g, '');
+    const reqNorm = REQ_HEADERS.map(norm);
+    const ciAliases = ['Check-In', 'Check In', 'Checkin', 'Arrival', 'From', 'Date'].map(norm);
+    const sheets = SpreadsheetApp.getActiveSpreadsheet().getSheets().map(sh => {
+      const lastCol = sh.getLastColumn(), lastRow = sh.getLastRow();
+      if (lastCol < 1 || lastRow < 1) return { name: sh.getName(), lastRow: lastRow, lastCol: lastCol, header: [], detected: false, rows: 0, parsed: 0, skipped: 0, samples: [] };
+      const header = sh.getRange(1, 1, 1, lastCol).getValues()[0].map(c => String(c).trim());
+      const hNorm = header.map(norm);
+      const detected = reqNorm.every(r => hNorm.indexOf(r) >= 0);
+      let ciIdx = header.indexOf('Check-In');
+      if (ciIdx < 0) ciIdx = hNorm.findIndex(h => ciAliases.indexOf(h) >= 0);
+      let parsed = 0, skipped = 0; const samples = [];
+      if (ciIdx >= 0 && lastRow > 1) {
+        const col = sh.getRange(2, ciIdx + 1, lastRow - 1, 1).getValues();
+        for (let i = 0; i < col.length; i++) {
+          const v = col[i][0];
+          if (v === '' || v == null) continue;
+          if (parseDate_(v)) parsed++; else skipped++;
+          if (samples.length < 5) samples.push({ raw: String(v).slice(0, 30), type: Object.prototype.toString.call(v) });
+        }
+      }
+      return { name: sh.getName(), lastRow: lastRow, lastCol: lastCol, header: header, detected: detected, ciHeader: ciIdx >= 0 ? header[ciIdx] : null, rows: lastRow - 1, parsed: parsed, skipped: skipped, samples: samples };
+    });
+    return jsonOut_({ requiredHeaders: REQ_HEADERS, detectedTabs: getBookingTabs_().map(s => s.getName()), sheets: sheets });
   }
 
   function recordRental_(p) {
