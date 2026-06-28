@@ -9,6 +9,7 @@ import { useAuth } from './useAuth';
 import { fetchAnalytics, monthLabel, fmtINR, TARGET_DEFAULT } from './lib';
 import type { AnalyticsData } from './types';
 import CurrentMonth from './components/CurrentMonth';
+import Insights from './components/Insights';
 import MonthView from './components/MonthView';
 import AllMonths from './components/AllMonths';
 
@@ -74,7 +75,7 @@ export default function App() {
   const months = data?.months || [];
   const curKey = data?.current?.month || months[months.length - 1]?.month || '';
   const pastMonths = months.filter((m) => m.month !== curKey).reverse();
-  const validView = view === 'current' || view === 'all' || months.some((m) => m.month === view) ? view : 'current';
+  const validView = view === 'current' || view === 'insights' || view === 'all' || months.some((m) => m.month === view) ? view : 'current';
 
   return (
     <Box sx={{ minHeight: '100dvh', bgcolor: 'background.default' }}>
@@ -122,14 +123,16 @@ export default function App() {
                 onChange={(_, v) => { if (v) setView(v); }}
                 sx={{ flexWrap: 'wrap', gap: 1, justifyContent: 'center', '& .MuiToggleButtonGroup-grouped': { border: '1px solid rgba(14,59,53,0.18)', borderRadius: '999px !important', mx: 0.25 } }}>
                 <ToggleButton value="current">This month</ToggleButton>
+                <ToggleButton value="insights">Insights</ToggleButton>
                 {pastMonths.map((m) => <ToggleButton key={m.month} value={m.month}>{monthLabel(m.month)}</ToggleButton>)}
                 <ToggleButton value="all">All months</ToggleButton>
               </ToggleButtonGroup>
             </Box>
 
             {validView === 'current' && <CurrentMonth data={data} />}
+            {validView === 'insights' && <Insights data={data} />}
             {validView === 'all' && <AllMonths data={data} />}
-            {validView !== 'current' && validView !== 'all' && <MonthView data={data} monthKey={validView} />}
+            {validView !== 'current' && validView !== 'insights' && validView !== 'all' && <MonthView data={data} monthKey={validView} />}
           </>
         )}
       </Container>

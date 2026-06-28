@@ -500,10 +500,16 @@
     let totalAmount = 0, totalAdvance = 0, totalNights = 0, totalBookings = 0, guestsSum = 0, guestsCount = 0;
     const bump_ = (key, field, val) => { (M[key] = M[key] || { bookings: 0, nights: 0, revenue: 0 })[field] += val; };
 
+    // pace / lead-time inputs: booking-made date ('Date' column) vs check-in
+    const paceBk = [];        // { stayKey, made: Date|null, revenue } per booking
+    const leadList = [];      // lead times (days) where a valid made-date <= check-in exists
+    let leadDenom = 0;        // bookings considered (coverage denominator)
+    const leadSamples = [];   // a few {made, ci, lead} to validate the Date column
+
     for (const sh of getBookingTabs_()) {
       const data = sh.getDataRange().getValues();
       const headers = data[0].map(c => String(c).trim());
-      const nameIdx = headers.indexOf('Name'), ciIdx = headers.indexOf('Check-In'), coIdx = headers.indexOf('Check-Out');
+      const nameIdx = headers.indexOf('Name'), ciIdx = headers.indexOf('Check-In'), coIdx = headers.indexOf('Check-Out'), dateIdx = headers.indexOf('Date');
       for (let i = 1; i < data.length; i++) {
         const row = data[i];
         if (!row[nameIdx]) continue;
@@ -513,8 +519,20 @@
         const nights = Math.round((coDate.getTime() - ciDate.getTime()) / 86400000);
         if (!(nights >= 1 && nights <= 60)) continue;            // also drops NaN / garbled rows
         const amount = num_(b.amount), advance = num_(b.advance) || num_(b.paid), perNight = amount / nights;
+        const stayKey = monthKey_(ciDate.getFullYear(), ciDate.getMonth() + 1);
 
-        bump_(monthKey_(ciDate.getFullYear(), ciDate.getMonth() + 1), 'bookings', 1);   // booking -> its check-in month
+        // booking-made date ('Date' col) -> lead time + pickup pace
+        const madeRaw = dateIdx >= 0 ? parseDate_(row[dateIdx]) : null;
+        const made = (madeRaw && madeRaw.getTime() <= ciDate.getTime()) ? madeRaw : null;
+        paceBk.push({ stayKey: stayKey, made: made, revenue: amount });
+        leadDenom++;
+        if (made) {
+          const ld = Math.round((ciDate.getTime() - made.getTime()) / 86400000);
+          leadList.push(ld);
+          if (leadSamples.length < 6) leadSamples.push({ made: Utilities.formatDate(made, TZ, 'yyyy-MM-dd'), ci: Utilities.formatDate(ciDate, TZ, 'yyyy-MM-dd'), lead: ld });
+        }
+
+        bump_(stayKey, 'bookings', 1);   // booking -> its check-in month
         if (ciDate.getFullYear() === curY && (ciDate.getMonth() + 1) === curM) {
           const cwi = Math.floor((ciDate.getDate() - 1) / 7); if (curWeeks[cwi]) curWeeks[cwi].bookings++;
         }
@@ -589,11 +607,75 @@
       availNights: ROOMS * daysInCur, days: curDays, weeks: curWeeksOut
     };
 
+    // --- lead time (booking-made -> check-in) ---
+    leadList.sort((a, b) => a - b);
+    const median_ = arr => !arr.length ? 0 : (arr.length % 2 ? arr[(arr.length - 1) / 2] : Math.round((arr[arr.length / 2 - 1] + arr[arr.length / 2]) / 2));
+    const inBucket_ = (lo, hi) => leadList.filter(x => x >= lo && x <= hi).length;
+    const leadTime = {
+      coverage: leadDenom ? Math.round(leadList.length / leadDenom * 100) / 100 : 0,
+      sampleSize: leadList.length,
+      median: median_(leadList),
+      mean: leadList.length ? Math.round(leadList.reduce((s, x) => s + x, 0) / leadList.length) : 0,
+      buckets: [
+        { label: 'Same day', count: inBucket_(0, 0) },
+        { label: '1-3 days', count: inBucket_(1, 3) },
+        { label: '4-7 days', count: inBucket_(4, 7) },
+        { label: '8-14 days', count: inBucket_(8, 14) },
+        { label: '15-30 days', count: inBucket_(15, 30) },
+        { label: '31+ days', count: inBucket_(31, 1e9) }
+      ],
+      samples: leadSamples
+    };
+
+    // --- pickup pace: % of a month's revenue locked-in by the current day-of-month ---
+    const asOfDay = now.getDate();
+    const lockDay_ = (made, key) => {
+      const yy = +key.split('-')[0], mm = +key.split('-')[1];
+      const first = new Date(yy, mm - 1, 1).getTime(), dim = daysInMonth_(yy, mm);
+      if (made.getTime() < first) return 1;
+      const dd = Math.floor((made.getTime() - first) / 86400000) + 1;
+      return Math.min(Math.max(1, dd), dim);
+    };
+    const paceByKey = {};
+    paceBk.forEach(b => { (paceByKey[b.stayKey] = paceByKey[b.stayKey] || []).push(b); });
+    const paceFor_ = key => {
+      const list = paceByKey[key] || [];
+      const dated = list.filter(b => b.made);
+      const datedTotal = dated.reduce((s, b) => s + b.revenue, 0);
+      const lockedByNow = dated.filter(b => lockDay_(b.made, key) <= asOfDay).reduce((s, b) => s + b.revenue, 0);
+      return {
+        month: key,
+        coverage: list.length ? Math.round(dated.length / list.length * 100) / 100 : 0,
+        finalRevenue: Math.round((M[key] || { revenue: 0 }).revenue),
+        pctByNow: datedTotal ? Math.round(lockedByNow / datedTotal * 1000) / 10 : 0
+      };
+    };
+    const paceMonths = months.filter(m => m.month !== curKey).map(m => paceFor_(m.month));
+    const fracs = paceMonths.filter(c => c.coverage >= 0.5 && c.finalRevenue > 0).map(c => c.pctByNow);
+    const avgFrac = fracs.length ? fracs.reduce((s, x) => s + x, 0) / fracs.length : 0;
+    const minFrac = fracs.length ? Math.min.apply(null, fracs) : 0;
+    const maxFrac = fracs.length ? Math.max.apply(null, fracs) : 0;
+    const curRevNow = Math.round((M[curKey] || { revenue: 0 }).revenue);
+    const project_ = pct => pct > 0 ? Math.round(curRevNow / (pct / 100)) : 0;
+    const pace = {
+      asOfDay: asOfDay,
+      coverage: leadTime.coverage,
+      sampleMonths: fracs.length,
+      months: paceMonths,
+      currentRevenue: curRevNow,
+      typicalPctByNow: Math.round(avgFrac * 10) / 10,
+      lowPctByNow: Math.round(minFrac * 10) / 10,
+      highPctByNow: Math.round(maxFrac * 10) / 10,
+      forecast: { expected: project_(avgFrac), low: project_(maxFrac), high: project_(minFrac) }
+    };
+
     return jsonOut_({
       generated: Utilities.formatDate(now, TZ, 'yyyy-MM-dd'),
       rooms: ROOMS,
       revenueTarget: 100000,
       current: current,
+      leadTime: leadTime,
+      pace: pace,
       months: months,
       channels: Object.keys(channels).map(k => Object.assign({ name: k }, channels[k])).sort((a, b) => b.revenue - a.revenue),
       roomSplit: roomSplit,

@@ -49,11 +49,37 @@ export interface Channel {
   nights: number;
 }
 
+export interface LeadBucket { label: string; count: number; }
+export interface LeadSample { made: string; ci: string; lead: number; }
+export interface LeadTime {
+  coverage: number;     // 0..1 — share of bookings with a usable made-date
+  sampleSize: number;
+  median: number;
+  mean: number;
+  buckets: LeadBucket[];
+  samples: LeadSample[];
+}
+
+export interface PaceMonth { month: string; coverage: number; finalRevenue: number; pctByNow: number; }
+export interface Pace {
+  asOfDay: number;
+  coverage: number;
+  sampleMonths: number;
+  months: PaceMonth[];
+  currentRevenue: number;
+  typicalPctByNow: number;
+  lowPctByNow: number;
+  highPctByNow: number;
+  forecast: { expected: number; low: number; high: number };
+}
+
 export interface AnalyticsData {
   generated: string;
   rooms: number;
   revenueTarget: number;
   current: CurrentMonthRec;
+  leadTime: LeadTime;
+  pace: Pace;
   months: MonthRec[];
   channels: Channel[];
   roomSplit: Record<string, number>;

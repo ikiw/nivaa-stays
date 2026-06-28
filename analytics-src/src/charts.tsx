@@ -2,8 +2,8 @@ import {
   Chart as ChartJS, BarElement, LineElement, PointElement, ArcElement,
   CategoryScale, LinearScale, Tooltip, Legend, BarController, LineController, DoughnutController,
 } from 'chart.js';
-import { Chart, Doughnut } from 'react-chartjs-2';
-import type { MonthRec, Channel } from './types';
+import { Chart, Doughnut, Bar } from 'react-chartjs-2';
+import type { MonthRec, Channel, LeadBucket } from './types';
 import { monthLabel, fmtFull, fmtINR, CHART_PALETTE } from './lib';
 
 ChartJS.register(
@@ -38,6 +38,23 @@ export function RevenueChart({ months }: { months: MonthRec[] }) {
     },
   };
   return <Chart type="bar" data={data} options={options} />;
+}
+
+export function LeadTimeChart({ buckets }: { buckets: LeadBucket[] }) {
+  const data = {
+    labels: buckets.map((b) => b.label),
+    datasets: [{ data: buckets.map((b) => b.count), backgroundColor: ['#1a7a44', '#3a8f5a', '#C9A227', '#d8a93a', '#C56B3E', '#c45a3a'], borderRadius: 4 }],
+  };
+  const total = buckets.reduce((s, b) => s + b.count, 0) || 1;
+  const options = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c: any) => `  ${c.raw} bookings (${Math.round((c.raw / total) * 100)}%)` } },
+    },
+    scales: { y: { beginAtZero: true, ticks: { precision: 0, font: { size: 10 } } }, x: { ticks: { font: { size: 10 } } } },
+  };
+  return <Bar data={data} options={options} />;
 }
 
 export function ChannelChart({ channels }: { channels: Channel[] }) {
