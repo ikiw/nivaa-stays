@@ -51,7 +51,24 @@ export function usePlanner() {
   // (adds a place / plans a day / taps "Load map") — a Map mount is a billed
   // Dynamic-Maps load, so bounce visitors who never interact cost nothing.
   const [mapActive, setMapActive] = useState(false);
-  useEffect(() => { if (stops.length > 0) setMapActive(true); }, [stops.length]);
+  const mapTracked = useRef(false);
+  // Mount the (billed) live map; fire map_open once per session with how it was triggered.
+  const activateMap = (trigger: string) => { if (!mapTracked.current) { mapTracked.current = true; track('map_open', { trigger }); } setMapActive(true); };
+  useEffect(() => { if (stops.length > 0) activateMap('auto'); }, [stops.length]);
+
+  // Top-of-funnel: fire once per load with device + referrer source (direct / google / internal / host).
+  useEffect(() => {
+    let source = 'direct';
+    const ref = document.referrer || '';
+    if (ref) {
+      try {
+        const host = new URL(ref).hostname.replace(/^www\./, '');
+        const self = window.location.hostname.replace(/^www\./, '');
+        source = host === self ? 'internal' : /(^|\.)google\./.test(host) ? 'google' : host;
+      } catch { source = 'other'; }
+    }
+    track('planner_open', { device: isMobile ? 'mobile' : 'desktop', source });
+  }, []);
 
   // ---------- shareable URL state (query params) ----------
   const hydrated = useRef(false);
@@ -99,7 +116,16 @@ export function usePlanner() {
   };
 
   // Open the place info card. On mobile, flip the Itinerary tab to the map so the card is visible.
-  const selectPlace = (i: number) => { setSelectedIdx(i); };   // card pops over the current view; map is opt-in
+  const selectPlace = (i: number, source: string = 'timeline') => {
+    const p = data?.places[i];
+    if (p) track('place_view', { name: p.name, category: p.cat, source });   // source: timeline | map
+    setSelectedIdx(i);   // card pops over the current view; map is opt-in
+  };
+  // Category / sub-type filter chips in the places picker → one place_filter event.
+  const selectFilter = (cat: string) => { track('place_filter', { category: cat }); setFilter(cat); setSubFilter('All'); };
+  const selectSubFilter = (sub: string) => { track('place_filter', { category: filter, sub }); setSubFilter(sub); };
+  // User-initiated panel switch (places ↔ itinerary). Programmatic openView calls stay untracked.
+  const switchView = (v: string) => { track('view_switch', { view: v === 'day' ? 'itinerary' : 'places' }); openView(v); };
 
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then((d: ItineraryData) => {
@@ -185,15 +211,17 @@ export function usePlanner() {
   const addToggle = (i: number) => {
     if (!data) return;
     touched();
-    track('plan_edit', { kind: stops.some(s => s.idx === i) ? 'remove_place' : 'add_place' });
+    const removing = stops.some(s => s.idx === i), p = data.places[i];
+    track('plan_edit', { kind: removing ? 'remove_place' : 'add_place', name: p?.name, category: p?.cat, day: activeDay });
     setStops(prev => prev.some(s => s.idx === i)
       ? prev.filter(s => s.idx !== i)
       : sortByDay([...prev, { idx: i, stay: idealStay(data.places[i]), day: activeDay }]));   // add to the day you're viewing
   };
-  const removeStop = (i: number) => { touched(); track('plan_edit', { kind: 'remove_place' }); setStops(prev => prev.filter(s => s.idx !== i)); };
-  const removeAt = (gi: number) => { touched(); track('plan_edit', { kind: 'remove' }); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
-  const addBreak = () => { touched(); track('plan_edit', { kind: 'add_break' }); setStops(prev => sortByDay([...prev, { brk: true, stay: 60, day: activeDay }])); };
-  const move = (gi: number, dir: number) => { touched(); track('plan_edit', { kind: 'reorder' }); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
+  const editName_ = (s?: Stop) => s == null ? undefined : (s.idx != null ? data?.places[s.idx]?.name : (s.brk ? 'Free time' : s.meal));
+  const removeStop = (i: number) => { touched(); track('plan_edit', { kind: 'remove_place', name: data?.places[i]?.name, category: data?.places[i]?.cat }); setStops(prev => prev.filter(s => s.idx !== i)); };
+  const removeAt = (gi: number) => { touched(); track('plan_edit', { kind: 'remove', name: editName_(stops[gi]), day: stops[gi]?.day }); setStops(prev => prev.filter((_, k) => k !== gi)); };   // gi-based (also removes breaks)
+  const addBreak = () => { touched(); track('plan_edit', { kind: 'add_break', name: 'Free time', day: activeDay }); setStops(prev => sortByDay([...prev, { brk: true, stay: 60, day: activeDay }])); };
+  const move = (gi: number, dir: number) => { touched(); track('plan_edit', { kind: 'reorder', name: editName_(stops[gi]), day: stops[gi]?.day }); setStops(prev => { const a = prev.slice(); const j = gi + dir; if (j < 0 || j >= a.length) return prev; if ((a[gi].day || 1) !== (a[j].day || 1)) return prev; [a[gi], a[j]] = [a[j], a[gi]]; return a; }); };
   const setStay = (gi: number, v: string | number) => { touched(); setStops(prev => prev.map((s, k) => k === gi ? { ...s, stay: Math.max(0, +v || 0) } : s)); };
 
   function optimize() {
@@ -338,7 +366,7 @@ export function usePlanner() {
     setShareAnchor(null); setMoreAnchor(null);
   };
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */
