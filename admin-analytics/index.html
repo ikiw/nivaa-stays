@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="theme-color" content="#0E3B35" />
+<link rel="icon" type="image/png" href="/assets/logo.png" />
+<title>Analytics · Nivaa Stays</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500..700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<!-- Shared admin auth (Google Identity) — injected at runtime with root-absolute
+     paths so Vite's base-rewriting can't touch them. auth.js sets window.NivaaAuth. -->
+<script>
+  (function () {
+    var gsi = document.createElement('script');
+    gsi.src = 'https://accounts.google.com/gsi/client'; gsi.async = true; gsi.defer = true;
+    document.head.appendChild(gsi);
+    var auth = document.createElement('script');
+    auth.src = '/js/auth.js';
+    document.head.appendChild(auth);
+  })();
+</script>
+  <script type="module" crossorigin src="/admin-analytics/assets/index-DDbzZzZB.js"></script>
+</head>
+<body style="margin:0;background:#FAF6EC;">
+<div id="root"></div>
+</body>
+</html>
