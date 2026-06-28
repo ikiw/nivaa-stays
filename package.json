@@ -8,7 +8,9 @@
     "cache-bust": "node scripts/cache-bust.mjs",
     "build:planner": "npm --prefix planner-src install --no-audit --no-fund && npm --prefix planner-src run build",
     "build": "npm run build:css && npm run build:planner && npm run cache-bust && npm run inline-css",
-    "inline-css": "node scripts/inline-css.mjs"
+    "inline-css": "node scripts/inline-css.mjs",
+    "test:apps-script": "TZ=Asia/Kolkata node --test apps-script/tests/",
+    "test": "npm run test:apps-script"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.0"
