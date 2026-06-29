@@ -6,6 +6,7 @@ import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import InfoOutlinedRounded from '@mui/icons-material/InfoOutlined';
 import TuneRounded from '@mui/icons-material/TuneRounded';
 import CloseRounded from '@mui/icons-material/CloseRounded';
+import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import { Map } from '@vis.gl/react-google-maps';
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { CAT_HEX, LEG_COLORS, SUB_ORDER, DAY_COLORS } from './constants';
@@ -17,9 +18,10 @@ import { GlanceRow, Centered } from './components/Bits';
 import Brand from './components/Brand';
 import AiBar from './components/AiBar';
 import Controls from './components/Controls';
+import { useState } from 'react';
 import type { TouchEvent } from 'react';
 import { usePlanner } from './usePlanner';
- import { CategoryChips, PlanChips, SubChips } from './components/Chips';
+ import { CategoryChips, SubChips } from './components/Chips';
 import MapView from './components/MapView';
 import PlacesPanel from './components/PlacesPanel';
 import DayPanel from './components/DayPanel';
@@ -27,6 +29,7 @@ import DayPanel from './components/DayPanel';
 
 export default function App() {
   const planner = usePlanner();
+  const [aiOpen, setAiOpen] = useState(false);
   const {
     isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
   } = planner;
@@ -63,10 +66,20 @@ export default function App() {
             </ToggleButtonGroup>
           </Box>
         ) : (
-          // ---- itinerary list / places: brand + AI prompt (+ start/window only on Places) ----
+          // ---- itinerary list / places: brand + collapsible AI (+ start/window only on Places) ----
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
-            <Box sx={{ mb: 1 }}>{<Brand />}</Box>
-            {mobView !== 'about' && <Box sx={{ mb: 1 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
+              <Brand />
+              <Box sx={{ flex: 1 }} />
+              {mobView !== 'about' && (
+                <IconButton onClick={() => setAiOpen(o => !o)} aria-label="Plan with AI"
+                  sx={{ flexShrink: 0, borderRadius: '11px', p: 0.9, color: aiOpen ? 'secondary.main' : 'text.secondary',
+                    border: '1px solid', borderColor: aiOpen ? 'secondary.main' : 'divider', bgcolor: aiOpen ? 'rgba(251,191,36,0.12)' : 'transparent' }}>
+                  <AutoAwesomeRounded sx={{ fontSize: 20 }} />
+                </IconButton>
+              )}
+            </Box>
+            {mobView !== 'about' && aiOpen && <Box sx={{ mb: 1 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} autoFocus />}</Box>}
             {mobView === 'places' && <Box sx={{ mb: 0.5 }}>{<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}</Box>}
           </Box>
         )}
@@ -141,13 +154,7 @@ export default function App() {
               {<CategoryChips planner={planner} />}
             </Paper>
           )}
-          {/* itinerary length filter floats over the map while picking a ready-made plan */}
-          {deskTab === 'day' && (!stops.length || browsing) && (
-            <Paper sx={{ position: 'absolute', top: 16, left: 16, zIndex: 3, p: 0.7, borderRadius: 999,
-              bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
-              {<PlanChips planner={planner} />}
-            </Paper>
-          )}
+          {/* 1-day/2-day length now lives in the rail's "Ready-made trips" toggle */}
           {/* floating "Your day" overview on the sea — alternate entry point while browsing */}
           {deskTab === 'places' && stops.length > 0 && (
             <Paper sx={{ position: 'absolute', top: 16, right: 16, zIndex: 3, width: 300, maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column',

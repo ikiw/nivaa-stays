@@ -9,9 +9,10 @@ interface AiBarProps {
   setQuery: (v: string) => void;
   onPlan: () => void;
   busy: boolean;
+  autoFocus?: boolean;
 }
 
-export default function AiBar({ isMobile, query, setQuery, onPlan, busy }: AiBarProps) {
+export default function AiBar({ isMobile, query, setQuery, onPlan, busy, autoFocus }: AiBarProps) {
   return (
     <Paper elevation={0} sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 0.5, width: '100%', px: 0.6, py: 0.4, borderRadius: 999,
       backgroundColor: 'rgba(18,19,22,0.42)', backdropFilter: 'blur(14px)',
@@ -20,7 +21,7 @@ export default function AiBar({ isMobile, query, setQuery, onPlan, busy }: AiBar
         background: 'linear-gradient(90deg, #0A0A0C 0%, #5B4A12 45%, #FBBF24 100%)',
         WebkitMask: 'linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)', WebkitMaskComposite: 'xor', maskComposite: 'exclude' },
       '&:focus-within': { boxShadow: '0 0 0 3px rgba(251,191,36,0.20), 0 0 22px rgba(251,191,36,0.40), 0 4px 18px rgba(0,0,0,0.45)' } }}>
-      <TextField fullWidth variant="standard" placeholder={isMobile ? 'Describe your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
+      <TextField fullWidth variant="standard" autoFocus={autoFocus} placeholder={isMobile ? 'Describe your ideal day…' : 'Prompt your ideal day — e.g. “beaches & filter coffee, relaxed pace”'}
         value={query} onChange={e => setQuery(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') onPlan(); }}
         InputProps={{ disableUnderline: true, startAdornment: <AutoAwesomeRounded sx={{ color: 'secondary.main', ml: 0.8, mr: 1 }} />, sx: { fontSize: '0.95rem' } }} />
       <Button variant="contained" color="secondary" onClick={onPlan} disabled={busy} aria-label="Plan my day"
