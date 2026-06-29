@@ -1,6 +1,6 @@
 // The itinerary panel: when empty/browsing it shows the ready-made plan list; otherwise
 // the live day — totals, day tabs, and the timeline (start → stops → back to start).
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import { Box, Stack, Button, Card, CardActionArea, Chip, Menu, MenuItem, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
@@ -13,7 +13,7 @@ import NotesRounded from '@mui/icons-material/NotesRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import LightbulbOutlinedRounded from '@mui/icons-material/LightbulbOutlined';
-import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
+import CohortCard from './CohortCard';
 import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import { CURATED } from '../curated';
@@ -21,8 +21,9 @@ import { LEG_COLORS, DAY_COLORS } from '../constants';
 import { isPseudo, parseTime, fmtClock, mealTagsForDay, weatherAtHour, track } from '../utils';
 import TimelineNode from './TimelineNode';
 import type { TimelineNodeProps } from './TimelineNode';
-import { PlanChips } from './Chips';
 import type { Planner } from '../usePlanner';
+
+const COHORT_ORDER = [...new Set(CURATED.map(c => c.cohort))];   // distinct cohorts, in authored order
 
 type NodeProps = Omit<TimelineNodeProps, 'data' | 'setStay' | 'move' | 'removeAt' | 'selectPlace'>;
 
@@ -33,6 +34,7 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
     setStops, setActiveDay, setLoadedId, planFilter, loadCurated, dayData, curDay, tripDays, tripDrive, tripKm,
     setStay, move, removeAt, selectPlace, weather,
   } = planner;
+  const [tripLen, setTripLen] = useState<1 | 2>(2);   // ready-made list: 1-day vs 2-day (default 2-day)
   if (!data) return null;
 
   // Timeline row — rendering lives in TimelineNode; inject data + handlers.
@@ -80,33 +82,25 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
             {browsing && stops.length > 0 && (
               <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(false)} sx={{ mb: 1, px: 0.6 }}>Back to your itinerary</Button>
             )}
-            <Typography sx={{ fontWeight: 700, fontSize: '0.92rem' }}>Start from a ready-made plan</Typography>
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', mb: 1.1 }}>Pick a trip — tap to load, then tweak it your way.</Typography>
-            {isMobile && <Box sx={{ mb: 1.4 }}><PlanChips planner={planner} /></Box>}
-            {([[1, '1-Day Itineraries'], [2, '2-Day Itineraries']] as [number, string][]).filter(([len]) => planFilter === 'all' || planFilter === len).map(([len, label]) => (
-              <Box key={len} sx={{ mb: 1.5 }}>
-                {planFilter === 'all' && <Typography sx={{ fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', mb: 0.7 }}>{label}</Typography>}
-                <Stack spacing={1}>
-                  {CURATED.filter(c => c.plan.length === len).map(c => {
-                    const count = c.plan.reduce((a, d) => a + d.length, 0);
-                    return (
-                      <Card key={c.id} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.10)', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'secondary.main', boxShadow: '0 6px 18px rgba(0,0,0,0.4)' } }}>
-                        <CardActionArea onClick={() => loadCurated(c)} sx={{ p: 1.25, display: 'flex', alignItems: 'center', gap: 1.25 }}>
-                          <Box sx={{ width: 38, height: 38, borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'rgba(251,191,36,0.16)', color: 'secondary.main' }}>
-                            <RouteRounded sx={{ fontSize: 20 }} />
-                          </Box>
-                          <Box sx={{ flex: 1, minWidth: 0 }}>
-                            <Typography sx={{ fontWeight: 700, fontSize: '0.88rem' }}>{c.cohort}</Typography>
-                            <Typography sx={{ fontSize: '0.74rem', color: 'text.secondary' }}>{c.tag} · {count} stops</Typography>
-                          </Box>
-                          <ChevronRightRounded sx={{ fontSize: 20, color: 'text.secondary', flexShrink: 0 }} />
-                        </CardActionArea>
-                      </Card>
-                    );
-                  })}
-                </Stack>
+            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1.3 }}>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Ready-made trips</Typography>
+                <Typography sx={{ fontSize: '0.76rem', color: 'text.secondary' }} noWrap>Tap to load, then tweak it.</Typography>
               </Box>
-            ))}
+              <ToggleButtonGroup exclusive size="small" value={tripLen} onChange={(_, v) => { if (v) setTripLen(v); }}
+                sx={{ flexShrink: 0, '& .MuiToggleButton-root': { px: 1.6, py: 0.45, fontWeight: 700, textTransform: 'none', fontSize: '0.78rem' } }}>
+                <ToggleButton value={1}>1 day</ToggleButton>
+                <ToggleButton value={2}>2 days</ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+            <Stack spacing={1}>
+              {COHORT_ORDER.map(name => {
+                const oneDay = CURATED.find(c => c.cohort === name && c.plan.length === 1);
+                const twoDay = CURATED.find(c => c.cohort === name && c.plan.length === 2);
+                if (!oneDay && !twoDay) return null;
+                return <CohortCard key={name} cohort={name} oneDay={oneDay} twoDay={twoDay} len={tripLen} onLoad={loadCurated} />;
+              })}
+            </Stack>
           </Box>
         )
         : (() => {

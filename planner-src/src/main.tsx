@@ -15,9 +15,9 @@ const theme = createTheme({
     primary: { main: '#2196F3', dark: '#1976D2', light: '#64B5F6', contrastText: '#ffffff' },
     secondary: { main: '#FBBF24', dark: '#F59E0B', light: '#FCD34D', contrastText: '#231A00' },
     success: { main: '#34D399' },
-    background: { default: '#0A0A0C', paper: '#1A1C20' },
+    background: { default: '#16151C', paper: '#221F2A' },   // lifted, faintly warm charcoal (was near-black)
     text: { primary: '#F3F4F6', secondary: '#A7ADB5' },
-    divider: 'rgba(255,255,255,0.13)',
+    divider: 'rgba(255,255,255,0.09)',
   },
   shape: { borderRadius: 10 },
   typography: {
