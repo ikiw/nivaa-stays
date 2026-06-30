@@ -31,9 +31,9 @@ export default function DateStrip({ value, onChange, days = 16 }: DateStripProps
               minWidth: 44, px: 1, py: 0.6, borderRadius: '10px', textAlign: 'center',
               transition: 'background-color .12s, border-color .12s',
               border: '1px solid', borderColor: sel ? 'transparent' : 'divider',
-              bgcolor: sel ? '#C9A227' : 'rgba(255,255,255,0.03)', color: sel ? '#0B1020' : 'text.primary',
-              '&:hover': sel ? {} : { borderColor: 'rgba(255,255,255,0.28)' } }}>
-            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', lineHeight: 1.4, color: sel ? 'rgba(11,16,32,0.7)' : 'text.secondary' }}>{wd}</Typography>
+              bgcolor: sel ? 'primary.main' : 'action.hover', color: sel ? 'primary.contrastText' : 'text.primary',
+              '&:hover': sel ? {} : { borderColor: 'text.disabled' } }}>
+            <Typography sx={{ fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.03em', lineHeight: 1.4, color: sel ? 'primary.contrastText' : 'text.secondary', opacity: sel ? 0.72 : 1 }}>{wd}</Typography>
             <Typography sx={{ fontSize: '0.92rem', fontWeight: 700, lineHeight: 1.1 }}>{d}</Typography>
           </Box>
         );

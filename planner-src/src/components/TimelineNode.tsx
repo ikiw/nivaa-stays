@@ -92,9 +92,9 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
                 </Stack>
               )}
             </Stack>
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
+            <Stack direction="row" alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 0.4, columnGap: 1, rowGap: 0.5, fontSize: '0.78rem', color: 'text.secondary' }}>
               <span>{sub} · {meal ? 'grab a bite nearby' : 'relax or explore on your own'}</span>
-              <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0 }}>{wxBit}{stayField}</Stack>
+              <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0, ml: 'auto' }}>{wxBit}{stayField}</Stack>
             </Stack>
           </Paper>
           {!last && drive && (<Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}><DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}</Box>)}
@@ -119,13 +119,13 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
           <Stack direction="row" spacing={1.1} alignItems="stretch">
           {p?.img && <PlaceThumb place={p} size={46} tint={catColor} radius="8px" iconSize={20} />}
           <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
-            <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
-              {!hasThumb && Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
+          <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={0.5}>
+            <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 0.6, rowGap: 0.3, pt: 0.2 }}>
+              {!hasThumb && Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Typography component="span" sx={{ fontWeight: 600, fontSize: '0.9rem', lineHeight: 1.25, color: 'text.primary', minWidth: 0, maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{title}</Typography>
               {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
               {p?.book && <Box component="a" href={p.book.url} target="_blank" rel="noopener" title={p.book.label} onClick={(e) => { e.stopPropagation(); track('place_book', { name: title, source: 'timeline' }); }} sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: 'rgba(251,191,36,0.18)', color: '#FBBF24', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(251,191,36,0.32)' } }}><LocalActivityRounded sx={{ fontSize: 11 }} /> Book</Box>}
               {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
-            </Typography>
+            </Box>
             {gi != null && (
               <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
                 <IconButton size="small" disabled={upDisabled} onClick={(e) => { e.stopPropagation(); move(gi, -1); }}><KeyboardArrowUpRounded fontSize="small" /></IconButton>
@@ -134,7 +134,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               </Stack>
             )}
           </Stack>
-          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mt: 0.4, fontSize: '0.78rem', color: 'text.secondary' }}>
+          <Stack direction="row" alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 0.4, columnGap: 1, rowGap: 0.5, fontSize: '0.78rem', color: 'text.secondary' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
               {p && p.rating ? (
                 <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
@@ -146,7 +146,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
               {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
             </Box>
-            <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0 }}>
+            <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0, ml: 'auto' }}>
               {wxBit}
               {gi != null && (
                 <TextField select size="small" value={stay} onClick={(e) => e.stopPropagation()} onChange={e => setStay(gi, e.target.value)} sx={{ width: 118, flexShrink: 0, '& .MuiSelect-select': { fontSize: '0.78rem' } }}

@@ -139,8 +139,8 @@ export default function App() {
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
             {<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && switchView(v)} color="primary">
-              <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
               <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Itinerary{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
+              <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
             </ToggleButtonGroup>
             {deskTab === 'places' && SUB_ORDER[filter] && <SubChips planner={planner} />}
           </Box>
