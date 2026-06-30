@@ -1,13 +1,18 @@
 // SEO/About content — rendered in the DOM (mobile keeps it mounted so crawlers index
 // it), revealed by the user via the "About" tab. Real <h1>/<h2>/<h3> + the itineraries
 // + FAQ.
-import { Box, Typography, Link, Button } from '@mui/material';
+import { useState } from 'react';
+import { Box, Typography, Link, Button, IconButton, Stack } from '@mui/material';
 import WhatsApp from '@mui/icons-material/WhatsApp';
+import ThumbUpAltRounded from '@mui/icons-material/ThumbUpAltRounded';
+import ThumbDownAltRounded from '@mui/icons-material/ThumbDownAltRounded';
 import { CURATED, FAQ } from '../curated';
 import { track } from '../utils';
 
 /** The crawlable "About this planner" panel: intro + ready-made itineraries + FAQ. */
 export default function AboutPanel() {
+  const [rated, setRated] = useState<'up' | 'down' | null>(null);
+  const rate = (v: 'up' | 'down') => { setRated(v); track('planner_rating', { rating: v }); };
   const h2 = { fontSize: '1.05rem', fontWeight: 700, color: 'text.primary', mt: 2.5, mb: 1.2 };
   const h3 = { fontSize: '0.9rem', fontWeight: 700, color: 'text.primary', mb: 0.2 };
   const p = { fontSize: '0.85rem', lineHeight: 1.55, color: 'text.secondary' };
@@ -33,8 +38,13 @@ export default function AboutPanel() {
       ))}
 
       <Box sx={{ mt: 2.5, p: 1.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
-        <Typography component="h2" sx={{ ...h3, fontSize: '0.95rem', mb: 0.4 }}>Got feedback?</Typography>
-        <Typography sx={{ ...p, mb: 1.2 }}>Spotted a bug, or have an idea to make the planner better? Message us — we read every one.</Typography>
+        <Typography component="h2" sx={{ ...h3, fontSize: '0.95rem', mb: 0.6 }}>Enjoying the planner?</Typography>
+        <Stack direction="row" alignItems="center" spacing={0.6} sx={{ mb: 1.2 }}>
+          <IconButton aria-label="Thumbs up" onClick={() => rate('up')} sx={{ borderRadius: '10px', border: '1px solid', borderColor: rated === 'up' ? 'success.main' : 'divider', color: rated === 'up' ? 'success.main' : 'text.secondary' }}><ThumbUpAltRounded sx={{ fontSize: 20 }} /></IconButton>
+          <IconButton aria-label="Thumbs down" onClick={() => rate('down')} sx={{ borderRadius: '10px', border: '1px solid', borderColor: rated === 'down' ? 'error.main' : 'divider', color: rated === 'down' ? 'error.main' : 'text.secondary' }}><ThumbDownAltRounded sx={{ fontSize: 20 }} /></IconButton>
+          {rated && <Typography sx={{ ...p, ml: 0.5 }}>Thanks for the feedback!</Typography>}
+        </Stack>
+        <Typography sx={{ ...p, mb: 1.2 }}>Spotted a bug, or have an idea to make it better? Message us — we read every one.</Typography>
         <Button variant="contained" disableElevation startIcon={<WhatsApp />}
           component="a" href={'https://wa.me/918892811032?text=' + encodeURIComponent('Feedback on the Pondicherry Planner: ')} target="_blank" rel="noopener"
           onClick={() => track('feedback_whatsapp', {})}
