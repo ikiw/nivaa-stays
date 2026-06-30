@@ -11,6 +11,7 @@
     "build": "npm run build:css && npm run build:planner && npm run build:analytics && npm run cache-bust && npm run inline-css",
     "inline-css": "node scripts/inline-css.mjs",
     "fetch:photos": "node scripts/fetch-place-photos.mjs",
+    "fetch:hotels": "node scripts/fetch-hotels.mjs",
     "test:apps-script": "TZ=Asia/Kolkata node --test apps-script/tests/",
     "test": "npm run test:apps-script"
   },
