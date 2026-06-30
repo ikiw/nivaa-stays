@@ -34,7 +34,7 @@ export default function App() {
   const planner = usePlanner();
   const [aiOpen, setAiOpen] = useState(false);
   const {
-    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
+    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, resetPlanner, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
   } = planner;
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
@@ -72,7 +72,7 @@ export default function App() {
           // ---- itinerary list / places: brand + collapsible AI (+ start/window only on Places) ----
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', flexShrink: 0 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
-              <Brand />
+              <Brand onClick={resetPlanner} />
               <Box sx={{ flex: 1 }} />
               <IconButton onClick={() => setHotelsOpen(true)} aria-label="Where to stay" sx={{ flexShrink: 0, color: 'text.secondary' }}><HotelRounded sx={{ fontSize: 20 }} /></IconButton>
               <ThemePicker />
@@ -124,7 +124,7 @@ export default function App() {
       {/* top bar card — Pondicherry French-quarter vibe behind a dark scrim */}
       <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, flexShrink: 0, borderRadius: '14px', border: '1px solid', borderColor: 'divider',
         bgcolor: 'background.paper' }}>
-        {<Brand />}
+        {<Brand onClick={resetPlanner} />}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
         <ThemePicker />
         <Button size="small" startIcon={<HotelRounded />} onClick={() => setHotelsOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary' }}>Stays</Button>
