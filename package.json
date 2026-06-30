@@ -12,6 +12,7 @@
     "inline-css": "node scripts/inline-css.mjs",
     "fetch:photos": "node scripts/fetch-place-photos.mjs",
     "fetch:hotels": "node scripts/fetch-hotels.mjs",
+    "fetch:rentals": "node scripts/fetch-rentals.mjs",
     "test:apps-script": "TZ=Asia/Kolkata node --test apps-script/tests/",
     "test": "npm run test:apps-script"
   },
