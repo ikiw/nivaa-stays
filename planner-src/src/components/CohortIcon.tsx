@@ -2,13 +2,9 @@
 // icons) so each ready-made trip is distinct at a glance, plus the accent colour
 // each cohort is themed with.
 import type { ReactNode } from 'react';
+import { ACTIVE } from '../theme/tokens';
 
-export const COHORT_COLORS: Record<string, string> = {
-  family: '#F4A259',     // warm amber — a day out together
-  couples: '#F472B6',    // rose — getaway
-  bachelors: '#A78BFA',  // violet — nightlife
-  solo: '#34D399',       // teal-green — explorer
-};
+export const COHORT_COLORS: Record<string, string> = ACTIVE.cohort;
 
 export function cohortKey(cohort: string): string {
   const c = cohort.toLowerCase();

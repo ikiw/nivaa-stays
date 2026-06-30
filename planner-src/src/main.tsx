@@ -6,18 +6,20 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { APIProvider } from '@vis.gl/react-google-maps';
 import App from './App';
 import { MAPS_KEY } from './config';
+import { ACTIVE } from './theme/tokens';
 
-// Standalone app theme (deliberately NOT the nivaastays brand) — a fresh,
-// premium "coastal" system: vivid teal + warm amber, soft elevation, big radius.
+// The MUI palette is built from the active theme tokens (theme/tokens.ts) — the
+// single source of every identity colour. Swap ACTIVE there to re-theme the app.
 const theme = createTheme({
   palette: {
-    mode: 'dark',
-    primary: { main: '#2196F3', dark: '#1976D2', light: '#64B5F6', contrastText: '#ffffff' },
-    secondary: { main: '#FBBF24', dark: '#F59E0B', light: '#FCD34D', contrastText: '#231A00' },
-    success: { main: '#34D399' },
-    background: { default: '#16151C', paper: '#221F2A' },   // lifted, faintly warm charcoal (was near-black)
-    text: { primary: '#F3F4F6', secondary: '#A7ADB5' },
-    divider: 'rgba(255,255,255,0.09)',
+    mode: ACTIVE.mode,
+    primary: { main: ACTIVE.interactive, contrastText: ACTIVE.interactiveInk },
+    secondary: { main: ACTIVE.highlight, contrastText: ACTIVE.highlightInk },
+    success: { main: ACTIVE.success },
+    warning: { main: ACTIVE.warning },
+    background: { default: ACTIVE.bg, paper: ACTIVE.surface },
+    text: { primary: ACTIVE.textPrimary, secondary: ACTIVE.textSecondary },
+    divider: ACTIVE.border,
   },
   shape: { borderRadius: 10 },
   typography: {

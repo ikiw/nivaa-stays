@@ -14,9 +14,10 @@ import StarRounded from '@mui/icons-material/StarRounded';
 import BeachAccessRounded from '@mui/icons-material/BeachAccessRounded';
 import LocalActivityRounded from '@mui/icons-material/LocalActivityRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
-import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, CAT_HEX } from '../constants';
+import { STAY_OPTIONS, TAG_COLOR, CAT_ICON, NODE_BG, NODE_INK } from '../constants';
 import { fmtDur, weatherInfo, track } from '../utils';
 import WeatherIcon from './WeatherIcon';
+import PlaceThumb from './PlaceThumb';
 import type { Category, ItineraryData, HourWeather } from '../types';
 
 export interface TimelineNodeProps {
@@ -102,21 +103,25 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
     );
   }
   const Icon = icon || (cat && CAT_ICON[cat]);
-  const catColor = cat ? (CAT_HEX[cat] || '#94A3B8') : '#F59E0B';   // match the map markers
+  const catColor = NODE_BG;   // single theme accent — no per-category rainbow
   const p = idx != null ? data.places[idx] : null;   // for rating/reviews + tap-for-details
+  const hasThumb = !!(p && p.img);                   // committed photo → lead the row with it (static, no API call)
   return (
     <Stack direction="row" spacing={1.2} alignItems="stretch">
       <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: catColor, color: '#0B1020', fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
+          bgcolor: catColor, color: NODE_INK, fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
         {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
         <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx, 'timeline') : undefined}
-          sx={{ p: 1, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.22)' }, '&:active': { bgcolor: 'rgba(255,255,255,0.09)' } }) }}>
+          sx={{ p: 1, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: 'action.hover', borderColor: 'divider' }, '&:active': { bgcolor: 'action.selected' } }) }}>
+          <Stack direction="row" spacing={1.1} alignItems="stretch">
+          {p?.img && <PlaceThumb place={p} size={46} tint={catColor} radius="8px" iconSize={20} />}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
             <Typography sx={{ fontWeight: 600, fontSize: '0.9rem', color: 'text.primary', display: 'flex', alignItems: 'center', gap: 0.6, minWidth: 0 }}>
-              {Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
+              {!hasThumb && Icon && <Icon sx={{ fontSize: 16, color: catColor, flexShrink: 0 }} />}<Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</Box>
               {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
               {p?.book && <Box component="a" href={p.book.url} target="_blank" rel="noopener" title={p.book.label} onClick={(e) => { e.stopPropagation(); track('place_book', { name: title, source: 'timeline' }); }} sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: 'rgba(251,191,36,0.18)', color: '#FBBF24', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(251,191,36,0.32)' } }}><LocalActivityRounded sx={{ fontSize: 11 }} /> Book</Box>}
               {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
@@ -153,6 +158,8 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
                 </TextField>
               )}
             </Stack>
+          </Stack>
+          </Box>
           </Stack>
         </Paper>
         {!last && drive && (

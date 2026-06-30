@@ -5,24 +5,27 @@ import MapRounded from '@mui/icons-material/MapRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import RouteMap from './RouteMap';
 import type { Planner } from '../usePlanner';
+import { ACTIVE } from '../theme/tokens';
 
 export default function MapView({ planner }: { planner: Planner }) {
   const { data, start, mapStops, selectedIdx, stops, mapActive, activateMap, selectPlace, isMobile } = planner;
   if (!data) return null;
   return (
-    <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: '#0d0d10' }}>
+    <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: 'background.default' }}>
       {mapActive ? (
         <>
           <RouteMap data={data} start={start} stops={mapStops} selected={selectedIdx} onSelect={(i) => selectPlace(i, 'map')} />
           {!stops.length && (
-            <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(18,20,26,0.9)', backdropFilter: 'blur(8px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
+            <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'background.paper', backdropFilter: 'blur(8px)', border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 22px rgba(0,0,0,0.18)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
               <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
             </Paper>
           )}
         </>
       ) : (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', p: { xs: 2.5, md: 3.5 },
-          backgroundImage: 'linear-gradient(0deg, rgba(10,10,12,0.92) 0%, rgba(10,10,12,0.35) 38%, rgba(10,10,12,0) 70%), url(/images/pondy-planner-bg.avif)',
+          backgroundImage: (ACTIVE.mode === 'light'
+            ? 'linear-gradient(0deg, ' + ACTIVE.bg + 'D9 0%, ' + ACTIVE.bg + '40 32%, ' + ACTIVE.bg + '00 60%)'
+            : 'linear-gradient(0deg, ' + ACTIVE.bg + 'EB 0%, ' + ACTIVE.bg + '59 38%, ' + ACTIVE.bg + '00 72%)') + ', url(' + ACTIVE.bgImage + ')',
           backgroundSize: 'cover', backgroundPosition: 'center' }}>
           <Stack direction="row" alignItems="center" spacing={1.5} flexWrap="wrap" useFlexGap sx={{ gap: 1.5 }}>
             <Box sx={{ minWidth: 0, flex: 1 }}>

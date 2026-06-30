@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from '../config';
-import { DAY_COLORS, CAT_HEX, LEG_COLORS, CAR_SVG } from '../constants';
+import { ROUTE_HEX, START_HEX, PIN_BG, PIN_BG_ACTIVE, PIN_INK, NODE_BG, NODE_INK, CAR_SVG } from '../constants';
 import type { ItineraryData, PlaceStop } from '../types';
 
 interface RouteMapProps {
@@ -33,12 +33,12 @@ function RouteLayer({ data, start, stops, selected, onSelect }: RouteMapProps) {
   const map = useMap();
   // markers: start (S) + each stop numbered within its day; coloured by day when 2 days.
   const markers = useMemo<Marker[]>(() => {
-    const out: Marker[] = [{ idx: start, label: 'S', color: '#F59E0B', isStart: true }];
+    const out: Marker[] = [{ idx: start, label: 'S', color: START_HEX, isStart: true }];
     const days = [...new Set(stops.map(s => s.day || 1))].sort((a, b) => a - b);
     const multi = days.length > 1;
     days.forEach(dn => {
       stops.filter(s => (s.day || 1) === dn).forEach((s, k) => {
-        out.push({ idx: s.idx, label: (multi ? `${dn}·` : '') + (k + 1), color: multi ? DAY_COLORS[(dn - 1) % DAY_COLORS.length] : (CAT_HEX[data.places[s.idx]?.cat] || '#2196F3') });
+        out.push({ idx: s.idx, label: (multi ? `${dn}·` : '') + (k + 1), color: NODE_BG });   // single brand colour (was per-day/category)
       });
     });
     return out;
@@ -77,10 +77,10 @@ function RouteLayer({ data, start, stops, selected, onSelect }: RouteMapProps) {
 function PinChip({ label, name, color, active }: { label: string; name: string; color: string; active: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 9px 3px 3px', transform: active ? 'translateY(-6px) scale(1.08)' : 'translateY(-6px)',
-      background: active ? '#23262e' : '#15171c', border: active ? `1.5px solid ${color}` : '1px solid rgba(255,255,255,0.16)', borderRadius: 999,
+      background: active ? PIN_BG_ACTIVE : PIN_BG, border: active ? `1.5px solid ${color}` : '1px solid rgba(255,255,255,0.16)', borderRadius: 999,
       boxShadow: active ? `0 0 0 3px ${color}44, 0 3px 12px rgba(0,0,0,0.5)` : '0 3px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'transform .12s ease' }}>
-      <span style={{ width: 20, height: 20, borderRadius: '50%', background: color, color: '#0B1020', fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</span>
-      <span style={{ color: '#ECEDEE', fontSize: 12.5, fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
+      <span style={{ width: 20, height: 20, borderRadius: '50%', background: color, color: NODE_INK, fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</span>
+      <span style={{ color: PIN_INK, fontSize: 12.5, fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
     </div>
   );
 }
@@ -111,18 +111,18 @@ function DirectionsRoute({ data, start, stops, selected }: Omit<RouteMapProps, '
   // car mode (no selection): ONLY the leg the car is on is lit; the rest ghost to a faint grey
   const ghostLeg = (focus: number) => {
     linesRef.current.forEach(({ line, leg }) => {
-      if (leg === focus) line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 1, strokeWeight: 6, zIndex: 20 });
+      if (leg === focus) line.setOptions({ strokeColor: ROUTE_HEX, strokeOpacity: 1, strokeWeight: 6, zIndex: 20 });
       else line.setOptions({ strokeColor: '#64748B', strokeOpacity: 0.18, strokeWeight: 3, zIndex: 1 });
     });
   };
   // tap mode: spotlight the selected leg, dim the rest (car hidden)
   const selectLeg = (al: number) => {
     linesRef.current.forEach(({ line, leg }) => {
-      if (leg === al) line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 1, strokeWeight: 8, zIndex: 30 });
+      if (leg === al) line.setOptions({ strokeColor: ROUTE_HEX, strokeOpacity: 1, strokeWeight: 8, zIndex: 30 });
       else line.setOptions({ strokeColor: '#64748B', strokeOpacity: 0.16, strokeWeight: 3, zIndex: 1 });
     });
   };
-  const fullRoute = () => linesRef.current.forEach(({ line, leg }) => line.setOptions({ strokeColor: LEG_COLORS[leg % LEG_COLORS.length], strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 }));
+  const fullRoute = () => linesRef.current.forEach(({ line, leg }) => line.setOptions({ strokeColor: ROUTE_HEX, strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 }));
 
   useEffect(() => {
     if (!map || !routesLib || !geometryLib || !markerLib) return;
@@ -149,7 +149,7 @@ function DirectionsRoute({ data, start, stops, selected }: Omit<RouteMapProps, '
       res.routes[0].legs.forEach((leg, li) => {
         const path: google.maps.LatLng[] = [];
         leg.steps.forEach(st => (st.path || []).forEach(q => { path.push(q); bounds.extend(q); full.push(q); legOf.push(li); }));
-        const line = new g.Polyline({ path, map, strokeColor: LEG_COLORS[li % LEG_COLORS.length], strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 });
+        const line = new g.Polyline({ path, map, strokeColor: ROUTE_HEX, strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 });
         linesRef.current.push({ line, leg: li });
       });
       if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
