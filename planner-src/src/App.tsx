@@ -26,13 +26,15 @@ import MapView from './components/MapView';
 import PlacesPanel from './components/PlacesPanel';
 import DayPanel from './components/DayPanel';
 import ThemePicker from './components/ThemePicker';
+import HotelsDialog from './components/HotelsDialog';
+import HotelRounded from '@mui/icons-material/HotelRounded';
 
 
 export default function App() {
   const planner = usePlanner();
   const [aiOpen, setAiOpen] = useState(false);
   const {
-    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
+    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay,
   } = planner;
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
@@ -72,6 +74,7 @@ export default function App() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
               <Brand />
               <Box sx={{ flex: 1 }} />
+              <IconButton onClick={() => setHotelsOpen(true)} aria-label="Where to stay" sx={{ flexShrink: 0, color: 'text.secondary' }}><HotelRounded sx={{ fontSize: 20 }} /></IconButton>
               <ThemePicker />
               {mobView !== 'about' && (
                 <IconButton onClick={() => setAiOpen(o => !o)} aria-label="Plan with AI"
@@ -109,6 +112,7 @@ export default function App() {
             <BottomNavigationAction value="about" label="About" icon={<InfoOutlinedRounded />} />
           </BottomNavigation>
         </Box>
+        <HotelsDialog open={hotelsOpen} onClose={() => setHotelsOpen(false)} isMobile />
         <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ mb: 7 }} />
       </Box>
     );
@@ -123,6 +127,7 @@ export default function App() {
         {<Brand />}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
         <ThemePicker />
+        <Button size="small" startIcon={<HotelRounded />} onClick={() => setHotelsOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary' }}>Stays</Button>
         <Button size="small" startIcon={<InfoOutlinedRounded />} onClick={() => { track('view_switch', { view: 'about' }); setAboutOpen(true); }} sx={{ flexShrink: 0, color: 'text.secondary' }}>About</Button>
       </Paper>
       <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundImage: 'none' } }}>
@@ -131,6 +136,7 @@ export default function App() {
           <AboutPanel />
         </DialogContent>
       </Dialog>
+      <HotelsDialog open={hotelsOpen} onClose={() => setHotelsOpen(false)} />
       {/* body */}
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: 1.25 }}>
         {/* left rail card */}
