@@ -75,22 +75,22 @@ export const studioDark: PlannerTokens = {
   border: 'rgba(255,255,255,0.09)',
   textPrimary: '#ECEEF2',
   textSecondary: '#A2AAB8',     // a touch brighter for readability (was #9AA3B2)
-  interactive: '#7E87C7',       // muted indigo — subtler primary, sits back on the dark base (was #7C83FF)
+  interactive: '#5B8AC7',       // muted MUI-ish blue — subtler primary, sits back on the dark base (was #7C83FF / #7E87C7)
   interactiveInk: '#0C0E1A',
   highlight: '#FF7A66',         // coral — kept
   highlightInk: '#2A0A04',
   pop: '#34D399',               // emerald
   success: '#34D399',
   warning: '#F5B544',           // softened amber
-  route: '#6E78C2',
-  start: '#7E87C7',
-  day: ['#7E87C7', '#FF7A66'],
+  route: '#5180C4',
+  start: '#5B8AC7',
+  day: ['#5B8AC7', '#FF7A66'],
   pinBg: '#191C24',
   pinBgActive: '#262A35',
   pinInk: '#ECEEF2',
   bgImage: '/images/pondy-planner-bg.avif',
   // Harmonised category family: all ~equal saturation/brightness, cohesive (was a neon rainbow).
-  cat: { Stay: '#7E87C7', Area: '#7E87C7', Beach: '#54C3DE', Attraction: '#A78BFA', Food: '#F2B45C', Social: '#F47A9A', Shopping: '#5FD0A6' },
+  cat: { Stay: '#5B8AC7', Area: '#5B8AC7', Beach: '#54C3DE', Attraction: '#A78BFA', Food: '#F2B45C', Social: '#F47A9A', Shopping: '#5FD0A6' },
   cohort: { family: '#F2B45C', couples: '#F47A9A', bachelors: '#A78BFA', solo: '#54C3DE' },
 };
 
