@@ -44,6 +44,7 @@ export function usePlanner() {
   const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
   const [aboutOpen, setAboutOpen] = useState(false); // desktop About dialog
   const [hotelsOpen, setHotelsOpen] = useState(false); // "Where to stay" hotels overlay
+  const [rentalsOpen, setRentalsOpen] = useState(false); // bike & car rentals overlay
   const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
   const [aiQuery, setAiQuery] = useState('');
   const [aiBusy, setAiBusy] = useState(false);
@@ -387,7 +388,7 @@ export function usePlanner() {
     setShareAnchor(null); setMoreAnchor(null);
   };
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, resetPlanner, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, rentalsOpen, setRentalsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, resetPlanner, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */

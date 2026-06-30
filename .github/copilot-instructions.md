@@ -30,6 +30,7 @@ Standalone **React 18 + MUI 6 + Vite + TypeScript** SPA. Catalog fetched at runt
 - **State** lives in `usePlanner.ts` (one big hook); `App.tsx` renders mobile + desktop layouts from it. The plan is encoded in the URL query (`buildSearch()`), kept in sync by a `replaceState` effect — shareable links.
 - **Place photos** — committed static AVIFs in `images/places/` referenced by `img`/`imgBy` in the catalog; served as site assets → **zero runtime Google calls**. `PlaceThumb` prefers `img`, with a viewport-gated live Places fetch only as a fallback.
 - **Hotels browse ("Stays")** — browse-only directory (NOT part of the itinerary), opened from the top-bar **Stays** button / mobile 🛏 header icon → `components/HotelsDialog.tsx`: cohort tabs (Family/Couples/Bachelors/Solo/Near JIPMER) + a **Top-rated / Under-₹6k / Under-₹3k** toggle, all derived from one pool `data/pondicherry-hotels.json`, ranked by a review-weighted (Bayesian) score; Nivaa is `featured`, leads JIPMER, links Book-direct. Data fetched lazily on open.
+- **Rentals browse** — bike & car rental directory, top-bar **Rentals** button / mobile 🛵 icon → `components/RentalsDialog.tsx`: a **Bikes / Cars** toggle, top-10 each by review-weighted score, **Call** (tel:) + Maps. Data: `data/pondicherry-rentals.json` (live rating/reviews/**phone**/place-id + curated `dailyFrom`). Lazily fetched on open. **Each browse overlay has its own `*Open` state in `usePlanner.ts` + a `*Dialog` rendered in both layouts in `App.tsx`** — follow that pattern for any new browse section.
 
 ## Data refresh scripts (manual; need a **server-side** `PLACES_API_KEY`)
 
@@ -37,6 +38,7 @@ The Places API key must be server-side usable (the rank tracker's key works) —
 
 - `npm run fetch:photos` (`scripts/fetch-place-photos.mjs`) — one Google photo per place `placeId` → `images/places/` + `img`/`imgBy` in the catalog. ~210 calls, free tier.
 - `npm run fetch:hotels` (`scripts/fetch-hotels.mjs`) — resolves the **editable `POOL` array** (name + cohorts + approx `nightlyFrom` ₹, since Google can't give nightly rates) to live rating/reviews/place-id/photo → `data/pondicherry-hotels.json` + `images/hotels/`. Edit `POOL` to add/remove stays; **fabricated names simply won't resolve**, so the API is the truth filter.
+- `npm run fetch:rentals` (`scripts/fetch-rentals.mjs`) — **discovery-based** (no named pool): runs ~6 Places Text Searches (bike + car angles) biased to Pondicherry, filters to real rental shops, ranks by reviews, keeps top 12/type → `data/pondicherry-rentals.json` + `images/rentals/` (incl. **phone**). Edit the `QUERIES` array to widen/narrow.
 
 > Storing Google photos is a Maps-Platform-ToS gray area — accepted deliberately; **no Search-ranking impact** (Search and the Maps API are separate systems). Keep attribution (`imgBy`).
 
