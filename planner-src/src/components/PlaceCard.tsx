@@ -5,8 +5,9 @@ import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import CheckCircleRounded from '@mui/icons-material/CheckCircleRounded';
 import AddCircleOutlineRounded from '@mui/icons-material/AddCircleOutlineRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
-import { CAT_ICON, CAT_HEX } from '../constants';
+import { CAT_HEX } from '../constants';
 import { mapLink } from '../utils';
+import PlaceThumb from './PlaceThumb';
 import type { Place } from '../types';
 
 interface PlaceCardProps {
@@ -18,15 +19,13 @@ interface PlaceCardProps {
 }
 
 export default function PlaceCard({ place, added, dm, dk, onToggle }: PlaceCardProps) {
-  const Icon = CAT_ICON[place.cat];
   const cat = CAT_HEX[place.cat] || '#94A3B8';
   return (
-    <Card variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'rgba(255,255,255,0.10)', bgcolor: added ? 'rgba(33,150,243,0.16)' : 'background.paper', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(33,150,243,0.5), 0 8px 22px rgba(0,0,0,0.45)' }, '&:hover .map-ghost': { opacity: 1 } }}>
+    <Card variant="outlined" sx={{ borderColor: added ? 'primary.main' : 'divider', bgcolor: added ? 'rgba(166,97,31,0.10)' : 'background.paper', transition: 'border-color .15s ease, box-shadow .15s ease', '&:hover': { borderColor: 'primary.main', boxShadow: '0 0 0 1px rgba(166,97,31,0.4), 0 8px 22px rgba(0,0,0,0.18)' }, '&:hover .map-ghost': { opacity: 1 } }}>
       <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
         <CardActionArea onClick={(e) => { onToggle(); e.currentTarget.blur(); }} sx={{ flex: 1, minWidth: 0, p: 1.25, display: 'flex', alignItems: 'center', gap: 1.25, '& .MuiCardActionArea-focusHighlight': { opacity: 0 } }}>
-          <Box sx={{ width: 38, height: 38, borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: `${cat}22`, color: cat }}>
-            <Icon sx={{ fontSize: 20 }} />
-          </Box>
+          <PlaceThumb place={place} size={38} tint={cat} />
+
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Typography sx={{ fontWeight: 700, fontSize: '0.88rem', color: 'text.primary', lineHeight: 1.25, letterSpacing: '-0.01em' }}>{place.name}</Typography>
             {place.desc && <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', mt: 0.2, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{place.desc}</Typography>}

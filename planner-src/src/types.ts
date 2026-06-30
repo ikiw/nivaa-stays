@@ -17,6 +17,8 @@ export interface Place {
   placeId?: string;
   rating?: number;
   reviews?: number;
+  img?: string;                             // committed thumbnail path (/images/places/<slug>.avif)
+  imgBy?: string;                           // photo contributor (Google attribution)
   book?: { url: string; label: string };   // optional booking / tickets / visit-info link
 }
 

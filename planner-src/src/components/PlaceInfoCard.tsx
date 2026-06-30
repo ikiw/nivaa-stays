@@ -1,7 +1,5 @@
 // Floating info card for a tapped place: lazy Google photo + rating/reviews +
 // short description, with "Show on map" and a Google Maps link.
-import { useState, useEffect } from 'react';
-import { useMapsLibrary } from '@vis.gl/react-google-maps';
 import { Paper, Stack, Box, Typography, IconButton, CircularProgress, Button } from '@mui/material';
 import CloseRounded from '@mui/icons-material/CloseRounded';
 import StarRounded from '@mui/icons-material/StarRounded';
@@ -9,11 +7,10 @@ import MapRounded from '@mui/icons-material/MapRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import LocalActivityRounded from '@mui/icons-material/LocalActivityRounded';
-import { photoCache, mapLink, track } from '../utils';
+import { mapLink, track } from '../utils';
 import { CAT_LABEL, SUB_LABEL, CAT_ICON } from '../constants';
+import { usePlacePhoto } from './PlaceThumb';
 import type { Place } from '../types';
-
-type Photo = { url: string; author: string };
 
 interface PlaceInfoCardProps {
   place: Place;
@@ -23,29 +20,11 @@ interface PlaceInfoCardProps {
 }
 
 export default function PlaceInfoCard({ place, onClose, isMobile, onShowOnMap }: PlaceInfoCardProps) {
-  const placesLib = useMapsLibrary('places');
-  // photo: a Photo once resolved, null when there's no place, undefined while loading.
-  const [photo, setPhoto] = useState<Photo | null | undefined>(() => (place.placeId ? photoCache.get(place.placeId) : null));
-  useEffect(() => {
-    const placeId = place.placeId;                 // capture so narrowing survives the async closure
-    if (!placeId) { setPhoto(null); return; }
-    if (photoCache.has(placeId)) { setPhoto(photoCache.get(placeId)); return; }
-    setPhoto(undefined);                           // loading
-    if (!placesLib) return;
-    let alive = true;
-    (async () => {
-      let res: Photo = { url: '', author: '' };
-      try {
-        const pl = new placesLib.Place({ id: placeId });
-        await pl.fetchFields({ fields: ['photos'] });
-        const ph = pl.photos && pl.photos[0];
-        if (ph && ph.getURI) res = { url: ph.getURI({ maxWidth: 400 }), author: (ph.authorAttributions && ph.authorAttributions[0] && ph.authorAttributions[0].displayName) || '' };
-      } catch { /* Places API not enabled / no photo — fall back to icon */ }
-      photoCache.set(placeId, res);
-      if (alive) setPhoto(res);
-    })();
-    return () => { alive = false; };
-  }, [placesLib, place.placeId]);
+  // Prefer the committed local image (static site asset — no Google call). Fall back to a
+  // live fetch only when a place has no baked image (the same hook + cache backs the list
+  // thumbnails). undefined = loading, null = nothing to show.
+  const live = usePlacePhoto(place.img ? undefined : place.placeId, true);
+  const photo = place.img ? { url: place.img, author: place.imgBy || '' } : live;
 
   const cat = (CAT_LABEL[place.cat] || place.cat || 'Start') + (place.sub ? ' · ' + (SUB_LABEL[place.sub] || place.sub) : '');
   const gmaps = place.placeId ? `https://www.google.com/maps/place/?q=place_id:${place.placeId}` : mapLink(place);

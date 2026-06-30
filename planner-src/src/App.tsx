@@ -9,7 +9,7 @@ import CloseRounded from '@mui/icons-material/CloseRounded';
 import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import { Map } from '@vis.gl/react-google-maps';
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
-import { CAT_HEX, LEG_COLORS, SUB_ORDER, DAY_COLORS } from './constants';
+import { NODE_BG, ROUTE_HEX, SUB_ORDER, DAY_COLORS } from './constants';
 import { isPseudo, parseTime, fmtClock, track } from './utils';
 import { CURATED } from './curated';
 import AboutPanel from './components/AboutPanel';
@@ -25,6 +25,7 @@ import { usePlanner } from './usePlanner';
 import MapView from './components/MapView';
 import PlacesPanel from './components/PlacesPanel';
 import DayPanel from './components/DayPanel';
+import ThemePicker from './components/ThemePicker';
 
 
 export default function App() {
@@ -51,7 +52,7 @@ export default function App() {
       if (ni !== i) { setActiveDay(tripDays[ni]); track('day_switch', { day: tripDays[ni] }); }
     };
     return (
-      <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+      <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
         {planView ? (
           // ---- sticky plan header: back + customize + name + Timeline/Map toggle ----
           <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', pb: 1, flexShrink: 0, borderBottom: '1px solid', borderColor: 'divider' }}>
@@ -71,6 +72,7 @@ export default function App() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.25 }}>
               <Brand />
               <Box sx={{ flex: 1 }} />
+              <ThemePicker />
               {mobView !== 'about' && (
                 <IconButton onClick={() => setAiOpen(o => !o)} aria-label="Plan with AI"
                   sx={{ flexShrink: 0, borderRadius: '11px', p: 0.9, color: aiOpen ? 'secondary.main' : 'text.secondary',
@@ -117,10 +119,10 @@ export default function App() {
     <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', gap: 1.25, p: 1.25, overflow: 'hidden', bgcolor: 'background.default' }}>
       {/* top bar card — Pondicherry French-quarter vibe behind a dark scrim */}
       <Paper elevation={0} sx={{ display: 'flex', alignItems: 'center', gap: 2.5, px: 2, py: 1, flexShrink: 0, borderRadius: '14px', border: '1px solid', borderColor: 'divider',
-        backgroundImage: 'linear-gradient(90deg, rgba(10,10,12,0.96) 28%, rgba(10,10,12,0.72) 60%, rgba(10,10,12,0.84)), url(/images/pondy-planner-bg.avif)',
-        backgroundSize: 'cover', backgroundPosition: 'center 28%', backgroundRepeat: 'no-repeat' }}>
+        bgcolor: 'background.paper' }}>
         {<Brand />}
         <Box sx={{ flex: 1, minWidth: 0, maxWidth: 720, mx: 'auto' }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
+        <ThemePicker />
         <Button size="small" startIcon={<InfoOutlinedRounded />} onClick={() => { track('view_switch', { view: 'about' }); setAboutOpen(true); }} sx={{ flexShrink: 0, color: 'text.secondary' }}>About</Button>
       </Paper>
       <Dialog open={aboutOpen} onClose={() => setAboutOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { backgroundImage: 'none' } }}>
@@ -133,7 +135,7 @@ export default function App() {
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', gap: 1.25 }}>
         {/* left rail card */}
         <Paper elevation={0} sx={{ width: 510, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
-          background: 'linear-gradient(180deg, #1C1A16 0%, #16161A 22%, #101013 100%)' }}>
+          bgcolor: 'background.paper' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
             {<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && switchView(v)} color="primary">
@@ -150,7 +152,7 @@ export default function App() {
         <Box sx={{ flex: 1, minWidth: 0, height: '100%', position: 'relative' }}>
           {deskTab === 'places' && (
             <Paper sx={{ position: 'absolute', top: 16, left: 16, zIndex: 3, p: 0.7, borderRadius: 999, maxWidth: 'calc(70% - 32px)',
-              bgcolor: 'rgba(18,20,26,0.86)', backdropFilter: 'blur(10px)', boxShadow: '0 6px 22px rgba(0,0,0,0.4)' }}>
+              bgcolor: 'background.paper', backdropFilter: 'blur(10px)', border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 22px rgba(0,0,0,0.18)' }}>
               {<CategoryChips planner={planner} />}
             </Paper>
           )}
@@ -158,7 +160,7 @@ export default function App() {
           {/* floating "Your day" overview on the sea — alternate entry point while browsing */}
           {deskTab === 'places' && stops.length > 0 && (
             <Paper sx={{ position: 'absolute', top: 16, right: 16, zIndex: 3, width: 300, maxHeight: 'calc(100% - 32px)', display: 'flex', flexDirection: 'column',
-              bgcolor: 'rgba(18,20,26,0.93)', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: '14px', boxShadow: '0 10px 34px rgba(0,0,0,0.55)' }}>
+              bgcolor: 'background.paper', backdropFilter: 'blur(12px)', border: '1px solid', borderColor: 'divider', borderRadius: '14px', boxShadow: '0 10px 34px rgba(0,0,0,0.22)' }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
                 <Typography sx={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: 0.7 }}><CalendarMonthRounded sx={{ fontSize: 18, color: 'primary.main' }} /> Itinerary</Typography>
                 <Button size="small" variant="outlined" onClick={() => switchView('day')} sx={{ py: 0.2 }}>Edit</Button>
@@ -172,16 +174,16 @@ export default function App() {
                   <Box key={d.day} sx={{ mb: tripDays.length > 1 ? 0.8 : 0 }}>
                     {tripDays.length > 1 && <Typography sx={{ fontSize: '0.66rem', fontWeight: 800, color: DAY_COLORS[(d.day - 1) % DAY_COLORS.length], mt: 0.6, mb: 0.4 }}>DAY {d.day} · back {fmtClock(d.clock)}</Typography>}
                     <GlanceRow color="#F59E0B" dot="S" name={data.places[start].name} time={fmtClock(parseTime(startTime))}
-                      legColor={LEG_COLORS[0]} drive={`${d.tl[0].dm} min · ${d.tl[0].dk} km`} />
+                      legColor={ROUTE_HEX} drive={`${d.tl[0].dm} min · ${d.tl[0].dk} km`} />
                     {(() => { let rn = 0; return d.tl.map((t, ti) => {
                       const lastStop = ti === d.tl.length - 1;
-                      const legColor = lastStop ? '#64748B' : LEG_COLORS[(ti + 1) % LEG_COLORS.length];
+                      const legColor = lastStop ? '#64748B' : ROUTE_HEX;
                       const drive = lastStop ? null : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
                       if (t.brk || t.meal)   // free time / meal — no place lookup (matches the main timeline guard)
                         return <GlanceRow key={t.gi} color="#64748B" dot="•" name={t.meal || 'Free time'} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
                       rn++;
                       const place = data.places[t.idx!];
-                      return <GlanceRow key={t.gi} color={CAT_HEX[place.cat] || '#2196F3'} dot={rn} name={place.name} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
+                      return <GlanceRow key={t.gi} color={NODE_BG} dot={rn} name={place.name} time={fmtClock(t.arrive)} last={lastStop} legColor={legColor} drive={drive} />;
                     }); })()}
                   </Box>
                 ))}

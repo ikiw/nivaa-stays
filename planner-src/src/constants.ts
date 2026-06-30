@@ -9,16 +9,22 @@ import ShoppingBagRounded from '@mui/icons-material/ShoppingBagRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
 import type { SvgIconComponent } from '@mui/icons-material';
 import type { Category, DurTriple } from './types';
+import { ACTIVE } from './theme/tokens';
 
 /** Where the baked itinerary catalog is fetched from. */
 export const DATA_URL = '/data/pondicherry-itinerary.json';
 
 /** Category → MUI icon component (markers, picker, place cards). */
 export const CAT_ICON: Record<Category, SvgIconComponent> = { Beach: BeachAccessRounded, Attraction: AccountBalanceRounded, Food: RestaurantRounded, Social: LocalBarRounded, Shopping: ShoppingBagRounded, Stay: FlagRounded, Area: FlagRounded };
-/** Per-category colours, shared by the map markers, the picker icons and the day dots. */
-export const CAT_HEX: Record<Category, string> = { Stay: '#F59E0B', Area: '#F59E0B', Beach: '#38BDF8', Attraction: '#2DD4BF', Food: '#FB923C', Social: '#F472B6', Shopping: '#A78BFA' };
-/** Distinct colour per route leg (start→1, 1→2, …) — cycles if there are more legs. */
-export const LEG_COLORS: string[] = ['#2563EB', '#EA580C', '#059669', '#DB2777', '#7C3AED', '#D97706', '#0891B2', '#DC2626', '#65A30D', '#0D9488'];
+/** Identity colours — all sourced from the active theme (theme/tokens.ts). */
+export const CAT_HEX: Record<Category, string> = ACTIVE.cat;
+export const ROUTE_HEX = ACTIVE.route;        // single route line + timeline rail
+export const START_HEX = ACTIVE.start;        // the "S" start marker
+export const PIN_BG = ACTIVE.pinBg;           // map pin chip background
+export const PIN_BG_ACTIVE = ACTIVE.pinBgActive;
+export const PIN_INK = ACTIVE.pinInk;         // map pin name text
+export const NODE_BG = ACTIVE.interactive;    // single colour for itinerary stop numbers (was per-category)
+export const NODE_INK = ACTIVE.interactiveInk;
 /** Top-down car (points north at 0°); rotated to the travel heading as it runs the route. */
 export const CAR_SVG = '<svg width="22" height="22" viewBox="0 0 22 22" style="display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.55))"><rect x="6" y="2.5" width="10" height="17" rx="3.6" fill="#FBBF24" stroke="#1A1300" stroke-width="1.2"/><rect x="7.6" y="4.2" width="6.8" height="3.4" rx="1.3" fill="#0B1020" opacity="0.82"/><rect x="7.6" y="13.8" width="6.8" height="3" rx="1.3" fill="#0B1020" opacity="0.6"/></svg>';
 /** Category → plural label used as the picker section headings. */
@@ -62,5 +68,5 @@ export const MEAL_LABELS: string[] = ['Breakfast', 'Lunch', 'Snack', 'Dinner'];
 export const TAG_COLOR: Record<string, string> = { Breakfast: '#F59E0B', Lunch: '#FB923C', Snack: '#FBBF24', Dinner: '#F472B6', 'Dinner & drinks': '#F472B6', Drinks: '#A78BFA', Shopping: '#A78BFA' };
 /** Stay-duration options (minutes) offered per stop. */
 export const STAY_OPTIONS: number[] = [15, 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240];
-/** Route colour per trip day (Day 1 blue, Day 2 orange). */
-export const DAY_COLORS: string[] = ['#2563EB', '#EA580C'];
+/** Colour per trip day — from the active theme. */
+export const DAY_COLORS: string[] = ACTIVE.day;
