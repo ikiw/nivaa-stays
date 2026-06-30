@@ -1,8 +1,10 @@
 // SEO/About content — rendered in the DOM (mobile keeps it mounted so crawlers index
 // it), revealed by the user via the "About" tab. Real <h1>/<h2>/<h3> + the itineraries
 // + FAQ.
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Typography, Link, Button } from '@mui/material';
+import WhatsApp from '@mui/icons-material/WhatsApp';
 import { CURATED, FAQ } from '../curated';
+import { track } from '../utils';
 
 /** The crawlable "About this planner" panel: intro + ready-made itineraries + FAQ. */
 export default function AboutPanel() {
@@ -29,6 +31,17 @@ export default function AboutPanel() {
           <Typography sx={p}>{f.a}</Typography>
         </Box>
       ))}
+
+      <Box sx={{ mt: 2.5, p: 1.5, borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}>
+        <Typography component="h2" sx={{ ...h3, fontSize: '0.95rem', mb: 0.4 }}>Got feedback?</Typography>
+        <Typography sx={{ ...p, mb: 1.2 }}>Spotted a bug, or have an idea to make the planner better? Message us — we read every one.</Typography>
+        <Button variant="contained" disableElevation startIcon={<WhatsApp />}
+          component="a" href={'https://wa.me/918892811032?text=' + encodeURIComponent('Feedback on the Pondicherry Planner: ')} target="_blank" rel="noopener"
+          onClick={() => track('feedback_whatsapp', {})}
+          sx={{ bgcolor: '#25D366', color: '#0B2E14', fontWeight: 700, borderRadius: 999, textTransform: 'none', '&:hover': { bgcolor: '#1FBA59' } }}>
+          Send feedback on WhatsApp
+        </Button>
+      </Box>
 
       <Typography sx={{ ...p, mt: 2.5 }}>
         More from Nivaa Stays: <Link href="https://nivaastays.com/" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>home</Link> · <Link href="https://nivaastays.com/pondicherry-travel-guide" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>Pondicherry travel guide</Link> · <Link href="https://nivaastays.com/booking" target="_blank" rel="noopener" sx={{ color: 'secondary.main' }}>book your stay near JIPMER</Link>.
