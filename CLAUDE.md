@@ -269,6 +269,8 @@ Standalone **React 18 + MUI 6 + Vite** SPA (source `planner-src/`, built into th
 
 ## Parked work
 
+> **Handoff (2026-07-01):** active development moved from Claude Code to **GitHub Copilot**. The planner's current status + open decisions live in **`.github/copilot-instructions.md`** (the Copilot guide). The list below is the older parked backlog.
+
 These were discussed and partially set up; resume when the user comes back to them:
 
 - **WhatsApp Cloud API automation** (3 reminder templates: check-in morning, check-out morning, post-checkout review). Templates designed, Meta app + phone wiring partially done. Blocked on the user's WhatsApp Business Account unlock. Resume by: get account unlocked → submit the 3 templates → generate a permanent System User token → add `sendWA_()` helper + `dailyWhatsAppSweep_()` + 9 AM IST trigger to `apps-script/app-script.js`.
@@ -281,9 +283,13 @@ In rough priority order:
 2. **Gmail OTA importer** — Apps Script trigger that parses Airbnb / Booking.com / MMT / Agoda confirmation emails and appends rows to the Bookings sheet. Replaces the manual re-entry step (and obsoletes the Chrome-extension idea).
 3. **Sitemap `<lastmod>` entries** — currently bare; adding ISO dates helps Google re-crawl after edits.
 4. **Analytics — demand-pattern + channel/pricing modules** — deferred extensions to the analytics dashboard: occupancy/ADR by day-of-week + seasonality, per-channel lead time, weekend-vs-weekday pricing/underpricing flags. Needs one more `?analytics=1` backend pass + redeploy.
+5. **Planner — explicit "Create itinerary" entry point** — today the "Add places" tab carries forward the places already selected in the viewed itinerary. Idea: make Places list places *fresh* with an explicit **"Create itinerary"** CTA, while **"Customize"** (from a loaded plan) keeps the selection. The owner deemed the current behaviour acceptable — this is an enhancement, not a bug.
+6. **Hotels — cohort/ranking tuning** — Bachelors and Solo currently resolve to the same social hostels (decide: merge, or repoint Bachelors at group-friendly hotels/villas); Couples "Top rated" by pure Google rating surfaces budget boutiques over the heritage icons (tune the review-weighting `PRIOR_N` in `HotelsDialog.tsx`); verify the Villa Helios match. All are data/ranking tweaks in `scripts/fetch-hotels.mjs` `POOL` / the `score()` fn — no UI rebuild.
 
 ## Done (was "Future ideas")
 
 - **Pre-compiled Tailwind to static CSS** — dropped the 273 KB `js/tailwind.js` runtime; biggest LCP win. See the Tailwind bullet under **Stack**.
 - **Security headers** — HSTS / X-Content-Type-Options / X-Frame-Options / Referrer-Policy / Permissions-Policy are set in `_worker.js` via `withSecurityHeaders()` (Workers + Assets ignores a `_headers` file, so they're applied in code on every response).
 - **Admin analytics dashboard** — built as a standalone React + MUI SPA at `/admin-analytics/` (Chart.js), with a pace/lead-time **Insights** view and an Apps Script test harness. See **Admin analytics dashboard** + the `analytics`/`tabsdebug` endpoints under **Backend**.
+- **Planner theming + photos + Hotels** (PRs #24–#27) — token-driven light/dark **theme system** (`planner-src/src/theme/tokens.ts`, Studio Dark default + Heritage White, sun/moon toggle), single-colour timeline/map pins, **baked place photos** (`npm run fetch:photos` → `images/places/`, served statically), and a browse-only **"Stays" hotel directory** (`npm run fetch:hotels` → `data/pondicherry-hotels.json` + `images/hotels/`, `components/HotelsDialog.tsx`, cohort tabs + price-tier toggle, Nivaa featured). See the **Pondicherry planner** section.
+- **Planner UX fixes** — "Back to itinerary" resets the URL to the bare planner path (browsing-aware URL sync); clicking the logo resets the planner (`resetPlanner`).

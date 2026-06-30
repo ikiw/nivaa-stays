@@ -128,6 +128,24 @@ export function usePlanner() {
   // User-initiated panel switch (places ↔ itinerary). Programmatic openView calls stay untracked.
   const switchView = (v: string) => { track('view_switch', { view: v === 'day' ? 'itinerary' : 'places' }); openView(v); };
 
+  // Reset to the fresh landing — clear the plan, restore defaults, drop back to the ready-made
+  // list. The URL-sync effect then clears the query (empty plan → bare path).
+  const resetPlanner = () => {
+    track('planner_reset', {});
+    setBrowsing(false);
+    setLoadedId(null);
+    setStops([]);
+    setSelectedIdx(null);
+    setStart(defaultStartRef.current);
+    setStartTime('09:00');
+    setEndTime('19:00');
+    setTripDate(todayISO());
+    setFilter('All');
+    setSubFilter('All');
+    setMobView('itinerary');
+    setDeskTab('day');
+  };
+
   useEffect(() => {
     fetch(DATA_URL).then(r => r.json()).then((d: ItineraryData) => {
       setData(d);
@@ -169,9 +187,11 @@ export function usePlanner() {
   }, [data, pendingCurated]);
 
   // Keep the URL in sync with the itinerary (always shareable) — replace, never push.
+  // While browsing the ready-made list the URL drops back to the bare planner path, so "back
+  // to itinerary" (and the logo reset) leave a clean URL instead of a stale plan link.
   useEffect(() => {
-    if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', buildSearch());
-  }, [start, startTime, endTime, stops, loadedId, tripDate]);
+    if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', browsing ? window.location.pathname : buildSearch());
+  }, [start, startTime, endTime, stops, loadedId, tripDate, browsing]);
 
   // Fetch Pondicherry's forecast for the selected date (skip dates outside the model's ~16-day range).
   useEffect(() => {
@@ -367,7 +387,7 @@ export function usePlanner() {
     setShareAnchor(null); setMoreAnchor(null);
   };
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, resetPlanner, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */
