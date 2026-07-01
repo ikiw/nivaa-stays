@@ -101,7 +101,7 @@ export default function App() {
               sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{<DayPanel planner={planner} hideBack />}</Box>
           )}
           {/* About — always mounted (in the DOM for crawlers), shown only when its tab is active */}
-          <Box sx={{ display: mobView === 'about' ? 'block' : 'none', flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{AboutPanel()}</Box>
+          <Box sx={{ display: mobView === 'about' ? 'block' : 'none', flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 1 }}>{<AboutPanel />}</Box>
         </Box>
         {planView && selectedIdx != null && data.places[selectedIdx] && (
           <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} isMobile
