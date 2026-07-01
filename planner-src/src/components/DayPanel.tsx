@@ -32,13 +32,13 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
     data, start, startTime, endTime, stops, browsing, setBrowsing, loadedId, optimize, addBreak, isMobile,
     shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, shareWhatsApp, copyShareLink, copyPlanText, gmapsUrl,
     setStops, setActiveDay, setLoadedId, planFilter, loadCurated, dayData, curDay, tripDays, tripDrive, tripKm,
-    setStay, move, removeAt, selectPlace, weather,
+    setStay, move, removeAt, selectPlace, selectedIdx, switchView, weather,
   } = planner;
   const [tripLen, setTripLen] = useState<1 | 2>(2);   // ready-made list: 1-day vs 2-day (default 2-day)
   if (!data) return null;
 
   // Timeline row — rendering lives in TimelineNode; inject data + handlers.
-  const Node = (props: NodeProps) => TimelineNode({ ...props, data, setStay, move, removeAt, selectPlace });
+  const renderNode = (props: NodeProps) => <TimelineNode {...props} data={data} setStay={setStay} move={move} removeAt={removeAt} selectPlace={selectPlace} />;
 
   const showList = !stops.length || browsing;          // browse the ready-made list (current plan kept)
   const loadedC = CURATED.find(c => c.id === loadedId);
@@ -46,14 +46,25 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
     <Box>
       {!showList && (<>
         {!hideBack && <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>}
-        <Stack direction="row" spacing={1} sx={{ mb: 1.5 }} flexWrap="wrap" useFlexGap>
-          {!loadedId && <Button size="small" variant="outlined" startIcon={<RouteRounded />} disabled={stops.length < 2} onClick={optimize}>Optimize</Button>}
-          <Button size="small" variant="outlined" startIcon={<SelfImprovementRounded />} onClick={addBreak}>Free time</Button>
-          <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => {
-            if (isMobile && navigator.share) { navigator.share({ title: 'Pondicherry day plan', text: 'Check out this Pondicherry day plan ✨', url: window.location.href }).then(() => track('plan_share', { method: 'native' })).catch(() => {}); }
-            else setShareAnchor(e.currentTarget);
-          }}>Share</Button>
-          <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)}>More</Button>
+        <Box sx={{ p: 1.25, mb: 1.5, borderRadius: '14px', border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+            <Box sx={{ minWidth: 0, flex: '1 1 190px' }}>
+              <Typography sx={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>
+                {loadedC ? loadedC.cohort : 'Your Pondicherry itinerary'}
+              </Typography>
+              <Typography sx={{ mt: 0.25, fontSize: '0.76rem', color: 'text.secondary', lineHeight: 1.45 }}>
+                {stops.filter(s => !isPseudo(s)).length} stops{tripDays.length > 1 ? ` · ${tripDays.length} days` : ''} · {tripDrive} min drive · {tripKm.toFixed(1)} km
+              </Typography>
+            </Box>
+            <Stack direction="row" spacing={0.6} useFlexGap sx={{ flexShrink: 0, flexWrap: 'wrap' }}>
+              <Button size="small" variant="contained" disableElevation onClick={() => switchView('places')} sx={{ px: 1, fontWeight: 700, textTransform: 'none' }}>Customize</Button>
+              <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => {
+                if (isMobile && navigator.share) { navigator.share({ title: 'Pondicherry day plan', text: 'Check out this Pondicherry day plan ✨', url: window.location.href }).then(() => track('plan_share', { method: 'native' })).catch(() => {}); }
+                else setShareAnchor(e.currentTarget);
+              }} sx={{ px: 0.8, textTransform: 'none' }}>Share</Button>
+              <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)} sx={{ px: 0.8, textTransform: 'none' }}>Trip</Button>
+            </Stack>
+          </Stack>
           <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
             <MenuItem onClick={shareWhatsApp}><WhatsApp sx={{ fontSize: 18, mr: 1, color: '#25D366' }} /> Share on WhatsApp</MenuItem>
@@ -62,11 +73,13 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
           </Menu>
           <Menu anchorEl={moreAnchor} open={!!moreAnchor} onClose={() => setMoreAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
+            {!loadedId && <MenuItem disabled={stops.length < 2} onClick={() => { optimize(); setMoreAnchor(null); }}><RouteRounded sx={{ fontSize: 17, mr: 1 }} /> Optimize route</MenuItem>}
+            <MenuItem onClick={() => { addBreak(); setMoreAnchor(null); }}><SelfImprovementRounded sx={{ fontSize: 17, mr: 1 }} /> Add free time</MenuItem>
             <MenuItem component="a" href={gmapsUrl()} target="_blank" rel="noopener" onClick={() => { track('plan_open_maps', { stops: stops.filter(s => !isPseudo(s)).length }); setMoreAnchor(null); }}><OpenInNewRounded sx={{ fontSize: 17, mr: 1 }} /> Open in Google Maps</MenuItem>
             {isMobile && <MenuItem onClick={copyPlanText}><NotesRounded sx={{ fontSize: 17, mr: 1 }} /> Copy as text</MenuItem>}
             <MenuItem onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); setMoreAnchor(null); }}><DeleteOutlineRounded sx={{ fontSize: 17, mr: 1 }} /> Clear itinerary</MenuItem>
           </Menu>
-        </Stack>
+        </Box>
         {loadedC?.why && (
           <Box sx={{ display: 'flex', gap: 0.9, p: 1.1, mb: 1.5, borderRadius: '10px', bgcolor: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.28)' }}>
             <LightbulbOutlinedRounded sx={{ fontSize: 18, color: 'secondary.main', mt: '1px', flexShrink: 0 }} />
@@ -81,6 +94,18 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
           <Box sx={{ pt: 0.5 }}>
             {browsing && stops.length > 0 && (
               <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(false)} sx={{ mb: 1, px: 0.6 }}>Back to your itinerary</Button>
+            )}
+            {!stops.length && (
+              <Box sx={{ p: 1.05, mb: 1.15, borderRadius: '13px', border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
+                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '-0.01em' }}>Pick a Pondicherry itinerary</Typography>
+                <Typography sx={{ mt: 0.25, fontSize: '0.76rem', color: 'text.secondary', lineHeight: 1.45 }}>
+                  Ready-made Pondicherry routes for families, couples, solo travellers and friends — planned with sensible timing, food breaks and driving flow.
+                </Typography>
+                <Stack direction="row" spacing={0.7} useFlexGap flexWrap="wrap" sx={{ mt: 0.85 }}>
+                  <Button size="small" variant="contained" disableElevation startIcon={<RouteRounded />} sx={{ textTransform: 'none', fontWeight: 700, py: 0.35 }}>Browse ready-made trips</Button>
+                  <Button size="small" variant="outlined" onClick={() => switchView('places')} sx={{ textTransform: 'none', py: 0.35 }}>Create your own</Button>
+                </Stack>
+              </Box>
             )}
             <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1.3 }}>
               <Box sx={{ minWidth: 0 }}>
@@ -128,24 +153,26 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
               {!d.tl.length
                 ? <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', py: 1.5, textAlign: 'center' }}>No stops on Day {d.day} yet — add places.</Typography>
                 : (<>
-                    {Node({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S',
-                      legColor: ROUTE_HEX, drive: `${d.tl[0].dm} min · ${d.tl[0].dk} km`, wx: weatherAtHour(weather, parseTime(startTime)) })}
+                    {renderNode({ icon: FlagRounded, title: data.places[start].name, sub: `Depart ${fmtClock(parseTime(startTime))}`, dot: 'S',
+                      legColor: ROUTE_HEX, drive: `${d.tl[0].dm} min · ${d.tl[0].dk} km`, wx: weatherAtHour(weather, parseTime(startTime)), readOnly: true, active: selectedIdx === start })}
                     {(() => { let rn = 0; const dayTags = mealTagsForDay(d.tl.map(e => ({ cat: e.idx != null ? data.places[e.idx].cat : '', arrive: e.arrive }))); return d.tl.map((t, ti) => {
                       const lastStop = ti === d.tl.length - 1;
                       const legColor = lastStop ? '#64748B' : ROUTE_HEX;
                       const drive = lastStop ? `${d.rMin} min · ${d.rKm} km · back to start` : `${d.tl[ti + 1].dm} min · ${d.tl[ti + 1].dk} km`;
-                      if (t.brk || t.meal) return <Fragment key={t.gi}>{Node({ gi: t.gi, brk: t.brk, meal: t.meal, sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, day: d.day, upDisabled: ti === 0, downDisabled: lastStop, legColor, drive, wx: weatherAtHour(weather, t.arrive) })}</Fragment>;
+                      if (t.brk || t.meal) return <Fragment key={t.gi}>{renderNode({ gi: t.gi, brk: t.brk, meal: t.meal, sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay, day: d.day, upDisabled: ti === 0, downDisabled: lastStop, legColor, drive, wx: weatherAtHour(weather, t.arrive), readOnly: true })}</Fragment>;
                       rn++;
                       const place = data.places[t.idx!];
-                      return <Fragment key={t.gi}>{Node({
+                      return <Fragment key={t.gi}>{renderNode({
                         idx: t.idx, gi: t.gi, dot: rn, title: place.name, cat: place.cat, day: d.day,
                         tag: dayTags[ti],
                         sub: `${fmtClock(t.arrive)} – ${fmtClock(t.depart)}`, stay: t.stay,
                         upDisabled: ti === 0, downDisabled: lastStop, legColor, drive,
                         wx: weatherAtHour(weather, t.arrive),
+                        readOnly: true,
+                        active: selectedIdx === t.idx,
                       })}</Fragment>;
                     }); })()}
-                    {Node({ icon: FlagRounded, title: `Back at ${data.places[start].name}`, sub: `Arrive ${fmtClock(d.clock)}`, dot: 'S', last: true })}
+                    {renderNode({ icon: FlagRounded, title: `Back at ${data.places[start].name}`, sub: `Arrive ${fmtClock(d.clock)}`, dot: 'S', last: true, readOnly: true, active: selectedIdx === start })}
                   </>)}
             </>);
           })()}

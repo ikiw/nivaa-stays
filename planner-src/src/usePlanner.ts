@@ -12,6 +12,7 @@ import { idealStay, isPseudo, track, parseSearch, todayISO, addDaysISO, fetchWea
 import { CURATED } from './curated';
 
 import { scheduleStays, computeSchedule } from './scheduler';
+import { itineraryNote } from './placeCopy';
 
 import type { ItineraryData, Stop, PlaceStop, SchedItem, ParsedSearch, Curated, Weather } from './types';
 
@@ -373,7 +374,12 @@ export function usePlanner() {
         const time = fmtClock(t.arrive);
         if (t.brk) L.push(`${time}  Free time · ${fmtDur(t.stay)}`);
         else if (t.meal) L.push(`${time}  ${t.meal} · ${fmtDur(t.stay)}`);
-        else { rn++; L.push(`${time}  ${rn}. ${data.places[t.idx!].name} · ${fmtDur(t.stay)}`); }
+        else {
+          rn++;
+          const place = data.places[t.idx!];
+          L.push(`${time}  ${rn}. ${place.name} · ${fmtDur(t.stay)}`);
+          L.push(`      ${itineraryNote(place)}`);
+        }
       });
       L.push(`${fmtClock(d.clock)}  Back at ${home}`, '');
     });
