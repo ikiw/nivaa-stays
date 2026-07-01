@@ -10,7 +10,7 @@ import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import { Map } from '@vis.gl/react-google-maps';
 // ---- planner modules (extracted from this file; behaviour unchanged) ----
 import { NODE_BG, ROUTE_HEX, SUB_ORDER, DAY_COLORS } from './constants';
-import { isPseudo, parseTime, fmtClock, track } from './utils';
+import { isPseudo, parseTime, fmtClock, fmtDur, track } from './utils';
 import { CURATED } from './curated';
 import AboutPanel from './components/AboutPanel';
 import PlaceInfoCard from './components/PlaceInfoCard';
@@ -41,6 +41,15 @@ export default function App() {
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
   if (!data) return <Centered><CircularProgress /></Centered>;
+
+  const selectedContext = selectedIdx == null ? null : (() => {
+    if (selectedIdx === start) return { time: `Depart ${fmtClock(parseTime(startTime))}`, stay: 'Start point' };
+    for (const d of dayData) {
+      const entry = d.tl.find(t => t.idx === selectedIdx);
+      if (entry) return { time: fmtClock(entry.arrive), stay: `${fmtDur(entry.stay)} stop`, drive: `${entry.dm} min drive in` };
+    }
+    return null;
+  })();
 
   if (isMobile) {
     const loadedC = CURATED.find(c => c.id === loadedId);
@@ -105,6 +114,7 @@ export default function App() {
         </Box>
         {planView && selectedIdx != null && data.places[selectedIdx] && (
           <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} isMobile
+            context={selectedContext}
             onShowOnMap={() => { track('view_switch', { view: 'map' }); setItinView('map'); activateMap('show_on_map'); }} />
         )}
         <Box sx={{ flexShrink: 0, bgcolor: 'background.paper', borderTop: '1px solid', borderColor: 'divider', pb: 'env(safe-area-inset-bottom)' }}>
@@ -149,10 +159,10 @@ export default function App() {
         <Paper elevation={0} sx={{ width: 510, flexShrink: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '14px', border: '1px solid', borderColor: 'divider',
           bgcolor: 'background.paper' }}>
           <Box sx={{ p: 2, pb: 1.5, display: 'flex', flexDirection: 'column', gap: 1.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-            {<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
+            {(deskTab === 'places' || !stops.length) && <Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && switchView(v)} color="primary">
               <ToggleButton value="day" sx={{ fontWeight: 700, py: 0.6 }}>Itinerary{stops.length ? ` (${stops.length})` : ''}</ToggleButton>
-              <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>Add places</ToggleButton>
+              <ToggleButton value="places" sx={{ fontWeight: 700, py: 0.6 }}>{stops.length ? 'Customize' : 'Create'}</ToggleButton>
             </ToggleButtonGroup>
             {deskTab === 'places' && SUB_ORDER[filter] && <SubChips planner={planner} />}
           </Box>
@@ -204,7 +214,7 @@ export default function App() {
           )}
           {<MapView planner={planner} />}
           {selectedIdx != null && data.places[selectedIdx] && (
-            <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} />
+            <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} context={selectedContext} />
           )}
         </Box>
       </Box>

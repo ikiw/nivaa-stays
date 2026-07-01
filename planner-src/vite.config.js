@@ -17,9 +17,9 @@ export default defineConfig({
       '/api': { target: 'https://nivaastays.com', changeOrigin: true },
     },
   },
-  // unit tests for the pure logic modules (utils + scheduler). Node env — no DOM needed.
+  // Unit tests: pure logic runs in Node; component files opt into jsdom per-file.
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts'],
+    include: ['tests/**/*.test.{ts,tsx}'],
   },
 });
