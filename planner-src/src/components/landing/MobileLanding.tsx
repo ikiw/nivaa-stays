@@ -86,13 +86,13 @@ export default function MobileLanding({ planner, showBackToItinerary = false, on
       </Stack>
 
       <Paper elevation={0} sx={{ p: 1.15, borderRadius: '16px', border: `1px solid ${panelBorder}`, background: panelBg }}>
-        <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 1 }}>
-          <Stack direction="row" spacing={0.65} alignItems="center">
-            <Box sx={{ color: ACCENT, fontSize: 18 }}>★</Box>
-            <Typography sx={{ color: titleColor, fontWeight: 850, fontSize: '1rem' }}>Popular ready-made itineraries</Typography>
+        <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1} sx={{ mb: 1 }}>
+          <Stack direction="row" spacing={0.65} alignItems="center" sx={{ minWidth: 0, flex: 1 }}>
+            <Box sx={{ color: ACCENT, fontSize: 18, flexShrink: 0 }}>★</Box>
+            <Typography sx={{ color: titleColor, fontWeight: 850, fontSize: '1rem', lineHeight: 1.22, minWidth: 0 }}>Popular ready-made itineraries</Typography>
           </Stack>
           <Button size="small" endIcon={<ChevronRightRounded sx={{ fontSize: 16 }} />} onClick={() => switchView('places')}
-            sx={{ color: ACCENT, textTransform: 'none', fontWeight: 800, minWidth: 0, px: 0.5 }}>View all</Button>
+            sx={{ color: ACCENT, textTransform: 'none', fontWeight: 800, minWidth: 0, px: 0.5, flexShrink: 0, whiteSpace: 'nowrap' }}>View all</Button>
         </Stack>
 
         <Stack spacing={0.85}>
@@ -103,16 +103,16 @@ export default function MobileLanding({ planner, showBackToItinerary = false, on
             const img = coverFor(cohort, data, c);
             return (
               <Card key={cohort} variant="outlined" sx={{ borderRadius: '15px', overflow: 'hidden', borderColor: panelBorder, background: cardBg }}>
-                <CardActionArea onClick={() => loadCurated(c)} sx={{ display: 'grid', gridTemplateColumns: '42% minmax(0, 1fr) 28px', minHeight: 108 }}>
+                <CardActionArea onClick={() => loadCurated(c)} sx={{ display: 'grid', gridTemplateColumns: '39% minmax(0, 1fr) 26px', minHeight: 116 }}>
                   <Box sx={{ height: '100%', overflow: 'hidden', bgcolor: color + '18' }}>
                     {img && <Box component="img" src={img} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                   </Box>
-                  <Box sx={{ minWidth: 0, p: 1.2, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.45 }}>
+                  <Box sx={{ minWidth: 0, p: 1.2, pr: 0.6, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 0.45 }}>
                     <Stack direction="row" spacing={0.6} alignItems="center">
                       <Box sx={{ color, display: 'flex' }}><CohortIcon cohort={cohort} size={16} /></Box>
                       <Typography sx={{ color: titleColor, fontWeight: 850, fontSize: '0.98rem', lineHeight: 1.15 }}>{cohort}</Typography>
                     </Stack>
-                    <Typography sx={{ color: mutedColor, fontSize: '0.78rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{blurbFor(cohort, c)}</Typography>
+                    <Typography sx={{ color: mutedColor, fontSize: '0.78rem', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{blurbFor(cohort, c)}</Typography>
                     <Stack direction="row" spacing={0.55} alignItems="center" sx={{ color: mutedColor, fontSize: '0.76rem' }}>
                       <span>◷ 1 day</span>
                       <span>|</span>
