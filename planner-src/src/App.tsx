@@ -176,7 +176,7 @@ export default function App() {
                     </Box>
                   </Box>
                 )}
-                <Box sx={{ position: 'sticky', top: 0, zIndex: 2, mx: -1.5, px: 1.5, py: 0.5, mb: 0.7, bgcolor: 'background.paper', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${softDivider}` }}>
+                <Box sx={{ position: 'sticky', top: '-7px', zIndex: 2, mx: -1.5, mt: -0.1, px: 1.5, pt: 0.65, pb: 0.5, mb: 0.7, bgcolor: 'background.paper', backdropFilter: 'blur(12px)', borderTop: `1px solid ${softDivider}`, borderBottom: `1px solid ${softDivider}` }}>
                   <Box sx={{ pb: 0.35, '& .MuiStack-root': { alignItems: 'center' } }}>
                     <CategoryChips planner={planner} />
                   </Box>
