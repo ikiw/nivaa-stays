@@ -34,6 +34,7 @@ import HotelsDialog from './components/HotelsDialog';
 import HotelRounded from '@mui/icons-material/HotelRounded';
 import RentalsDialog from './components/RentalsDialog';
 import TwoWheelerRounded from '@mui/icons-material/TwoWheelerRounded';
+import { ACCENT, ACCENT_INK, activeRailBg, accentBorder, accentSoftBg, cardBg, chipBg, mutedColor, panelBorder, softBorder, softDivider, titleColor } from './theme/surfaces';
 
 
 export default function App() {
@@ -90,7 +91,7 @@ export default function App() {
 
   if (isMobile) {
     const loadedC = CURATED.find(c => c.id === loadedId);
-    const loadedCohortColor = loadedC ? COHORT_COLORS[cohortKey(loadedC.cohort)] : '#E6C35A';
+    const loadedCohortColor = loadedC ? COHORT_COLORS[cohortKey(loadedC.cohort)] : ACCENT;
     const showList = !stops.length || browsing;          // browsing the ready-made list
     const planView = mobView === 'itinerary' && !showList; // a loaded plan is on screen
     const swipeDays = (e: TouchEvent) => {                            // swipe left/right between Day 1 / Day 2
@@ -106,24 +107,24 @@ export default function App() {
       <Box sx={{ height: '100dvh', display: 'flex', flexDirection: 'column', bgcolor: 'background.paper' }}>
         {planView ? (
           // ---- sticky plan header: back + customize + name + Timeline/Map toggle ----
-          <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', pb: 0.9, flexShrink: 0, borderBottom: '1px solid rgba(255,255,255,0.08)', bgcolor: '#0D121B' }}>
+          <Box sx={{ px: 1.5, pt: 'calc(env(safe-area-inset-top) + 8px)', pb: 0.9, flexShrink: 0, borderBottom: `1px solid ${softDivider}`, bgcolor: 'background.paper' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, minHeight: 42 }}>
               <IconButton onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ ml: -1, color: 'text.primary' }} aria-label="Back to itineraries"><ArrowBackRounded /></IconButton>
               <Box sx={{ minWidth: 0, flex: 1 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '1.03rem', lineHeight: 1.12, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 0.45 }}>
+                <Typography sx={{ fontWeight: 900, fontSize: '1.03rem', lineHeight: 1.12, color: titleColor, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 0.45 }}>
                   {loadedC && <Box component="span" sx={{ color: loadedCohortColor, display: 'inline-flex', flexShrink: 0 }}><CohortIcon cohort={loadedC.cohort} size={17} /></Box>}{loadedC ? loadedC.cohort : 'Your itinerary'}
                 </Typography>
                 <Typography sx={{ mt: 0.12, color: 'text.secondary', fontSize: '0.72rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {stops.filter(s => !isPseudo(s)).length} stops · {tripDays.length || 1} day{(tripDays.length || 1) > 1 ? 's' : ''} · {tripDrive} min drive · {tripKm.toFixed(1)} km
                 </Typography>
               </Box>
-              <Button size="small" startIcon={<TuneRounded sx={{ fontSize: 16 }} />} onClick={() => switchView('places')} sx={{ ml: 'auto', px: 0.9, minHeight: 34, flexShrink: 0, color: '#F5F0E4', border: '1px solid rgba(255,255,255,0.14)', borderRadius: '10px', textTransform: 'none', fontWeight: 850 }}>Customize</Button>
+              <Button size="small" startIcon={<TuneRounded sx={{ fontSize: 16 }} />} onClick={() => switchView('places')} sx={{ ml: 'auto', px: 0.9, minHeight: 34, flexShrink: 0, color: titleColor, border: `1px solid ${panelBorder}`, borderRadius: '10px', textTransform: 'none', fontWeight: 850 }}>Customize</Button>
             </Box>
-            <ToggleButtonGroup exclusive fullWidth size="small" value={itinView} onChange={(_, v) => { if (v) { track('view_switch', { view: v }); setItinView(v); if (v === 'map') activateMap('view_toggle'); const next = buildSearch('day', v); if (next !== window.location.pathname + window.location.search) window.history.pushState(window.history.state, '', next); } }} sx={{ mt: 0.95, p: 0.25, borderRadius: '13px', border: '1px solid rgba(255,255,255,0.10)', bgcolor: '#111721',
+            <ToggleButtonGroup exclusive fullWidth size="small" value={itinView} onChange={(_, v) => { if (v) { track('view_switch', { view: v }); setItinView(v); if (v === 'map') activateMap('view_toggle'); const next = buildSearch('day', v); if (next !== window.location.pathname + window.location.search) window.history.pushState(window.history.state, '', next); } }} sx={{ mt: 0.95, p: 0.25, borderRadius: '13px', border: `1px solid ${panelBorder}`, bgcolor: activeRailBg,
               '& .MuiToggleButton-root': { border: 0, borderRadius: '10px !important', color: 'text.secondary', fontWeight: 900, py: 0.55 },
-              '& .Mui-selected': { color: '#F9E8A8 !important', bgcolor: 'rgba(230,195,90,0.16) !important', boxShadow: 'inset 0 0 0 1px rgba(230,195,90,0.22)' } }}>
-              <ToggleButton value="timeline"><CalendarMonthRounded sx={{ fontSize: 16, mr: 0.6, color: itinView === 'timeline' ? '#E6C35A' : 'inherit' }} /> Timeline</ToggleButton>
-              <ToggleButton value="map"><MapRounded sx={{ fontSize: 16, mr: 0.6, color: itinView === 'map' ? '#E6C35A' : 'inherit' }} /> Map</ToggleButton>
+              '& .Mui-selected': { color: `${ACCENT} !important`, bgcolor: `${accentSoftBg} !important`, boxShadow: `inset 0 0 0 1px ${accentBorder}` } }}>
+              <ToggleButton value="timeline"><CalendarMonthRounded sx={{ fontSize: 16, mr: 0.6, color: itinView === 'timeline' ? ACCENT : 'inherit' }} /> Timeline</ToggleButton>
+              <ToggleButton value="map"><MapRounded sx={{ fontSize: 16, mr: 0.6, color: itinView === 'map' ? ACCENT : 'inherit' }} /> Map</ToggleButton>
             </ToggleButtonGroup>
           </Box>
         ) : (
@@ -152,7 +153,7 @@ export default function App() {
           ) : mobView === 'places' ? (
             <Box sx={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
               <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', p: 1.5, pt: 0.8, pb: stops.length ? 9.5 : 1.5 }}>
-                <Box sx={{ mb: 0.85, p: 0.8, borderRadius: '14px', bgcolor: '#111721', border: '1px solid rgba(255,255,255,0.08)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <Box sx={{ mb: 0.85, p: 0.8, borderRadius: '14px', background: cardBg, border: `1px solid ${panelBorder}` }}>
                   {<Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
                 </Box>
                 {filter === 'All' && (
@@ -166,16 +167,16 @@ export default function App() {
                         return (
                           <Box key={i} role="button" tabIndex={0} onClick={() => planner.selectPlace(i, 'popular_rail')}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); planner.selectPlace(i, 'popular_rail'); } }}
-                            sx={{ flex: '0 0 92px', cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', bgcolor: '#111721', border: '1px solid rgba(255,255,255,0.08)' }}>
-                            <PlaceThumb place={p} size={76} width={92} height={76} tint="#E6C35A" radius="0" />
-                            <Typography sx={{ px: 0.65, py: 0.55, color: '#fff', fontSize: '0.72rem', fontWeight: 750, lineHeight: 1.18, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</Typography>
+                            sx={{ flex: '0 0 92px', cursor: 'pointer', borderRadius: '12px', overflow: 'hidden', bgcolor: chipBg, border: `1px solid ${panelBorder}` }}>
+                            <PlaceThumb place={p} size={76} width={92} height={76} tint={ACCENT} radius="0" />
+                            <Typography sx={{ px: 0.65, py: 0.55, color: titleColor, fontSize: '0.72rem', fontWeight: 750, lineHeight: 1.18, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.name}</Typography>
                           </Box>
                         );
                       })}
                     </Box>
                   </Box>
                 )}
-                <Box sx={{ position: 'sticky', top: 0, zIndex: 2, mx: -1.5, px: 1.5, py: 0.5, mb: 0.7, bgcolor: 'rgba(25,28,36,0.94)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                <Box sx={{ position: 'sticky', top: 0, zIndex: 2, mx: -1.5, px: 1.5, py: 0.5, mb: 0.7, bgcolor: 'background.paper', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${softDivider}` }}>
                   <Box sx={{ pb: 0.35, '& .MuiStack-root': { alignItems: 'center' } }}>
                     <CategoryChips planner={planner} />
                   </Box>
@@ -191,20 +192,20 @@ export default function App() {
                 <Box sx={{ position: 'absolute', left: 10, right: 10, bottom: 8, zIndex: 3, display: 'grid', gridTemplateColumns: '1fr auto', gap: 1, alignItems: 'center',
                   p: 0.85, borderRadius: '13px', bgcolor: 'rgba(23,19,13,0.96)', border: '1px solid rgba(230,195,90,0.42)', boxShadow: '0 -10px 30px rgba(0,0,0,0.34)', backdropFilter: 'blur(12px)' }}>
                   <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
-                    <Box sx={{ width: 27, height: 27, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E6C35A', border: '1px solid rgba(230,195,90,0.38)', flexShrink: 0 }}>✓</Box>
+                    <Box sx={{ width: 27, height: 27, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: ACCENT, border: `1px solid ${accentBorder}`, flexShrink: 0 }}>✓</Box>
                     <Box sx={{ minWidth: 0 }}>
                       <Typography sx={{ color: '#fff', fontWeight: 900, fontSize: '0.86rem', lineHeight: 1.15 }}>{stops.filter(s => !isPseudo(s)).length} place{stops.filter(s => !isPseudo(s)).length === 1 ? '' : 's'} selected</Typography>
                       <Typography sx={{ color: 'text.secondary', fontSize: '0.66rem', mt: 0.15 }} noWrap>Add more places to your itinerary</Typography>
                     </Box>
                   </Stack>
-                  <Button variant="contained" disableElevation onClick={() => switchView('day')} sx={{ minHeight: 38, px: 1.5, borderRadius: '10px', bgcolor: '#E6C35A', color: '#211A06', fontWeight: 900, textTransform: 'none', '&:hover': { bgcolor: '#F1D171' } }}>
+                  <Button variant="contained" disableElevation onClick={() => switchView('day')} sx={{ minHeight: 38, px: 1.5, borderRadius: '10px', bgcolor: ACCENT, color: ACCENT_INK, fontWeight: 900, textTransform: 'none', '&:hover': { bgcolor: ACCENT } }}>
                     View itinerary
                   </Button>
                 </Box>
               )}
               {!stops.length && (
                 <Button size="small" variant="contained" disableElevation startIcon={<MapRounded sx={{ fontSize: 16 }} />} onClick={() => { track('view_switch', { view: 'places_map' }); setMobView('places'); setItinView('map'); activateMap('places_view_map'); const next = buildSearch('places', 'map'); if (next !== window.location.pathname + window.location.search) window.history.pushState(window.history.state, '', next); }}
-                  sx={{ position: 'absolute', right: 14, bottom: 14, zIndex: 4, minHeight: 38, px: 1.4, borderRadius: 999, textTransform: 'none', bgcolor: '#E6C35A', color: '#211A06', fontWeight: 900, boxShadow: '0 12px 28px rgba(0,0,0,0.34)', '&:hover': { bgcolor: '#F1D171' } }}>
+                  sx={{ position: 'absolute', right: 14, bottom: 14, zIndex: 4, minHeight: 38, px: 1.4, borderRadius: 999, textTransform: 'none', bgcolor: ACCENT, color: ACCENT_INK, fontWeight: 900, boxShadow: '0 12px 28px rgba(0,0,0,0.34)', '&:hover': { bgcolor: ACCENT } }}>
                   View map
                 </Button>
               )}
@@ -277,16 +278,16 @@ export default function App() {
         gridTemplateColumns: desktopGridColumns }}>
         {/* left rail card */}
         <Paper elevation={0} sx={{ minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '16px',
-          border: '1px solid rgba(255,255,255,0.09)',
+          border: `1px solid ${softBorder}`,
           bgcolor: 'background.paper',
           boxShadow: stops.length && deskTab === 'day' ? '0 20px 60px rgba(0,0,0,0.22)' : undefined }}>
-          <Box sx={{ p: 1.45, pb: 1.2, display: 'flex', flexDirection: 'column', gap: 1.1, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+          <Box sx={{ p: 1.45, pb: 1.2, display: 'flex', flexDirection: 'column', gap: 1.1, borderBottom: `1px solid ${softDivider}` }}>
             {(deskTab === 'places' || !stops.length) && <Controls start={start} startTime={startTime} endTime={endTime} tripDate={tripDate} weather={weather} weatherLoading={weatherLoading} starts={starts} onStartChange={(v) => { touched(); setStart(v); setStops(p => p.filter(s => s.idx !== v)); }} onWindowChange={(st, et) => { touched(); setStartTime(st); setEndTime(et); }} onDateChange={setTripDate} />}
             <ToggleButtonGroup exclusive fullWidth size="small" value={deskTab} onChange={(_, v) => v && switchView(v)} color="primary"
-              sx={{ p: 0.35, borderRadius: '13px', border: '1px solid rgba(255,255,255,0.07)', bgcolor: '#0D121A', overflow: 'hidden',
+              sx={{ p: 0.35, borderRadius: '13px', border: `1px solid ${panelBorder}`, bgcolor: activeRailBg, overflow: 'hidden',
                 '& .MuiToggleButton-root': { border: 0, borderRadius: '9px !important', py: 0.65, color: 'text.secondary', fontWeight: 900, textTransform: 'none', position: 'relative' },
-                '& .Mui-selected': { color: '#F9E8A8 !important', bgcolor: 'rgba(230,195,90,0.13) !important', boxShadow: 'inset 0 0 0 1px rgba(230,195,90,0.20), 0 12px 30px rgba(230,195,90,0.15)' },
-                '& .Mui-selected::after': { content: '""', position: 'absolute', left: '42%', right: '42%', bottom: 0, height: 2, borderRadius: 999, bgcolor: '#E6C35A', boxShadow: '0 0 14px #E6C35A' } }}>
+                '& .Mui-selected': { color: `${ACCENT} !important`, bgcolor: `${accentSoftBg} !important`, boxShadow: `inset 0 0 0 1px ${accentBorder}` },
+                '& .Mui-selected::after': { content: '""', position: 'absolute', left: '42%', right: '42%', bottom: 0, height: 2, borderRadius: 999, bgcolor: ACCENT, boxShadow: `0 0 14px ${ACCENT}` } }}>
               <ToggleButton value="day">Itinerary{stops.length ? ` (${stops.filter(s => !isPseudo(s)).length})` : ''}</ToggleButton>
               <ToggleButton value="places">{stops.length ? 'Customize' : 'Create'}</ToggleButton>
             </ToggleButtonGroup>
@@ -322,11 +323,11 @@ export default function App() {
         </Box>
         {deskTab === 'places' && stops.length > 0 && (
           <Paper elevation={0} sx={{ minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden', borderRadius: '16px',
-            border: '1px solid rgba(255,255,255,0.09)', bgcolor: 'background.paper', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1.15, borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            border: `1px solid ${softBorder}`, bgcolor: 'background.paper', boxShadow: '0 20px 60px rgba(0,0,0,0.18)' }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ px: 1.5, py: 1.15, borderBottom: `1px solid ${softDivider}` }}>
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: '#fff' }}>Itinerary</Typography>
-                <Typography sx={{ mt: 0.2, fontSize: '0.72rem', color: 'text.secondary' }}>{stops.filter(s => !isPseudo(s)).length} stops · {tripDays.length || 1} day{(tripDays.length || 1) > 1 ? 's' : ''} · {tripDrive} min · {tripKm.toFixed(1)} km</Typography>
+                <Typography sx={{ fontWeight: 900, fontSize: '0.98rem', color: titleColor }}>Itinerary</Typography>
+                <Typography sx={{ mt: 0.2, fontSize: '0.72rem', color: mutedColor }}>{stops.filter(s => !isPseudo(s)).length} stops · {tripDays.length || 1} day{(tripDays.length || 1) > 1 ? 's' : ''} · {tripDrive} min · {tripKm.toFixed(1)} km</Typography>
               </Box>
               <Button size="small" variant="outlined" onClick={() => switchView('day')} sx={{ py: 0.25, borderRadius: '10px', textTransform: 'none', fontWeight: 850 }}>Edit</Button>
             </Stack>

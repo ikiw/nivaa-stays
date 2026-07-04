@@ -20,6 +20,7 @@ import { itineraryNote } from '../placeCopy';
 import WeatherIcon from './WeatherIcon';
 import PlaceThumb from './PlaceThumb';
 import type { Category, ItineraryData, HourWeather } from '../types';
+import { ACCENT, accentBorder, accentHoverBorder, accentSoftBg, cardBg, chipBg, mutedColor, panelBorder, titleColor } from '../theme/surfaces';
 
 export interface TimelineNodeProps {
   icon?: SvgIconComponent;
@@ -81,7 +82,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
     return (
       <Stack direction="row" spacing={1.2} alignItems="stretch">
         <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: meal ? `${pColor}22` : 'rgba(255,255,255,0.10)', color: meal ? pColor : 'text.secondary' }}><PIcon sx={{ fontSize: 15 }} /></Box>
+          <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: meal ? `${pColor}22` : chipBg, color: meal ? pColor : 'text.secondary' }}><PIcon sx={{ fontSize: 15 }} /></Box>
           {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22, opacity: 0.55 }} />}
         </Box>
         <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
@@ -116,7 +117,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
   const readableDesc = readOnly && p ? itineraryNote(p) : null;
   const richRead = readOnly && !!p;
   const mobileRead = richRead && isMobile;
-  const dotBg = readOnly ? (active ? '#E6C35A' : '#60A5FA') : catColor;
+  const dotBg = readOnly ? (active ? ACCENT : catColor) : catColor;
   const dotInk = readOnly ? '#06111D' : NODE_INK;
   const longDur = (m: number) => {
     const h = Math.floor(m / 60), mm = m % 60;
@@ -135,10 +136,10 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
         <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx, 'timeline') : undefined}
           sx={{ p: mobileRead ? 1 : richRead ? 0.85 : readOnly ? 1.05 : 1, borderRadius: readOnly ? '15px' : undefined,
             overflow: 'hidden',
-            bgcolor: active ? '#222016' : readOnly ? '#171B24' : undefined,
-            borderColor: active ? 'rgba(230,195,90,0.56)' : readOnly ? 'rgba(255,255,255,0.09)' : undefined,
+            background: active ? accentSoftBg : readOnly ? cardBg : undefined,
+            borderColor: active ? accentHoverBorder : readOnly ? panelBorder : undefined,
             boxShadow: readOnly ? '0 10px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04)' : undefined,
-            ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s, transform .12s', '&:hover': { transform: readOnly ? 'translateY(-1px)' : undefined, bgcolor: active ? 'rgba(230,195,90,0.15)' : readOnly ? 'rgba(255,255,255,0.055)' : 'action.hover', borderColor: active ? 'rgba(230,195,90,0.66)' : readOnly ? 'rgba(230,195,90,0.22)' : 'divider' }, '&:active': { bgcolor: 'action.selected' } }) }}>
+            ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s, transform .12s', '&:hover': { transform: readOnly ? 'translateY(-1px)' : undefined, bgcolor: active ? accentSoftBg : readOnly ? chipBg : 'action.hover', borderColor: active ? accentHoverBorder : readOnly ? accentBorder : 'divider' }, '&:active': { bgcolor: 'action.selected' } }) }}>
           <Stack direction={richRead ? 'row-reverse' : 'row'} spacing={mobileRead ? 0.9 : richRead ? 1.1 : readOnly ? 1.25 : 1.1} alignItems="stretch">
           {p?.img && <PlaceThumb place={p} size={readOnly ? 64 : 46} width={richRead ? (isMobile ? 82 : 104) : undefined} height={richRead ? (isMobile ? 88 : 76) : undefined} tint={catColor} radius={readOnly ? '11px' : '8px'} iconSize={readOnly ? 22 : 20} />}
           <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -159,14 +160,14 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
           </Stack>
           {tag && mobileRead && <Box component="span" sx={{ mt: 0.35, display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.56rem', fontWeight: 850, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.55, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}24`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
           {readOnly && sub && (
-            <Stack direction="row" spacing={0.55} alignItems="center" sx={{ mt: mobileRead && tag ? 0.45 : 0.42, color: '#F5F0E4', fontSize: '0.76rem', fontWeight: 800,
+            <Stack direction="row" spacing={0.55} alignItems="center" sx={{ mt: mobileRead && tag ? 0.45 : 0.42, color: titleColor, fontSize: '0.76rem', fontWeight: 800,
               ...(mobileRead ? { alignSelf: 'flex-start', maxWidth: '100%' } : {}) }}>
               <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.45, whiteSpace: 'nowrap',
-                ...(mobileRead ? { px: 0.65, py: 0.32, borderRadius: 999, bgcolor: 'rgba(230,195,90,0.08)', border: '1px solid rgba(230,195,90,0.16)' } : {}) }}>
-                <AccessTimeRounded sx={{ fontSize: 13, color: '#E6C35A' }} />
+                ...(mobileRead ? { px: 0.65, py: 0.32, borderRadius: 999, bgcolor: accentSoftBg, border: `1px solid ${accentBorder}` } : {}) }}>
+                <AccessTimeRounded sx={{ fontSize: 13, color: ACCENT }} />
                 {sub}
               </Box>
-              {stay ? <Box component="span" sx={{ color: '#E6C35A', fontWeight: 900, whiteSpace: 'nowrap' }}>{mobileRead ? longDur(stay) : fmtDur(stay)}</Box> : null}
+              {stay ? <Box component="span" sx={{ color: ACCENT, fontWeight: 900, whiteSpace: 'nowrap' }}>{mobileRead ? longDur(stay) : fmtDur(stay)}</Box> : null}
             </Stack>
           )}
           {readableDesc && <Typography sx={{ mt: 0.42, fontSize: richRead ? '0.76rem' : '0.78rem', lineHeight: 1.42, color: 'text.secondary', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{readableDesc}</Typography>}
@@ -199,7 +200,7 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
           </Stack>
         </Paper>
         {!last && drive && (
-          <Box sx={{ mt: 0.55, ml: 0.3, fontSize: '0.7rem', color: 'rgba(245,240,228,0.50)', display: 'inline-flex', alignItems: 'center', gap: 0.45, px: 0.7, py: 0.25, borderRadius: 999, bgcolor: 'rgba(255,255,255,0.025)' }}>
+          <Box sx={{ mt: 0.55, ml: 0.3, fontSize: '0.7rem', color: mutedColor, display: 'inline-flex', alignItems: 'center', gap: 0.45, px: 0.7, py: 0.25, borderRadius: 999, bgcolor: chipBg }}>
             <DirectionsCarRounded sx={{ fontSize: 13, color: legColor || 'inherit', opacity: 0.85 }} />{drive}
           </Box>
         )}

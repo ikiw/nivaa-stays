@@ -11,6 +11,7 @@ import { CAT_HEX } from '../constants';
 import { mapLink } from '../utils';
 import PlaceThumb from './PlaceThumb';
 import type { Place } from '../types';
+import { ACCENT, ACCENT_INK, accentBorder, accentSoftBg, cardBg, panelBorder } from '../theme/surfaces';
 
 interface PlaceCardProps {
   place: Place;
@@ -24,7 +25,7 @@ interface PlaceCardProps {
 export default function PlaceCard({ place, added, dm, dk, onToggle, featured = false }: PlaceCardProps) {
   const cat = CAT_HEX[place.cat] || '#94A3B8';
   return (
-    <Card variant="outlined" sx={{ borderColor: added ? 'rgba(230,195,90,0.58)' : 'rgba(255,255,255,0.075)', bgcolor: added ? 'rgba(230,195,90,0.08)' : '#111721', borderRadius: { xs: '13px', md: '12px' },
+    <Card variant="outlined" sx={{ borderColor: added ? accentBorder : panelBorder, background: added ? accentSoftBg : cardBg, borderRadius: { xs: '13px', md: '12px' },
       transition: 'border-color .15s ease, box-shadow .15s ease, background-color .15s ease',
       '&:hover': { borderColor: 'rgba(230,195,90,0.46)', boxShadow: '0 8px 22px rgba(0,0,0,0.18)' }, '&:hover .map-ghost': { opacity: 1 } }}>
       <Box sx={{ display: 'flex', alignItems: 'stretch' }}>
@@ -33,7 +34,7 @@ export default function PlaceCard({ place, added, dm, dk, onToggle, featured = f
             <PlaceThumb place={place} size={64} width={76} height={58} tint={cat} radius="9px" />
             {featured && (
               <Box sx={{ position: 'absolute', top: 4, left: 4, display: 'inline-flex', alignItems: 'center', gap: 0.25, px: 0.5, py: '1px',
-                borderRadius: 999, bgcolor: '#E6C35A', color: '#241A04', fontSize: '0.52rem', fontWeight: 900, boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}>
+                borderRadius: 999, bgcolor: ACCENT, color: ACCENT_INK, fontSize: '0.52rem', fontWeight: 900, boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}>
                 <LocalFireDepartmentRounded sx={{ fontSize: 10 }} /> Popular
               </Box>
             )}
@@ -51,10 +52,10 @@ export default function PlaceCard({ place, added, dm, dk, onToggle, featured = f
             </Box>
           </Box>
           <Tooltip title={added ? 'Remove from day' : 'Add to day'}>
-            <Box component="span" sx={{ flexShrink: 0, display: 'flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: '9px', border: '1px solid rgba(230,195,90,0.38)', color: '#E6C35A', bgcolor: added ? 'rgba(230,195,90,0.18)' : 'rgba(230,195,90,0.04)' }}>
+            <Box component="span" sx={{ flexShrink: 0, display: 'flex', width: 28, height: 28, alignItems: 'center', justifyContent: 'center', borderRadius: '9px', border: `1px solid ${accentBorder}`, color: ACCENT, bgcolor: added ? accentSoftBg : 'transparent' }}>
               {added
-                ? <CheckCircleRounded sx={{ fontSize: 20, color: '#E6C35A' }} />
-                : <AddCircleOutlineRounded sx={{ fontSize: 20, color: '#E6C35A' }} />}
+                ? <CheckCircleRounded sx={{ fontSize: 20, color: ACCENT }} />
+                : <AddCircleOutlineRounded sx={{ fontSize: 20, color: ACCENT }} />}
             </Box>
           </Tooltip>
         </CardActionArea>

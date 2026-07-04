@@ -8,20 +8,20 @@ import StarRounded from '@mui/icons-material/StarRounded';
 import CohortIcon, { COHORT_COLORS, cohortKey } from '../CohortIcon';
 import { COHORT_ORDER, blurbFor, coverFor, planFor } from './shared';
 import type { Planner } from '../../usePlanner';
+import { ACCENT, accentHoverBorder, accentSoftBg, cardBg, hoverBg, mutedColor, panelBg, panelBorder, shadowSoft, titleColor } from '../../theme/surfaces';
 
 export default function ItinerariesPanel({ planner }: { planner: Planner }) {
   const { data, loadCurated, switchView } = planner;
   return (
     <Paper id="ready-made-trips" elevation={0} sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', p: { md: 1.15, xl: 1.25 }, borderRadius: '18px',
-      border: '1px solid rgba(255,255,255,0.11)', background: 'linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.028))',
-      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+      border: `1px solid ${panelBorder}`, background: panelBg, boxShadow: shadowSoft }}>
       <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.5} sx={{ mb: 1 }}>
         <Stack direction="row" spacing={0.8} alignItems="center">
-          <StarRounded sx={{ color: '#E6C35A', fontSize: 20 }} />
-          <Typography sx={{ color: '#fff', fontWeight: 850, fontSize: '1.05rem' }}>Popular ready-made itineraries</Typography>
+          <StarRounded sx={{ color: ACCENT, fontSize: 20 }} />
+          <Typography sx={{ color: titleColor, fontWeight: 850, fontSize: '1.05rem' }}>Popular ready-made itineraries</Typography>
         </Stack>
         <Button size="small" endIcon={<ArrowForwardRounded sx={{ fontSize: 15 }} />} onClick={() => switchView('places')}
-          sx={{ textTransform: 'none', fontWeight: 800, color: '#E6C35A', borderRadius: '9px', px: 1, '&:hover': { bgcolor: 'rgba(230,195,90,0.08)' } }}>
+          sx={{ textTransform: 'none', fontWeight: 800, color: ACCENT, borderRadius: '9px', px: 1, '&:hover': { bgcolor: accentSoftBg } }}>
           View all trips
         </Button>
       </Stack>
@@ -32,7 +32,7 @@ export default function ItinerariesPanel({ planner }: { planner: Planner }) {
           const stopCount = c.plan.reduce((n, d) => n + d.length, 0);
           const img = coverFor(cohort, data, c);
           return (
-            <Card key={cohort} variant="outlined" sx={{ height: '100%', borderRadius: '17px', overflow: 'hidden', borderColor: 'rgba(255,255,255,0.11)', background: 'linear-gradient(180deg, rgba(255,255,255,0.075), rgba(255,255,255,0.035))', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)', transition: 'border-color .16s, background-color .16s, transform .16s', '&:hover': { transform: 'translateY(-2px)', borderColor: 'rgba(230,195,90,0.46)', bgcolor: 'rgba(255,255,255,0.075)' } }}>
+            <Card key={cohort} variant="outlined" sx={{ height: '100%', borderRadius: '17px', overflow: 'hidden', borderColor: panelBorder, background: cardBg, boxShadow: shadowSoft, transition: 'border-color .16s, background-color .16s, transform .16s', '&:hover': { transform: 'translateY(-2px)', borderColor: accentHoverBorder, bgcolor: hoverBg } }}>
               <CardActionArea onClick={() => loadCurated(c)} sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}>
                 <Box sx={{ position: 'relative', flex: '0 0 auto', height: { md: 106, xl: 116 }, bgcolor: color + '18' }}>
                   {img && <Box component="img" src={img} alt="" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
@@ -44,16 +44,16 @@ export default function ItinerariesPanel({ planner }: { planner: Planner }) {
                 <Box sx={{ flex: 1, minHeight: 0, p: 1.4, pt: 1.15, display: 'flex', flexDirection: 'column', gap: 0.62 }}>
                   <Stack direction="row" spacing={0.7} alignItems="center">
                     <Box sx={{ color, display: 'flex', opacity: 0.95 }}><CohortIcon cohort={cohort} size={17} /></Box>
-                    <Typography sx={{ color: '#fff', fontWeight: 850, fontSize: '0.96rem', lineHeight: 1.18 }}>{cohort}</Typography>
+                    <Typography sx={{ color: titleColor, fontWeight: 850, fontSize: '0.96rem', lineHeight: 1.18 }}>{cohort}</Typography>
                   </Stack>
-                  <Typography sx={{ color: 'rgba(255,255,255,0.66)', fontSize: '0.73rem', lineHeight: 1.42, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{blurbFor(cohort, c)}</Typography>
-                  <Stack direction="row" spacing={0.58} alignItems="center" sx={{ color: 'rgba(255,255,255,0.62)', fontSize: '0.72rem', pt: 0.1 }}>
+                  <Typography sx={{ color: mutedColor, fontSize: '0.73rem', lineHeight: 1.42, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{blurbFor(cohort, c)}</Typography>
+                  <Stack direction="row" spacing={0.58} alignItems="center" sx={{ color: mutedColor, fontSize: '0.72rem', pt: 0.1 }}>
                     <AccessTimeRounded sx={{ fontSize: 13 }} />
                     <span>2 days</span>
                     <PlaceRounded sx={{ fontSize: 13, ml: 0.4 }} />
                     <span>{stopCount} stops</span>
                   </Stack>
-                  <Box sx={{ mt: 'auto', py: 0.72, borderRadius: '10px', border: '1px solid rgba(230,195,90,0.35)', color: '#E6C35A', fontSize: '0.78rem', fontWeight: 850, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3, bgcolor: 'rgba(230,195,90,0.025)' }}>
+                  <Box sx={{ mt: 'auto', py: 0.72, borderRadius: '10px', border: `1px solid ${accentHoverBorder}`, color: ACCENT, fontSize: '0.78rem', fontWeight: 850, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.3, bgcolor: accentSoftBg }}>
                     View plan <ChevronRightRounded sx={{ fontSize: 16 }} />
                   </Box>
                 </Box>
