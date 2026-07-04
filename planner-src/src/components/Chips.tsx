@@ -19,7 +19,8 @@ export function CategoryChips({ planner }: { planner: Planner }) {
         return (
           <Chip key={key} label={`${label} ${n}`} icon={Icon ? <Icon /> : undefined} size="small"
             color={filter === key ? 'primary' : 'default'} variant={filter === key ? 'filled' : 'outlined'}
-            onClick={() => selectFilter(key)} sx={{ fontWeight: 600 }} />
+            onClick={() => selectFilter(key)} sx={{ fontWeight: 750, borderRadius: '10px', bgcolor: filter === key ? undefined : '#171B24',
+              borderColor: filter === key ? undefined : 'rgba(255,255,255,0.10)', '& .MuiChip-icon': { fontSize: 15 } }} />
         );
       })}
     </Stack>
@@ -54,7 +55,7 @@ export function SubChips({ planner }: { planner: Planner }) {
       {rows.map(([key, label, n]) => (
         <Chip key={key} label={`${label} ${n}`} size="small" onClick={() => selectSubFilter(key)}
           color={subFilter === key ? 'primary' : 'default'} variant={subFilter === key ? 'filled' : 'outlined'}
-          sx={{ fontWeight: 600, fontSize: '0.7rem' }} />
+          sx={{ fontWeight: 750, fontSize: '0.7rem', borderRadius: '9px', bgcolor: subFilter === key ? undefined : '#171B24', borderColor: subFilter === key ? undefined : 'rgba(255,255,255,0.10)' }} />
       ))}
     </Stack>
   );

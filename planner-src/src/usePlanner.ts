@@ -16,7 +16,7 @@ import { itineraryNote } from './placeCopy';
 
 import type { ItineraryData, Stop, PlaceStop, SchedItem, ParsedSearch, Curated, Weather } from './types';
 
-type StateSnap = { start: number; startTime: string; endTime: string; stops: Stop[]; loadedId: string | null; tripDate: string };
+type StateSnap = { start: number; startTime: string; endTime: string; stops: Stop[]; loadedId: string | null; tripDate: string; itinView: string };
 
 export function usePlanner() {
   const isMobile = useMediaQuery('(max-width:900px)');
@@ -79,14 +79,16 @@ export function usePlanner() {
   const initialUrl = useRef<ParsedSearch | null>(null);
   if (initialUrl.current === null) initialUrl.current = parseSearch();
   const stateRef = useRef<StateSnap | null>(null);                  // latest itinerary, readable from history callbacks
-  stateRef.current = { start, startTime, endTime, stops, loadedId, tripDate };
+  stateRef.current = { start, startTime, endTime, stops, loadedId, tripDate, itinView };
   const touchStartX = useRef<number | null>(null);               // mobile swipe-between-days
   const viewRef = useRef('itinerary');
-  viewRef.current = isMobile ? mobView : deskTab;
+  viewRef.current = isMobile ? (mobView === 'itinerary' ? 'day' : mobView) : deskTab;
 
-  const buildSearch = (viewOverride?: string) => {
-    const { start, startTime, endTime, stops, loadedId, tripDate } = stateRef.current!;
-    const view = viewOverride !== undefined ? viewOverride : viewRef.current;
+  const buildSearch = (viewOverride?: string, modeOverride?: string) => {
+    const { start, startTime, endTime, stops, loadedId, tripDate, itinView } = stateRef.current!;
+    const rawView = viewOverride !== undefined ? viewOverride : viewRef.current;
+    const view = rawView === 'itinerary' ? 'day' : rawView;
+    const mode = modeOverride !== undefined ? modeOverride : itinView;
     const q = new URLSearchParams();
     if (loadedId) {
       q.set('itinerary', loadedId);                                 // readable URL for an unmodified curated plan
@@ -102,20 +104,28 @@ export function usePlanner() {
           : stops.map(enc).join('-'));
       }
     }
-    if (view === 'places') q.set('v', 'places');                    // itinerary/day is the default view — keep it out of the URL
+    if (view === 'day' || view === 'places' || view === 'about') q.set('v', view);
+    if ((view === 'day' || view === 'places') && (mode === 'timeline' || mode === 'map')) q.set('m', mode);
     if (tripDate && tripDate !== todayISO()) q.set('d', tripDate);  // only a non-today date is worth sharing
     const qs = q.toString();
     return window.location.pathname + (qs ? '?' + qs : '');
   };
 
   // Switch the active panel. Mobile: 'day' → the Itinerary tab (timeline), 'places' → Places tab.
-  const openView = (v: string) => {
-    setDeskTab(v === 'day' ? 'day' : 'places');
+  const openView = (v: string, historyMode: 'replace' | 'push' = 'replace', modeOverride?: string) => {
+    if (v === 'day' || v === 'places') setDeskTab(v === 'day' ? 'day' : 'places');
     if (isMobile) {
-      if (v === 'places') setMobView('places');
-      else { setMobView('itinerary'); setItinView('timeline'); }
+      if (v === 'places') { setMobView('places'); setItinView(modeOverride === 'map' ? 'map' : 'timeline'); if (modeOverride === 'map') setMapActive(true); }
+      else if (v === 'about') setMobView('about');
+      else { setMobView('itinerary'); setItinView(modeOverride === 'map' ? 'map' : 'timeline'); }
     }
-    window.history.replaceState(window.history.state, '', buildSearch(v));
+    const next = buildSearch(v, modeOverride);
+    const current = window.location.pathname + window.location.search;
+    if (next !== current) {
+      const state = window.history.state;
+      if (historyMode === 'push') window.history.pushState(state, '', next);
+      else window.history.replaceState(state, '', next);
+    }
   };
 
   // Open the place info card. On mobile, flip the Itinerary tab to the map so the card is visible.
@@ -128,7 +138,7 @@ export function usePlanner() {
   const selectFilter = (cat: string) => { track('place_filter', { category: cat }); setFilter(cat); setSubFilter('All'); };
   const selectSubFilter = (sub: string) => { track('place_filter', { category: filter, sub }); setSubFilter(sub); };
   // User-initiated panel switch (places ↔ itinerary). Programmatic openView calls stay untracked.
-  const switchView = (v: string) => { track('view_switch', { view: v === 'day' ? 'itinerary' : 'places' }); openView(v); };
+  const switchView = (v: string) => { track('view_switch', { view: v === 'day' ? 'itinerary' : 'places' }); openView(v, 'push'); };
 
   // Reset to the fresh landing — clear the plan, restore defaults, drop back to the ready-made
   // list. The URL-sync effect then clears the query (empty plan → bare path).
@@ -173,8 +183,9 @@ export function usePlanner() {
               : { idx: o.idx!, stay: o.stay ?? idealStay(d.places[o.idx!]), day: o.day || 1 }));
         }
       }
-      if (u.view === 'places') { setMobView('places'); setDeskTab('places'); }
-      else if (u.view === 'day') setDeskTab('day');
+      if (u.view === 'places') { setMobView('places'); setDeskTab('places'); if (u.mode) { setItinView(u.mode); if (u.mode === 'map') setMapActive(true); } }
+      else if (u.view === 'about') setMobView('about');
+      else if (u.view === 'day') { setMobView('itinerary'); setDeskTab('day'); if (u.mode) { setItinView(u.mode); if (u.mode === 'map') setMapActive(true); } }
       hydrated.current = true;
     }).catch(() => setErr(true));
   }, []);
@@ -193,7 +204,7 @@ export function usePlanner() {
   // to itinerary" (and the logo reset) leave a clean URL instead of a stale plan link.
   useEffect(() => {
     if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', browsing ? window.location.pathname : buildSearch());
-  }, [start, startTime, endTime, stops, loadedId, tripDate, browsing]);
+  }, [start, startTime, endTime, stops, loadedId, tripDate, browsing, itinView]);
 
   // Fetch Pondicherry's forecast for the selected date (skip dates outside the model's ~16-day range).
   useEffect(() => {
@@ -208,9 +219,15 @@ export function usePlanner() {
   // Phone back/forward → restore the open view without rolling back the live plan.
   useEffect(() => {
     const onPop = () => {
-      const v = parseSearch().view;
-      if (isMobile) setMobView(v === 'places' ? 'places' : 'itinerary'); else setDeskTab(v === 'places' ? 'places' : 'day');
-      if (hydrated.current) window.history.replaceState(window.history.state, '', buildSearch(v || (isMobile ? 'day' : 'places')));
+      const u = parseSearch();
+      const v = u.view;
+      if (isMobile) {
+        if (v === 'places') { setMobView('places'); setItinView(u.mode === 'map' ? 'map' : 'timeline'); if (u.mode === 'map') activateMap('history'); }
+        else if (v === 'about') setMobView('about');
+        else { setMobView('itinerary'); setItinView(u.mode || 'timeline'); if (u.mode === 'map') activateMap('history'); }
+      } else {
+        setDeskTab(v === 'places' ? 'places' : 'day');
+      }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);

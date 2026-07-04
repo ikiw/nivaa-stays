@@ -6,17 +6,24 @@ import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import RouteMap from './RouteMap';
 import type { Planner } from '../usePlanner';
 import { ACTIVE } from '../theme/tokens';
+import { PICK_ORDER } from '../constants';
 
-export default function MapView({ planner }: { planner: Planner }) {
-  const { data, start, mapStops, selectedIdx, stops, mapActive, activateMap, selectPlace, isMobile } = planner;
+export default function MapView({ planner, showBrowsePlaces = false }: { planner: Planner; showBrowsePlaces?: boolean }) {
+  const { data, start, mapStops, selectedIdx, stops, mapActive, activateMap, selectPlace, isMobile, filter, byCat, subFilter } = planner;
   if (!data) return null;
+  const browsePlaceIndices = showBrowsePlaces && !stops.length
+    ? (filter === 'All'
+        ? PICK_ORDER.flatMap(cat => byCat[cat] || [])
+        : (byCat[filter] || []).filter(i => subFilter === 'All' || data.places[i]?.sub === subFilter))
+    : undefined;
   return (
-    <Box sx={{ height: '100%', minHeight: 0, borderRadius: '14px', overflow: 'hidden', border: '1px solid', borderColor: 'divider', position: 'relative', bgcolor: 'background.default' }}>
-      {mapActive ? (
+    <Box sx={{ height: '100%', minHeight: 0, borderRadius: '16px', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.10)', position: 'relative', bgcolor: 'background.default',
+      boxShadow: '0 22px 70px rgba(0,0,0,0.26), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+      {mapActive || (!isMobile && !stops.length) ? (
         <>
-          <RouteMap data={data} start={start} stops={mapStops} selected={selectedIdx} onSelect={(i) => selectPlace(i, 'map')} />
+          <RouteMap data={data} start={start} stops={mapStops} selected={selectedIdx} onSelect={(i) => selectPlace(i, 'map')} browseCatalog={showBrowsePlaces && !stops.length} browsePlaceIndices={browsePlaceIndices} />
           {!stops.length && (
-            <Paper sx={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', zIndex: 2, px: 2, py: 1, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'background.paper', backdropFilter: 'blur(8px)', border: '1px solid', borderColor: 'divider', boxShadow: '0 6px 22px rgba(0,0,0,0.18)', color: 'text.secondary', fontSize: '0.85rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
+            <Paper sx={{ position: 'absolute', bottom: 18, left: 18, zIndex: 2, px: 1.4, py: 0.75, borderRadius: 999, display: 'flex', alignItems: 'center', gap: 0.8, bgcolor: 'rgba(13,18,27,0.82)', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,0.10)', boxShadow: '0 6px 22px rgba(0,0,0,0.18)', color: 'text.secondary', fontSize: '0.78rem', maxWidth: 'calc(100% - 32px)', pointerEvents: 'none' }}>
               <PlaceRounded sx={{ fontSize: 18, flexShrink: 0 }} /> Add places to start building your itinerary.
             </Paper>
           )}
