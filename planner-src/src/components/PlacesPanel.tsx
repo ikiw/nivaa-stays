@@ -10,9 +10,17 @@ import type { Planner } from '../usePlanner';
 export default function PlacesPanel({ planner }: { planner: Planner }) {
   const { data, filter, byCat, collapsed, subFilter, toggleCat, isStop, driveMin, driveKm, addToggle, start } = planner;
   if (!data) return null;
-  const placeCard = (i: number) => (
-    <PlaceCard key={i} place={data.places[i]} added={isStop(i)} dm={driveMin(start, i)} dk={driveKm(start, i)} onToggle={() => addToggle(i)} />
+  const placeCard = (i: number, pos = 1) => (
+    <PlaceCard key={i} place={data.places[i]} added={isStop(i)} dm={driveMin(start, i)} dk={driveKm(start, i)} onToggle={() => addToggle(i)} featured={pos === 0} />
   );
+  if (filter === 'All') {
+    const items = PICK_ORDER.flatMap(cat => byCat[cat] || []);
+    return (
+      <Box>
+        <Grid>{items.map(placeCard)}</Grid>
+      </Box>
+    );
+  }
   const cats = filter === 'All' ? PICK_ORDER : PICK_ORDER.filter(c => c === filter);
   return (
     <Box>

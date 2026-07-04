@@ -209,7 +209,7 @@ describe('parseSearch: shareable-URL decoding', () => {
   const parse = (search: string) => { (globalThis as any).window = { location: { search } }; return parseSearch(); };
 
   it('empty query → empty plan', () => {
-    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, date: null });
+    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, mode: null, date: null });
   });
   it('decodes a valid trip date and rejects junk', () => {
     expect(parse('?d=2026-06-28').date).toBe('2026-06-28');
@@ -218,7 +218,9 @@ describe('parseSearch: shareable-URL decoding', () => {
   });
   it('decodes start, window and view', () => {
     const r = parse('?s=3&st=10:00&et=20:30&v=places');
-    expect(r).toMatchObject({ start: 3, startTime: '10:00', endTime: '20:30', view: 'places' });
+    expect(r).toMatchObject({ start: 3, startTime: '10:00', endTime: '20:30', view: 'places', mode: null });
+    expect(parse('?v=about').view).toBe('about');
+    expect(parse('?v=day&m=map')).toMatchObject({ view: 'day', mode: 'map' });
   });
   it('rejects malformed start/time/view', () => {
     const r = parse('?s=x&st=bad&v=nope');

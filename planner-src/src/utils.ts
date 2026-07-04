@@ -171,7 +171,7 @@ export const track = (event: string, params?: Record<string, unknown>): void => 
  */
 export function parseSearch(): ParsedSearch {
   const q = new URLSearchParams(window.location.search);
-  const s = q.get('s'), st = q.get('st'), et = q.get('et'), p = q.get('p'), v = q.get('v'), dt = q.get('d');
+  const s = q.get('s'), st = q.get('st'), et = q.get('et'), p = q.get('p'), v = q.get('v'), m = q.get('m'), dt = q.get('d');
   const mealMap: Record<string, string> = { B: 'Breakfast', L: 'Lunch', S: 'Snack', D: 'Dinner' };
   return {
     itinerary: q.get('itinerary'),
@@ -188,7 +188,8 @@ export function parseSearch(): ParsedSearch {
       const idx = +a;
       return Number.isInteger(idx) && idx >= 0 ? { idx, stay: b != null && /^\d+$/.test(b) ? +b : null, day: di + 1 } : null;
     }).filter((x): x is ParsedStop => x != null)) : [],
-    view: v === 'places' || v === 'day' ? v : null,
+    view: v === 'places' || v === 'day' || v === 'about' ? v : null,
+    mode: m === 'timeline' || m === 'map' ? m : null,
     date: /^\d{4}-\d{2}-\d{2}$/.test(dt || '') ? dt : null,
   };
 }

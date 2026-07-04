@@ -17,6 +17,7 @@ import Controls from '../src/components/Controls';
 import DateStrip from '../src/components/DateStrip';
 import HotelsDialog from '../src/components/HotelsDialog';
 import MapView from '../src/components/MapView';
+import PlannerLanding from '../src/components/PlannerLanding';
 import { CatHead, Centered, GlanceRow, Grid } from '../src/components/Bits';
 import { CategoryChips, PlanChips, SubChips } from '../src/components/Chips';
 import PlaceCard from '../src/components/PlaceCard';
@@ -129,15 +130,12 @@ function planner(overrides: Record<string, unknown> = {}) {
 }
 
 describe('phase 3 planner UX components', () => {
-  it('DayPanel empty state presents an intentional create flow', () => {
+  it('DayPanel empty/list state is delegated to landing components', () => {
     const p = planner();
     render(<DayPanel planner={p} />);
 
-    expect(screen.getByText('Pick a Pondicherry itinerary')).toBeInTheDocument();
-    expect(screen.getByText('Browse ready-made trips')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByText('Create your own'));
-    expect(p.switchView).toHaveBeenCalledWith('places');
+    expect(screen.queryByText('Pick a Pondicherry itinerary')).not.toBeInTheDocument();
+    expect(screen.queryByText('Ready-made trips')).not.toBeInTheDocument();
   });
 
   it('DayPanel clean itinerary uses local stop notes and read-mode actions', () => {
@@ -200,6 +198,31 @@ describe('phase 3 planner UX components', () => {
     expect(within(map).getByText('Sacred Heart Basilica')).toBeInTheDocument();
   });
 
+  it('PlannerLanding makes ready-made itineraries the primary desktop entry', () => {
+    const p = planner({
+      starts: [{ p: places[0], i: 0 }],
+      tripDate: '2026-07-02',
+      weather: null,
+      weatherLoading: false,
+      loadCurated: vi.fn(),
+      switchView: vi.fn(),
+      touched: vi.fn(),
+      setStart: vi.fn(),
+      setStops: vi.fn(),
+      setStartTime: vi.fn(),
+      setEndTime: vi.fn(),
+      setTripDate: vi.fn(),
+    });
+
+    render(<PlannerLanding planner={p} />);
+
+    expect(screen.getByText(/Pick your perfect/i)).toBeInTheDocument();
+    expect(screen.getAllByText('Family Day Out').length).toBeGreaterThan(0);
+    expect(screen.getByText('Popular ready-made itineraries')).toBeInTheDocument();
+    expect(screen.getByText('Create my itinerary')).toBeInTheDocument();
+    expect(screen.getByText('Browse ready-made trips')).toBeInTheDocument();
+  });
+
   it('renders the main leaf components without crashing', () => {
     const basePlanner = planner({
       byCat: { Beach: [1], Attraction: [2] },
@@ -253,7 +276,7 @@ describe('phase 3 planner UX components', () => {
 
     expect(screen.getByText('Pondicherry Planner')).toBeInTheDocument();
     expect(screen.getByText('Family with kids')).toBeInTheDocument();
-    expect(screen.getByText('Your live map appears here')).toBeInTheDocument();
+    expect(screen.getByText('Add places to start building your itinerary.')).toBeInTheDocument();
     expect(screen.getAllByText('Promenade Beach').length).toBeGreaterThan(0);
     expect(screen.getAllByText('33°').length).toBeGreaterThan(0);
   });

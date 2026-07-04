@@ -1,7 +1,7 @@
 // The itinerary panel: when empty/browsing it shows the ready-made plan list; otherwise
 // the live day — totals, day tabs, and the timeline (start → stops → back to start).
 import { Fragment, useState } from 'react';
-import { Box, Stack, Button, Card, CardActionArea, Chip, Menu, MenuItem, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
+import { Box, Stack, Button, Menu, MenuItem, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import ArrowBackRounded from '@mui/icons-material/ArrowBackRounded';
 import RouteRounded from '@mui/icons-material/RouteRounded';
 import SelfImprovementRounded from '@mui/icons-material/SelfImprovementRounded';
@@ -13,17 +13,17 @@ import NotesRounded from '@mui/icons-material/NotesRounded';
 import OpenInNewRounded from '@mui/icons-material/OpenInNewRounded';
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
 import LightbulbOutlinedRounded from '@mui/icons-material/LightbulbOutlined';
-import CohortCard from './CohortCard';
-import DirectionsCarRounded from '@mui/icons-material/DirectionsCarRounded';
 import FlagRounded from '@mui/icons-material/FlagRounded';
+import WbSunnyRounded from '@mui/icons-material/WbSunnyRounded';
+import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
+import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded';
 import { CURATED } from '../curated';
 import { ROUTE_HEX, DAY_COLORS } from '../constants';
 import { isPseudo, parseTime, fmtClock, mealTagsForDay, weatherAtHour, track } from '../utils';
 import TimelineNode from './TimelineNode';
 import type { TimelineNodeProps } from './TimelineNode';
 import type { Planner } from '../usePlanner';
-
-const COHORT_ORDER = [...new Set(CURATED.map(c => c.cohort))];   // distinct cohorts, in authored order
+import { HERO_IMAGE, coverFor } from './landing/shared';
 
 type NodeProps = Omit<TimelineNodeProps, 'data' | 'setStay' | 'move' | 'removeAt' | 'selectPlace'>;
 
@@ -34,36 +34,65 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
     setStops, setActiveDay, setLoadedId, planFilter, loadCurated, dayData, curDay, tripDays, tripDrive, tripKm,
     setStay, move, removeAt, selectPlace, selectedIdx, switchView, weather,
   } = planner;
-  const [tripLen, setTripLen] = useState<1 | 2>(2);   // ready-made list: 1-day vs 2-day (default 2-day)
+  const [routeInsightOpen, setRouteInsightOpen] = useState(false);
   if (!data) return null;
 
   // Timeline row — rendering lives in TimelineNode; inject data + handlers.
-  const renderNode = (props: NodeProps) => <TimelineNode {...props} data={data} setStay={setStay} move={move} removeAt={removeAt} selectPlace={selectPlace} />;
+  const renderNode = (props: NodeProps) => <TimelineNode {...props} isMobile={isMobile} data={data} setStay={setStay} move={move} removeAt={removeAt} selectPlace={selectPlace} />;
 
   const showList = !stops.length || browsing;          // browse the ready-made list (current plan kept)
   const loadedC = CURATED.find(c => c.id === loadedId);
+  if (showList) return null;                          // list/landing is owned by App (PlannerLanding/MobileLanding)
+  const realStopCount = stops.filter(s => !isPseudo(s)).length;
+  const activeDaySummary = dayData.find(x => x.day === curDay) || dayData[0];
+  const routeInsight = loadedC?.why ? loadedC.why.split('. ').slice(0, 1).join('. ').replace(/\.$/, '') + '.' : '';
+  const cover = loadedC ? (isMobile ? HERO_IMAGE : coverFor(loadedC.cohort, data, loadedC)) : null;
   return (
     <Box>
       {!showList && (<>
-        {!hideBack && <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>}
-        <Box sx={{ p: 1.25, mb: 1.5, borderRadius: '14px', border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
-          <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={1.2} useFlexGap sx={{ flexWrap: 'wrap' }}>
+        {!hideBack && isMobile && <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => { setBrowsing(true); track('itinerary_list_open', {}); }} sx={{ mb: 1, px: 0.6, color: 'text.secondary' }}>Itineraries</Button>}
+        <Box sx={{ p: { xs: 1.2, md: 1.4 }, mb: 1.05, borderRadius: { xs: '16px', md: '14px' }, border: '1px solid rgba(255,255,255,0.09)',
+          bgcolor: '#0D121B', overflow: 'hidden', position: 'relative',
+          boxShadow: '0 16px 42px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04)',
+          ...(isMobile && cover ? {
+            minHeight: 112,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            backgroundImage: `linear-gradient(90deg, rgba(9,13,20,0.95) 0%, rgba(9,13,20,0.78) 45%, rgba(9,13,20,0.18) 100%), url(${cover})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          } : {}) }}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1.2} useFlexGap sx={{ flexWrap: 'wrap' }}>
             <Box sx={{ minWidth: 0, flex: '1 1 190px' }}>
-              <Typography sx={{ fontWeight: 800, fontSize: '1rem', letterSpacing: '-0.01em' }}>
-                {loadedC ? loadedC.cohort : 'Your Pondicherry itinerary'}
+              <Typography sx={{ fontFamily: isMobile ? '"Playfair Display", serif' : undefined, fontWeight: 900, fontSize: { xs: '1.45rem', md: '1.18rem' }, letterSpacing: '-0.02em', color: '#fff', lineHeight: 1.05 }}>
+                {isMobile ? `Day ${curDay}` : loadedC ? loadedC.cohort : 'Your Pondicherry itinerary'}
               </Typography>
-              <Typography sx={{ mt: 0.25, fontSize: '0.76rem', color: 'text.secondary', lineHeight: 1.45 }}>
-                {stops.filter(s => !isPseudo(s)).length} stops{tripDays.length > 1 ? ` · ${tripDays.length} days` : ''} · {tripDrive} min drive · {tripKm.toFixed(1)} km
+              <Typography sx={{ mt: 0.35, color: 'rgba(245,240,228,0.66)', fontSize: '0.78rem', lineHeight: 1.35, display: { xs: 'none', md: 'block' } }}>
+                {realStopCount} stops · {tripDays.length || 1} day{(tripDays.length || 1) > 1 ? 's' : ''} · {tripDrive} min drive · {tripKm.toFixed(1)} km
               </Typography>
+              {activeDaySummary && (
+                <Typography sx={{ mt: { xs: 0.55, md: 0.3 }, color: { xs: 'rgba(245,240,228,0.78)', md: 'rgba(245,240,228,0.66)' }, fontSize: { xs: '0.78rem', md: '0.76rem' }, lineHeight: 1.35, fontWeight: { xs: 750, md: 500 } }}>
+                  Day {curDay} · {activeDaySummary.drive} min drive · {activeDaySummary.km.toFixed(1)} km · ends by {fmtClock(activeDaySummary.clock)}
+                </Typography>
+              )}
             </Box>
-            <Stack direction="row" spacing={0.6} useFlexGap sx={{ flexShrink: 0, flexWrap: 'wrap' }}>
-              <Button size="small" variant="contained" disableElevation onClick={() => switchView('places')} sx={{ px: 1, fontWeight: 700, textTransform: 'none' }}>Customize</Button>
+            <Stack direction="row" spacing={0.75} useFlexGap sx={{ flexShrink: 0, flexWrap: 'wrap', display: { xs: 'none', md: 'flex' } }}>
+              <Button size="small" variant="contained" disableElevation onClick={() => switchView('places')} sx={{ px: 1.3, minHeight: 34, fontWeight: 900, textTransform: 'none', bgcolor: '#E6C35A', color: '#211A06', borderRadius: '10px', boxShadow: '0 0 0 1px rgba(255,255,255,0.12), 0 8px 18px rgba(230,195,90,0.16)', '&:hover': { bgcolor: '#F1D171' } }}>Customize</Button>
               <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => {
                 if (isMobile && navigator.share) { navigator.share({ title: 'Pondicherry day plan', text: 'Check out this Pondicherry day plan ✨', url: window.location.href }).then(() => track('plan_share', { method: 'native' })).catch(() => {}); }
                 else setShareAnchor(e.currentTarget);
-              }} sx={{ px: 0.8, textTransform: 'none' }}>Share</Button>
-              <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)} sx={{ px: 0.8, textTransform: 'none' }}>Trip</Button>
+              }} sx={{ px: 1.05, minHeight: 34, textTransform: 'none', borderColor: 'rgba(230,195,90,0.20)', color: '#E6C35A', borderRadius: '10px', fontWeight: 800, bgcolor: 'rgba(230,195,90,0.025)' }}>Share</Button>
+              <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)} sx={{ px: 1.05, minHeight: 34, textTransform: 'none', borderColor: 'rgba(255,255,255,0.14)', color: 'rgba(255,255,255,0.86)', borderRadius: '10px', fontWeight: 800 }}>Trip</Button>
             </Stack>
+          </Stack>
+          <Stack direction="row" spacing={0.8} sx={{ display: { xs: 'flex', md: 'none' }, mt: 1.15 }}>
+            <Button size="small" variant="outlined" startIcon={<ShareRounded />} onClick={(e) => {
+              if (navigator.share) { navigator.share({ title: 'Pondicherry day plan', text: 'Check out this Pondicherry day plan ✨', url: window.location.href }).then(() => track('plan_share', { method: 'native' })).catch(() => {}); }
+              else setShareAnchor(e.currentTarget);
+            }} sx={{ minHeight: 34, px: 1.15, textTransform: 'none', borderColor: 'rgba(230,195,90,0.24)', color: '#E6C35A', borderRadius: '10px', fontWeight: 850, bgcolor: 'rgba(0,0,0,0.22)' }}>Share</Button>
+            <Button size="small" variant="outlined" color="inherit" startIcon={<MoreVertRounded />} onClick={(e) => setMoreAnchor(e.currentTarget)}
+              sx={{ minHeight: 34, px: 1.15, textTransform: 'none', borderColor: 'rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', borderRadius: '10px', fontWeight: 850, bgcolor: 'rgba(0,0,0,0.18)' }}>Trip</Button>
           </Stack>
           <Menu anchorEl={shareAnchor} open={!!shareAnchor} onClose={() => setShareAnchor(null)}
             transformOrigin={{ horizontal: 'left', vertical: 'top' }} anchorOrigin={{ horizontal: 'left', vertical: 'bottom' }}>
@@ -80,76 +109,42 @@ export default function DayPanel({ planner, hideBack }: { planner: Planner; hide
             <MenuItem onClick={() => { track('plan_clear', {}); setStops([]); setActiveDay(1); setLoadedId(null); setBrowsing(false); setMoreAnchor(null); }}><DeleteOutlineRounded sx={{ fontSize: 17, mr: 1 }} /> Clear itinerary</MenuItem>
           </Menu>
         </Box>
-        {loadedC?.why && (
-          <Box sx={{ display: 'flex', gap: 0.9, p: 1.1, mb: 1.5, borderRadius: '10px', bgcolor: 'rgba(251,191,36,0.10)', border: '1px solid rgba(251,191,36,0.28)' }}>
-            <LightbulbOutlinedRounded sx={{ fontSize: 18, color: 'secondary.main', mt: '1px', flexShrink: 0 }} />
-            <Typography sx={{ fontSize: '0.78rem', color: 'text.secondary', lineHeight: 1.5 }}>
-              <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>Why this order — </Box>{loadedC.why}
-            </Typography>
-          </Box>
-        )}
       </>)}
-      {showList
-        ? (
-          <Box sx={{ pt: 0.5 }}>
-            {browsing && stops.length > 0 && (
-              <Button size="small" startIcon={<ArrowBackRounded />} onClick={() => setBrowsing(false)} sx={{ mb: 1, px: 0.6 }}>Back to your itinerary</Button>
-            )}
-            {!stops.length && (
-              <Box sx={{ p: 1.05, mb: 1.15, borderRadius: '13px', border: '1px solid', borderColor: 'divider', bgcolor: 'rgba(255,255,255,0.03)' }}>
-                <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, letterSpacing: '-0.01em' }}>Pick a Pondicherry itinerary</Typography>
-                <Typography sx={{ mt: 0.25, fontSize: '0.76rem', color: 'text.secondary', lineHeight: 1.45 }}>
-                  Ready-made Pondicherry routes for families, couples, solo travellers and friends — planned with sensible timing, food breaks and driving flow.
-                </Typography>
-                <Stack direction="row" spacing={0.7} useFlexGap flexWrap="wrap" sx={{ mt: 0.85 }}>
-                  <Button size="small" variant="contained" disableElevation startIcon={<RouteRounded />} sx={{ textTransform: 'none', fontWeight: 700, py: 0.35 }}>Browse ready-made trips</Button>
-                  <Button size="small" variant="outlined" onClick={() => switchView('places')} sx={{ textTransform: 'none', py: 0.35 }}>Create your own</Button>
-                </Stack>
-              </Box>
-            )}
-            <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ mb: 1.3 }}>
-              <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontWeight: 700, fontSize: '0.95rem' }}>Ready-made trips</Typography>
-                <Typography sx={{ fontSize: '0.76rem', color: 'text.secondary' }} noWrap>Tap to load, then tweak it.</Typography>
-              </Box>
-              <ToggleButtonGroup exclusive size="small" value={tripLen} onChange={(_, v) => { if (v) setTripLen(v); }}
-                sx={{ flexShrink: 0, '& .MuiToggleButton-root': { px: 1.6, py: 0.45, fontWeight: 700, textTransform: 'none', fontSize: '0.78rem' } }}>
-                <ToggleButton value={1}>1 day</ToggleButton>
-                <ToggleButton value={2}>2 days</ToggleButton>
-              </ToggleButtonGroup>
-            </Stack>
-            <Stack spacing={1}>
-              {COHORT_ORDER.map(name => {
-                const oneDay = CURATED.find(c => c.cohort === name && c.plan.length === 1);
-                const twoDay = CURATED.find(c => c.cohort === name && c.plan.length === 2);
-                if (!oneDay && !twoDay) return null;
-                return <CohortCard key={name} cohort={name} oneDay={oneDay} twoDay={twoDay} len={tripLen} onLoad={loadCurated} />;
-              })}
-            </Stack>
-          </Box>
-        )
-        : (() => {
+      {(() => {
             const d = dayData.find(x => x.day === curDay) || dayData[0];
-            const over = Math.round(d.clock) - parseTime(endTime);
             return (<>
-              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.25, fontSize: '0.82rem', flexWrap: 'wrap' }} useFlexGap>
-                <span><b>{stops.filter(s => !isPseudo(s)).length}</b> stops{tripDays.length > 1 ? ` · ${tripDays.length} days` : ''}</span>
-                <span><DirectionsCarRounded sx={{ fontSize: 15, verticalAlign: '-3px' }} /> <b>{tripDrive} min</b> · {tripKm.toFixed(1)} km</span>
-              </Stack>
               {tripDays.length > 1 && (
-                <ToggleButtonGroup exclusive fullWidth size="small" value={curDay} onChange={(_, v) => { if (v) { setActiveDay(v); track('day_switch', { day: v }); } }} sx={{ mb: 1.25 }}>
-                  {tripDays.map(dn => (
-                    <ToggleButton key={dn} value={dn} sx={{ fontWeight: 700, py: 0.55 }}>
-                      <Box component="span" sx={{ width: 9, height: 9, borderRadius: '50%', bgcolor: DAY_COLORS[(dn - 1) % DAY_COLORS.length], mr: 0.8 }} /> Day {dn}
-                    </ToggleButton>
-                  ))}
+                <ToggleButtonGroup exclusive fullWidth size="small" value={curDay} onChange={(_, v) => { if (v) { setActiveDay(v); track('day_switch', { day: v }); } }} sx={{ mb: 1.05, p: 0.35, borderRadius: '14px', border: '1px solid rgba(255,255,255,0.09)', bgcolor: '#101721',
+                  '& .MuiToggleButton-root': { border: 0, borderRadius: '10px !important', color: 'text.secondary', fontWeight: 900, position: 'relative' },
+                  '& .Mui-selected': { color: '#F9E8A8 !important', bgcolor: 'rgba(230,195,90,0.16) !important', boxShadow: 'inset 0 0 0 1px rgba(230,195,90,0.24), 0 10px 22px rgba(230,195,90,0.12)' },
+                  '& .Mui-selected::after': { content: '""', position: 'absolute', left: '44%', right: '44%', bottom: 0, height: 2, borderRadius: 999, bgcolor: '#E6C35A', boxShadow: '0 0 14px #E6C35A' } }}>
+                  {tripDays.map(dn => {
+                    const DayIcon = dn === 1 ? WbSunnyRounded : DarkModeRounded;
+                    return (
+                      <ToggleButton key={dn} value={dn} sx={{ fontWeight: 700, py: 0.55 }}>
+                        <DayIcon sx={{ fontSize: 16, mr: 0.65, color: curDay === dn ? '#E6C35A' : DAY_COLORS[(dn - 1) % DAY_COLORS.length] }} /> Day {dn}
+                      </ToggleButton>
+                    );
+                  })}
                 </ToggleButtonGroup>
               )}
-              <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25, fontSize: '0.8rem', color: 'text.secondary', flexWrap: 'wrap' }} useFlexGap>
-                <span>{d.drive} min · {d.km.toFixed(1)} km</span>
-                <span>back <b style={{ color: '#ECEDEE' }}>{fmtClock(d.clock)}</b></span>
-                <Chip size="small" variant="outlined" color={over > 0 ? 'warning' : 'success'} label={over > 0 ? `over by ${Math.floor(over / 60) ? Math.floor(over / 60) + 'h ' : ''}${over % 60}m` : 'fits'} />
-              </Stack>
+              {loadedC?.why && (
+                <Box sx={{ display: 'flex', gap: 0.85, p: { xs: 1.15, md: 1 }, mb: 1.05, borderRadius: '12px', bgcolor: '#17130D', border: '1px solid rgba(230,195,90,0.24)' }}>
+                  <LightbulbOutlinedRounded sx={{ fontSize: 18, color: '#E6C35A', mt: '1px', flexShrink: 0 }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1}>
+                      <Typography sx={{ color: '#F5F0E4', fontWeight: 850, fontSize: '0.86rem', lineHeight: 1.25 }}>Why this route works</Typography>
+                      <KeyboardArrowDownRounded sx={{ fontSize: 18, color: 'text.secondary', transform: routeInsightOpen ? 'rotate(180deg)' : 'none', transition: 'transform .12s' }} />
+                    </Stack>
+                    <Typography sx={{ mt: 0.35, fontSize: '0.76rem', color: 'text.secondary', lineHeight: 1.55, display: '-webkit-box', WebkitLineClamp: routeInsightOpen ? 'unset' : 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {routeInsightOpen ? loadedC.why : routeInsight}
+                    </Typography>
+                    <Button size="small" onClick={() => setRouteInsightOpen(v => !v)} sx={{ mt: 0.25, px: 0, minWidth: 0, color: '#E6C35A', textTransform: 'none', fontWeight: 850 }}>
+                      {routeInsightOpen ? 'Show less' : 'Read more'}
+                    </Button>
+                  </Box>
+                </Box>
+              )}
               {!d.tl.length
                 ? <Typography sx={{ fontSize: '0.8rem', color: 'text.secondary', py: 1.5, textAlign: 'center' }}>No stops on Day {d.day} yet — add places.</Typography>
                 : (<>

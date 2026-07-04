@@ -82,7 +82,7 @@ export const studioDark: PlannerTokens = {
   pop: '#34D399',               // emerald
   success: '#34D399',
   warning: '#F5B544',           // softened amber
-  route: '#5180C4',
+  route: '#C9A227',
   start: '#5B8AC7',
   day: ['#5B8AC7', '#FF7A66'],
   pinBg: '#191C24',

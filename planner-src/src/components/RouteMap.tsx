@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { MAP_ID } from '../config';
-import { ROUTE_HEX, START_HEX, PIN_BG, PIN_BG_ACTIVE, PIN_INK, NODE_BG, NODE_INK, CAR_SVG } from '../constants';
+import { CAT_HEX, ROUTE_HEX, START_HEX, PIN_BG, PIN_BG_ACTIVE, PIN_INK, NODE_BG, NODE_INK, CAR_SVG } from '../constants';
 import type { ItineraryData, PlaceStop } from '../types';
 
 interface RouteMapProps {
@@ -13,15 +13,18 @@ interface RouteMapProps {
   stops: PlaceStop[];        // the active day's real stops (pseudo rows never reach the map)
   selected: number | null;
   onSelect: (idx: number) => void;
+  browseCatalog?: boolean;
+  browsePlaceIndices?: number[];
 }
 
 /** The planner map. Renders the start + stop markers and the routed driving path. */
-export default function RouteMap({ data, start, stops, selected, onSelect }: RouteMapProps) {
+export default function RouteMap({ data, start, stops, selected, onSelect, browseCatalog = false, browsePlaceIndices }: RouteMapProps) {
   return (
     <Map mapId={MAP_ID} defaultCenter={{ lat: 11.934, lng: 79.83 }} defaultZoom={12} gestureHandling="greedy"
+      colorScheme="DARK" renderingType="VECTOR"
       mapTypeControl={false} streetViewControl={false} fullscreenControl={false} clickableIcons={false}
       style={{ width: '100%', height: '100%' }}>
-      <RouteLayer data={data} start={start} stops={stops} selected={selected} onSelect={onSelect} />
+      <RouteLayer data={data} start={start} stops={stops} selected={selected} onSelect={onSelect} browseCatalog={browseCatalog} browsePlaceIndices={browsePlaceIndices} />
     </Map>
   );
 }
@@ -29,27 +32,54 @@ export default function RouteMap({ data, start, stops, selected, onSelect }: Rou
 interface Marker { idx: number; label: string; color: string; isStart?: boolean }
 
 /** Markers (start + numbered stops, coloured by day) + the route, panning to the selection. */
-function RouteLayer({ data, start, stops, selected, onSelect }: RouteMapProps) {
+function RouteLayer({ data, start, stops, selected, onSelect, browseCatalog = false, browsePlaceIndices }: RouteMapProps) {
   const map = useMap();
   // markers: start (S) + each stop numbered within its day; coloured by day when 2 days.
   const markers = useMemo<Marker[]>(() => {
     const out: Marker[] = [{ idx: start, label: 'S', color: START_HEX, isStart: true }];
     const days = [...new Set(stops.map(s => s.day || 1))].sort((a, b) => a - b);
     const multi = days.length > 1;
+    if (browseCatalog && !stops.length) {
+      const browse = browsePlaceIndices || data.places.map((_, idx) => idx);
+      browse.forEach((idx) => {
+        const p = data.places[idx];
+        if (idx === start || p.cat === 'Stay' || p.cat === 'Area') return;
+        out.push({ idx, label: String(out.length), color: CAT_HEX[p.cat] || ROUTE_HEX });
+      });
+      return out.slice(0, 55);
+    }
     days.forEach(dn => {
       stops.filter(s => (s.day || 1) === dn).forEach((s, k) => {
-        out.push({ idx: s.idx, label: (multi ? `${dn}·` : '') + (k + 1), color: NODE_BG });   // single brand colour (was per-day/category)
+        out.push({ idx: s.idx, label: (multi ? `${dn}·` : '') + (k + 1), color: ROUTE_HEX });   // gold route markers to match the route line
       });
     });
+    if (browsePlaceIndices?.length) {
+      const routeIdxs = new Set([start, ...stops.map(s => s.idx)]);
+      let n = 1;
+      browsePlaceIndices.forEach(idx => {
+        const p = data.places[idx];
+        if (!p || routeIdxs.has(idx) || p.cat === 'Stay' || p.cat === 'Area') return;
+        out.push({ idx, label: String(n++), color: CAT_HEX[p.cat] || ROUTE_HEX });
+      });
+    }
     return out;
-  }, [start, stops, data]);
+  }, [start, stops, data, browseCatalog, browsePlaceIndices]);
 
   // Centre on the start when there's no route (Directions auto-fits otherwise).
   useEffect(() => {
-    if (!map || stops.length || !data.places[start]) return;
+    if (!map || !data.places[start]) return;
+    if (browseCatalog || (browsePlaceIndices?.length && !stops.length)) {
+      const bounds = new google.maps.LatLngBounds();
+      markers.forEach(m => {
+        const p = data.places[m.idx];
+        if (p) bounds.extend({ lat: p.lat, lng: p.lng });
+      });
+      if (!bounds.isEmpty()) map.fitBounds(bounds, 55);
+      return;
+    }
     map.setCenter({ lat: data.places[start].lat, lng: data.places[start].lng });
     map.setZoom(13);
-  }, [map, start, stops.length, data]);
+  }, [map, start, stops.length, data, browseCatalog, browsePlaceIndices, markers]);
 
   // Pan to the place picked from the timeline or a marker, so the info card has context.
   useEffect(() => {
@@ -68,7 +98,7 @@ function RouteLayer({ data, start, stops, selected, onSelect }: RouteMapProps) {
           </AdvancedMarker>
         );
       })}
-      <DirectionsRoute data={data} start={start} stops={stops} selected={selected} />
+      {!browseCatalog && <DirectionsRoute data={data} start={start} stops={stops} selected={selected} />}
     </>
   );
 }
@@ -79,7 +109,10 @@ function PinChip({ label, name, color, active }: { label: string; name: string; 
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 9px 3px 3px', transform: active ? 'translateY(-6px) scale(1.08)' : 'translateY(-6px)',
       background: active ? PIN_BG_ACTIVE : PIN_BG, border: active ? `1.5px solid ${color}` : '1px solid rgba(255,255,255,0.16)', borderRadius: 999,
       boxShadow: active ? `0 0 0 3px ${color}44, 0 3px 12px rgba(0,0,0,0.5)` : '0 3px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap', cursor: 'pointer', transition: 'transform .12s ease' }}>
-      <span style={{ width: 20, height: 20, borderRadius: '50%', background: color, color: NODE_INK, fontWeight: 800, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{label}</span>
+      <span style={{ width: 24, height: 25, position: 'relative', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <span style={{ position: 'absolute', top: 1, left: 2, width: 20, height: 20, borderRadius: '50% 50% 50% 0', background: color, transform: 'rotate(-45deg)', boxShadow: 'inset 0 0 0 2px rgba(255,255,255,0.22)' }} />
+        <span style={{ position: 'relative', color: NODE_INK, fontWeight: 800, fontSize: label.length > 1 ? 10.5 : 12, lineHeight: 1, letterSpacing: label.length > 1 ? '-0.06em' : 0 }}>{label}</span>
+      </span>
       <span style={{ color: PIN_INK, fontSize: 12.5, fontWeight: 600, maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
     </div>
   );
@@ -152,7 +185,7 @@ function DirectionsRoute({ data, start, stops, selected }: Omit<RouteMapProps, '
         const line = new g.Polyline({ path, map, strokeColor: ROUTE_HEX, strokeOpacity: 0.9, strokeWeight: 5, zIndex: 1 });
         linesRef.current.push({ line, leg: li });
       });
-      if (!bounds.isEmpty()) map.fitBounds(bounds, 60);
+      if (!bounds.isEmpty()) map.fitBounds(bounds, 110);
       const canRun = full.length > 1;
       if (activeLegRef.current >= 0) selectLeg(activeLegRef.current);
       else if (canRun) ghostLeg(legOf[0]);

@@ -42,6 +42,7 @@ export interface TimelineNodeProps {
   wx?: HourWeather | null;   // forecast at this stop's arrival hour
   readOnly?: boolean;        // clean itinerary mode: hide edit controls and show richer copy
   active?: boolean;          // synced with the map/detail selection
+  isMobile?: boolean;
   data: ItineraryData;
   setStay: (gi: number, v: string | number) => void;
   move: (gi: number, dir: number) => void;
@@ -50,7 +51,7 @@ export interface TimelineNodeProps {
 }
 
 /** One timeline row: a place stop, or a break/meal pseudo-row. App injects `data` + handlers. */
-export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, wx, readOnly = false, active = false, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
+export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0, gi, last, legColor, drive, tag, day, upDisabled, downDisabled, brk, meal, wx, readOnly = false, active = false, isMobile = false, data, setStay, move, removeAt, selectPlace }: TimelineNodeProps) {
   const scrollActiveRow = (el: HTMLDivElement | null) => {
     if (active && el) window.setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 0);
   };
@@ -113,25 +114,40 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
   const p = idx != null ? data.places[idx] : null;   // for rating/reviews + tap-for-details
   const hasThumb = !!(p && p.img);                   // committed photo → lead the row with it (static, no API call)
   const readableDesc = readOnly && p ? itineraryNote(p) : null;
+  const richRead = readOnly && !!p;
+  const mobileRead = richRead && isMobile;
+  const dotBg = readOnly ? (active ? '#E6C35A' : '#60A5FA') : catColor;
+  const dotInk = readOnly ? '#06111D' : NODE_INK;
+  const longDur = (m: number) => {
+    const h = Math.floor(m / 60), mm = m % 60;
+    if (h && mm) return `${h}h ${mm} min`;
+    if (h) return `${h}h`;
+    return `${mm} min`;
+  };
   return (
     <Stack ref={scrollActiveRow} direction="row" spacing={1.2} alignItems="stretch">
       <Box sx={{ width: 26, flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Box sx={{ width: 26, height: 26, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          bgcolor: catColor, color: NODE_INK, fontSize: '0.72rem', fontWeight: 700 }}>{dot}</Box>
-        {!last && <Box sx={{ flex: 1, width: 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.4, minHeight: 22 }} />}
+          bgcolor: dotBg, color: dotInk, fontSize: '0.72rem', fontWeight: 900, boxShadow: readOnly ? `0 0 0 5px ${dotBg}1F, 0 8px 18px rgba(0,0,0,0.24)` : undefined }}>{dot}</Box>
+        {!last && <Box sx={{ flex: 1, width: richRead ? 2 : 3, bgcolor: legColor || 'divider', borderRadius: 2, mt: 0.45, minHeight: 24, opacity: richRead ? 0.52 : 1 }} />}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0, pb: last ? 0 : 1.2 }}>
         <Paper variant="outlined" onClick={idx != null ? () => selectPlace(idx, 'timeline') : undefined}
-          sx={{ p: readOnly ? 1.15 : 1, borderRadius: readOnly ? '13px' : undefined, bgcolor: active ? 'rgba(91,138,199,0.16)' : readOnly ? 'rgba(255,255,255,0.025)' : undefined, borderColor: active ? 'primary.main' : undefined, ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s', '&:hover': { bgcolor: active ? 'rgba(91,138,199,0.20)' : 'action.hover', borderColor: active ? 'primary.main' : 'divider' }, '&:active': { bgcolor: 'action.selected' } }) }}>
-          <Stack direction="row" spacing={readOnly ? 1.35 : 1.1} alignItems="stretch">
-          {p?.img && <PlaceThumb place={p} size={readOnly ? 64 : 46} tint={catColor} radius={readOnly ? '10px' : '8px'} iconSize={readOnly ? 22 : 20} />}
+          sx={{ p: mobileRead ? 1 : richRead ? 0.85 : readOnly ? 1.05 : 1, borderRadius: readOnly ? '15px' : undefined,
+            overflow: 'hidden',
+            bgcolor: active ? '#222016' : readOnly ? '#171B24' : undefined,
+            borderColor: active ? 'rgba(230,195,90,0.56)' : readOnly ? 'rgba(255,255,255,0.09)' : undefined,
+            boxShadow: readOnly ? '0 10px 28px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04)' : undefined,
+            ...(idx != null && { cursor: 'pointer', transition: 'background-color .12s, border-color .12s, transform .12s', '&:hover': { transform: readOnly ? 'translateY(-1px)' : undefined, bgcolor: active ? 'rgba(230,195,90,0.15)' : readOnly ? 'rgba(255,255,255,0.055)' : 'action.hover', borderColor: active ? 'rgba(230,195,90,0.66)' : readOnly ? 'rgba(230,195,90,0.22)' : 'divider' }, '&:active': { bgcolor: 'action.selected' } }) }}>
+          <Stack direction={richRead ? 'row-reverse' : 'row'} spacing={mobileRead ? 0.9 : richRead ? 1.1 : readOnly ? 1.25 : 1.1} alignItems="stretch">
+          {p?.img && <PlaceThumb place={p} size={readOnly ? 64 : 46} width={richRead ? (isMobile ? 82 : 104) : undefined} height={richRead ? (isMobile ? 88 : 76) : undefined} tint={catColor} radius={readOnly ? '11px' : '8px'} iconSize={readOnly ? 22 : 20} />}
           <Box sx={{ flex: 1, minWidth: 0 }}>
           <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={0.5}>
-            <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'center', columnGap: 0.6, rowGap: 0.3, pt: 0.2 }}>
-              {!hasThumb && Icon && <Icon sx={{ fontSize: readOnly ? 17 : 16, color: catColor, flexShrink: 0 }} />}<Typography component="span" sx={{ fontWeight: 700, fontSize: readOnly ? '0.96rem' : '0.9rem', lineHeight: 1.24, color: 'text.primary', minWidth: 0, maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{title}</Typography>
-              {tag && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}26`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
+            <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexWrap: mobileRead ? 'nowrap' : 'wrap', alignItems: 'center', columnGap: 0.6, rowGap: 0.3, pt: 0.2 }}>
+              {!hasThumb && Icon && <Icon sx={{ fontSize: readOnly ? 17 : 16, color: catColor, flexShrink: 0 }} />}<Typography component="span" sx={{ fontWeight: 850, fontSize: richRead ? '0.96rem' : readOnly ? '0.96rem' : '0.9rem', lineHeight: 1.18, color: 'text.primary', minWidth: 0, maxWidth: '100%', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere', letterSpacing: '-0.01em' }}>{title}</Typography>
+              {tag && !mobileRead && <Box component="span" sx={{ flexShrink: 0, fontSize: '0.56rem', fontWeight: 850, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.55, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}24`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
               {p?.book && <Box component="a" href={p.book.url} target="_blank" rel="noopener" title={p.book.label} onClick={(e) => { e.stopPropagation(); track('place_book', { name: title, source: 'timeline' }); }} sx={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 0.25, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.6, py: '1px', borderRadius: '6px', bgcolor: 'rgba(251,191,36,0.18)', color: '#FBBF24', textDecoration: 'none', '&:hover': { bgcolor: 'rgba(251,191,36,0.32)' } }}><LocalActivityRounded sx={{ fontSize: 11 }} /> Book</Box>}
-              {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0 }} />}
+              {idx != null && <ChevronRightRounded sx={{ fontSize: 18, color: 'text.disabled', flexShrink: 0, ml: mobileRead ? 'auto' : 0 }} />}
             </Box>
             {!readOnly && gi != null && (
               <Stack direction="row" spacing={0.2} sx={{ flexShrink: 0 }}>
@@ -141,18 +157,30 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
               </Stack>
             )}
           </Stack>
-          {readableDesc && <Typography sx={{ mt: 0.45, fontSize: '0.78rem', lineHeight: 1.45, color: 'text.secondary', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{readableDesc}</Typography>}
-          <Stack direction="row" alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 0.4, columnGap: 1, rowGap: 0.5, fontSize: '0.78rem', color: 'text.secondary' }}>
+          {tag && mobileRead && <Box component="span" sx={{ mt: 0.35, display: 'inline-flex', alignSelf: 'flex-start', fontSize: '0.56rem', fontWeight: 850, textTransform: 'uppercase', letterSpacing: '0.04em', px: 0.55, py: '1px', borderRadius: '6px', bgcolor: `${TAG_COLOR[tag] || '#94A3B8'}24`, color: TAG_COLOR[tag] || '#94A3B8' }}>{tag}</Box>}
+          {readOnly && sub && (
+            <Stack direction="row" spacing={0.55} alignItems="center" sx={{ mt: mobileRead && tag ? 0.45 : 0.42, color: '#F5F0E4', fontSize: '0.76rem', fontWeight: 800,
+              ...(mobileRead ? { alignSelf: 'flex-start', maxWidth: '100%' } : {}) }}>
+              <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.45, whiteSpace: 'nowrap',
+                ...(mobileRead ? { px: 0.65, py: 0.32, borderRadius: 999, bgcolor: 'rgba(230,195,90,0.08)', border: '1px solid rgba(230,195,90,0.16)' } : {}) }}>
+                <AccessTimeRounded sx={{ fontSize: 13, color: '#E6C35A' }} />
+                {sub}
+              </Box>
+              {stay ? <Box component="span" sx={{ color: '#E6C35A', fontWeight: 900, whiteSpace: 'nowrap' }}>{mobileRead ? longDur(stay) : fmtDur(stay)}</Box> : null}
+            </Stack>
+          )}
+          {readableDesc && <Typography sx={{ mt: 0.42, fontSize: richRead ? '0.76rem' : '0.78rem', lineHeight: 1.42, color: 'text.secondary', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{readableDesc}</Typography>}
+          <Stack direction="row" alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 0.45, columnGap: 0.85, rowGap: 0.45, fontSize: '0.73rem', color: 'text.secondary' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
               {p && p.rating ? (
                 <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.3, flexShrink: 0 }}>
                   <StarRounded sx={{ fontSize: 13, color: '#FBBF24' }} />
-                  <Box component="span" sx={{ fontWeight: 700, color: 'text.primary' }}>{p.rating}</Box>
-                  {p.reviews ? <Box component="span">({Number(p.reviews).toLocaleString()})</Box> : null}
+                  <Box component="span" sx={{ fontWeight: 800, color: 'text.primary' }}>{p.rating}</Box>
+                  {p.reviews ? <Box component="span">{mobileRead ? `· ${Number(p.reviews).toLocaleString()}` : `(${Number(p.reviews).toLocaleString()})`}</Box> : null}
                 </Box>
               ) : null}
-              {p && p.rating && sub ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
-              {sub ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
+              {p && p.rating && sub && !readOnly ? <Box component="span" sx={{ opacity: 0.45, flexShrink: 0 }}>·</Box> : null}
+              {sub && !readOnly ? <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub}</Box> : null}
             </Box>
             <Stack direction="row" alignItems="center" spacing={0.8} sx={{ flexShrink: 0, ml: 'auto' }}>
               {wxBit}
@@ -171,8 +199,8 @@ export default function TimelineNode({ icon, idx, cat, dot, title, sub, stay = 0
           </Stack>
         </Paper>
         {!last && drive && (
-          <Box sx={{ mt: 0.7, fontSize: '0.76rem', color: 'text.secondary', display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <DirectionsCarRounded sx={{ fontSize: 15, color: legColor || 'inherit' }} />{drive}
+          <Box sx={{ mt: 0.55, ml: 0.3, fontSize: '0.7rem', color: 'rgba(245,240,228,0.50)', display: 'inline-flex', alignItems: 'center', gap: 0.45, px: 0.7, py: 0.25, borderRadius: 999, bgcolor: 'rgba(255,255,255,0.025)' }}>
+            <DirectionsCarRounded sx={{ fontSize: 13, color: legColor || 'inherit', opacity: 0.85 }} />{drive}
           </Box>
         )}
       </Box>

@@ -49,12 +49,14 @@ interface PlaceThumbProps {
   place: Place;
   size: number;          // px (square)
   tint: string;          // icon colour + tinted backing while the photo loads / when absent
+  width?: number;         // optional rectangular frame for itinerary read cards
+  height?: number;
   radius?: string;
   iconSize?: number;
 }
 
-const frame = (size: number, radius: string, tint: string, hasImg: boolean) => ({
-  width: size, height: size, borderRadius: radius, flexShrink: 0, overflow: 'hidden',
+const frame = (size: number, radius: string, tint: string, hasImg: boolean, width?: number, height?: number) => ({
+  width: width ?? size, height: height ?? size, borderRadius: radius, flexShrink: 0, overflow: 'hidden',
   display: 'flex', alignItems: 'center', justifyContent: 'center',
   bgcolor: hasImg ? 'transparent' : `${tint}22`, color: tint,
 });
@@ -62,21 +64,21 @@ const frame = (size: number, radius: string, tint: string, hasImg: boolean) => (
 /** Square thumbnail. Prefers the committed local image (static, served as a site asset —
  *  zero Google calls); falls back to a lazily-fetched Google photo for the few places
  *  without a baked image, and to the category icon when there's nothing at all. */
-export default function PlaceThumb({ place, size, tint, radius = '10px', iconSize = 20 }: PlaceThumbProps) {
+export default function PlaceThumb({ place, size, tint, width, height, radius = '10px', iconSize = 20 }: PlaceThumbProps) {
   const Icon = CAT_ICON[place.cat] || PlaceRounded;
   if (place.img) {
     return (
-      <Box sx={frame(size, radius, tint, true)}>
+      <Box sx={frame(size, radius, tint, true, width, height)}>
         <Box component="img" src={place.img} alt={place.name} loading="lazy" decoding="async"
           sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
       </Box>
     );
   }
-  return <LiveThumb place={place} size={size} tint={tint} radius={radius} icon={<Icon sx={{ fontSize: iconSize }} />} />;
+  return <LiveThumb place={place} size={size} tint={tint} width={width} height={height} radius={radius} icon={<Icon sx={{ fontSize: iconSize }} />} />;
 }
 
 /** Fallback: live Google fetch, gated to the viewport so it never calls until on screen. */
-function LiveThumb({ place, size, tint, radius, icon }: { place: Place; size: number; tint: string; radius: string; icon: ReactNode }) {
+function LiveThumb({ place, size, tint, width, height, radius, icon }: { place: Place; size: number; tint: string; width?: number; height?: number; radius: string; icon: ReactNode }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [inView, setInView] = useState(false);
   useEffect(() => {
@@ -92,7 +94,7 @@ function LiveThumb({ place, size, tint, radius, icon }: { place: Place; size: nu
   const photo = usePlacePhoto(place.placeId, inView);
   const url = photo && photo.url ? photo.url : null;
   return (
-    <Box ref={ref} sx={frame(size, radius, tint, !!url)}>
+    <Box ref={ref} sx={frame(size, radius, tint, !!url, width, height)}>
       {url
         ? <Box component="img" src={url} alt={place.name} loading="lazy" decoding="async" sx={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
         : icon}

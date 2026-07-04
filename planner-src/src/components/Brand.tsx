@@ -15,7 +15,7 @@ export default function Brand({ onClick }: { onClick?: () => void }) {
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.05, letterSpacing: '-0.01em' }}>Pondicherry Planner</Typography>
-        <Typography sx={{ fontSize: '0.72rem', color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>Plan a day trip · driving times · r/pondicherry picks</Typography>
+        <Typography noWrap sx={{ fontSize: '0.72rem', color: 'text.secondary', display: { xs: 'none', sm: 'block' } }}>Plan a day trip · driving times · local picks</Typography>
       </Box>
     </Stack>
   );
