@@ -141,6 +141,9 @@ export interface ParsedSearch {
   view: 'places' | 'day' | 'about' | null;
   mode: 'timeline' | 'map' | null;
   date: string | null;   // selected trip date (YYYY-MM-DD), for the weather forecast
+  modal: 'stays' | null;
+  stay: 'family' | 'couples' | 'bachelors' | 'solo' | 'jipmer' | null;
+  tier: 'top' | 'k6' | 'k3' | null;
 }
 
 declare global {

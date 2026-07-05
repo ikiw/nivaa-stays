@@ -27,8 +27,8 @@ const COHORTS = [
 ];
 const TIERS = [
   { key: 'top', label: 'Top rated', cap: Infinity },
-  { key: 'k6', label: 'Under ₹6k', cap: 6000 },
-  { key: 'k3', label: 'Under ₹3k', cap: 3000 },
+  { key: 'k6', label: 'Comfort picks', cap: 6000 },
+  { key: 'k3', label: 'Budget picks', cap: 3000 },
 ];
 
 // Bayesian shrinkage toward 4.0 so a 5.0 with 26 reviews can't outrank a 4.6 with 2,000.
@@ -84,13 +84,15 @@ interface HotelsDialogProps {
   open: boolean;
   onClose: () => void;
   isMobile?: boolean;
+  cohort: string;
+  tier: string;
+  onCohortChange: (cohort: string) => void;
+  onTierChange: (tier: string) => void;
 }
 
-export default function HotelsDialog({ open, onClose, isMobile }: HotelsDialogProps) {
+export default function HotelsDialog({ open, onClose, isMobile, cohort, tier, onCohortChange, onTierChange }: HotelsDialogProps) {
   const [hotels, setHotels] = useState<Hotel[] | null>(null);
   const [err, setErr] = useState(false);
-  const [cohort, setCohort] = useState('family');
-  const [tier, setTier] = useState('top');
 
   useEffect(() => {
     if (!open || hotels) return;
@@ -122,14 +124,14 @@ export default function HotelsDialog({ open, onClose, isMobile }: HotelsDialogPr
           <Typography sx={{ flex: 1, fontWeight: 700, fontSize: '1rem' }}>Where to stay</Typography>
           <IconButton edge="end" onClick={onClose} aria-label="Close"><CloseRounded /></IconButton>
         </Toolbar>
-        <Tabs value={cohort} onChange={(_, v) => setCohort(v)} variant="scrollable" scrollButtons="auto"
+        <Tabs value={cohort} onChange={(_, v) => onCohortChange(v)} variant="scrollable" scrollButtons="auto"
           sx={{ minHeight: 40, px: 1, '& .MuiTab-root': { minHeight: 40, fontWeight: 700, fontSize: '0.8rem', textTransform: 'none' } }}>
           {COHORTS.map((c) => <Tab key={c.key} value={c.key} label={c.label} />)}
         </Tabs>
       </AppBar>
 
       <Box sx={{ p: 1.5, display: 'flex', flexDirection: 'column', gap: 1.25, overflowY: 'auto', flex: 1 }}>
-        <ToggleButtonGroup exclusive size="small" value={tier} onChange={(_, v) => v && setTier(v)} color="primary" fullWidth>
+        <ToggleButtonGroup exclusive size="small" value={tier} onChange={(_, v) => v && onTierChange(v)} color="primary" fullWidth>
           {TIERS.map((t) => <ToggleButton key={t.key} value={t.key} sx={{ fontWeight: 700, fontSize: '0.74rem', py: 0.4, textTransform: 'none' }}>{t.label}</ToggleButton>)}
         </ToggleButtonGroup>
 
