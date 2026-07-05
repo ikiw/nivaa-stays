@@ -209,7 +209,7 @@ describe('parseSearch: shareable-URL decoding', () => {
   const parse = (search: string) => { (globalThis as any).window = { location: { search } }; return parseSearch(); };
 
   it('empty query → empty plan', () => {
-    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, mode: null, date: null });
+    expect(parse('')).toEqual({ itinerary: null, start: null, startTime: null, endTime: null, stops: [], view: null, mode: null, date: null, modal: null, stay: null, tier: null });
   });
   it('decodes a valid trip date and rejects junk', () => {
     expect(parse('?d=2026-06-28').date).toBe('2026-06-28');
@@ -247,5 +247,9 @@ describe('parseSearch: shareable-URL decoding', () => {
   });
   it('reads a curated itinerary id', () => {
     expect(parse('?itinerary=first-timer').itinerary).toBe('first-timer');
+  });
+  it('decodes shareable Stays modal state', () => {
+    expect(parse('?modal=stays&stay=family&tier=k3')).toMatchObject({ modal: 'stays', stay: 'family', tier: 'k3' });
+    expect(parse('?modal=rentals&stay=bad&tier=luxury')).toMatchObject({ modal: null, stay: null, tier: null });
   });
 });

@@ -41,7 +41,7 @@ export default function App() {
   const planner = usePlanner();
   const [aiOpen, setAiOpen] = useState(false);
   const {
-    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, rentalsOpen, setRentalsOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, resetPlanner, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay, buildSearch,
+    isMobile, data, err, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, setActiveDay, loadedId, filter, browsing, setBrowsing, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, hotelCohort, hotelTier, openHotels, closeHotels, updateHotelCohort, updateHotelTier, rentalsOpen, setRentalsOpen, deskTab, aiQuery, setAiQuery, aiBusy, snack, setSnack, setMapActive, touchStartX, openView, switchView, resetPlanner, activateMap, starts, touched, aiPlan, tripDays, dayData, tripDrive, tripKm, curDay, buildSearch,
   } = planner;
 
   if (err) return <Centered>Could not load the places data. Please refresh.</Centered>;
@@ -133,7 +133,7 @@ export default function App() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: mobView === 'places' ? 0.8 : 1.25 }}>
               <Brand onClick={resetPlanner} />
               <Box sx={{ flex: 1 }} />
-              <IconButton onClick={() => setHotelsOpen(true)} aria-label="Where to stay" sx={{ flexShrink: 0, color: 'text.secondary' }}><HotelRounded sx={{ fontSize: 20 }} /></IconButton>
+              <IconButton onClick={() => openHotels()} aria-label="Where to stay" sx={{ flexShrink: 0, color: 'text.secondary' }}><HotelRounded sx={{ fontSize: 20 }} /></IconButton>
               <IconButton onClick={() => setRentalsOpen(true)} aria-label="Bike & car rentals" sx={{ flexShrink: 0, color: 'text.secondary' }}><TwoWheelerRounded sx={{ fontSize: 20 }} /></IconButton>
               <ThemePicker />
               {mobView !== 'about' && (
@@ -236,7 +236,7 @@ export default function App() {
             <BottomNavigationAction value="about" label="About" icon={<InfoOutlinedRounded />} />
           </BottomNavigation>
         </Box>
-        <HotelsDialog open={hotelsOpen} onClose={() => setHotelsOpen(false)} isMobile />
+        <HotelsDialog open={hotelsOpen} onClose={closeHotels} isMobile cohort={hotelCohort} tier={hotelTier} onCohortChange={updateHotelCohort} onTierChange={updateHotelTier} />
         <RentalsDialog open={rentalsOpen} onClose={() => setRentalsOpen(false)} isMobile />
         <Snackbar open={!!snack} autoHideDuration={5000} onClose={() => setSnack('')} message={snack} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ mb: 7 }} />
       </Box>
@@ -253,7 +253,7 @@ export default function App() {
           <Box sx={{ flex: '0 0 300px', minWidth: 0 }}>{<Brand onClick={resetPlanner} />}</Box>
           <Box sx={{ flex: '0 1 540px', minWidth: 360 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
           <Stack direction="row" spacing={1.25} alignItems="center" sx={{ ml: 'auto', minWidth: 0 }}>
-            <Button size="small" startIcon={<HotelRounded />} onClick={() => setHotelsOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary', textTransform: 'none', fontWeight: 700 }}>Stays</Button>
+            <Button size="small" startIcon={<HotelRounded />} onClick={() => openHotels()} sx={{ flexShrink: 0, color: 'text.secondary', textTransform: 'none', fontWeight: 700 }}>Stays</Button>
             <Button size="small" startIcon={<TwoWheelerRounded />} onClick={() => setRentalsOpen(true)} sx={{ flexShrink: 0, color: 'text.secondary', textTransform: 'none', fontWeight: 700 }}>Rentals</Button>
             <Button size="small" startIcon={<InfoOutlinedRounded />} onClick={() => { track('view_switch', { view: 'about' }); setAboutOpen(true); }} sx={{ flexShrink: 0, color: 'text.secondary', textTransform: 'none', fontWeight: 700 }}>About</Button>
             <Box sx={{ width: 1, height: 28, bgcolor: 'divider', opacity: 0.7 }} />
@@ -267,7 +267,7 @@ export default function App() {
           <AboutPanel />
         </DialogContent>
       </Dialog>
-      <HotelsDialog open={hotelsOpen} onClose={() => setHotelsOpen(false)} />
+      <HotelsDialog open={hotelsOpen} onClose={closeHotels} cohort={hotelCohort} tier={hotelTier} onCohortChange={updateHotelCohort} onTierChange={updateHotelTier} />
       <RentalsDialog open={rentalsOpen} onClose={() => setRentalsOpen(false)} />
       {showDesktopLanding ? (
         <Box sx={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 1300, mx: 'auto' }}>

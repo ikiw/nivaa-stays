@@ -45,6 +45,8 @@ export function usePlanner() {
   const [itinView, setItinView] = useState('timeline'); // timeline | map (toggle inside the Itinerary tab)
   const [aboutOpen, setAboutOpen] = useState(false); // desktop About dialog
   const [hotelsOpen, setHotelsOpen] = useState(false); // "Where to stay" hotels overlay
+  const [hotelCohort, setHotelCohort] = useState('family');
+  const [hotelTier, setHotelTier] = useState('top');
   const [rentalsOpen, setRentalsOpen] = useState(false); // bike & car rentals overlay
   const [deskTab, setDeskTab] = useState('day'); // places | day (desktop rail) — plan-first
   const [aiQuery, setAiQuery] = useState('');
@@ -84,7 +86,7 @@ export function usePlanner() {
   const viewRef = useRef('itinerary');
   viewRef.current = isMobile ? (mobView === 'itinerary' ? 'day' : mobView) : deskTab;
 
-  const buildSearch = (viewOverride?: string, modeOverride?: string) => {
+  const buildSearch = (viewOverride?: string, modeOverride?: string, modalOverride?: 'stays' | null) => {
     const { start, startTime, endTime, stops, loadedId, tripDate, itinView } = stateRef.current!;
     const rawView = viewOverride !== undefined ? viewOverride : viewRef.current;
     const view = rawView === 'itinerary' ? 'day' : rawView;
@@ -107,6 +109,12 @@ export function usePlanner() {
     if (view === 'day' || view === 'places' || view === 'about') q.set('v', view);
     if ((view === 'day' || view === 'places') && (mode === 'timeline' || mode === 'map')) q.set('m', mode);
     if (tripDate && tripDate !== todayISO()) q.set('d', tripDate);  // only a non-today date is worth sharing
+    const modal = modalOverride === undefined ? (hotelsOpen ? 'stays' : null) : modalOverride;
+    if (modal === 'stays') {
+      q.set('modal', 'stays');
+      q.set('stay', hotelCohort);
+      q.set('tier', hotelTier);
+    }
     const qs = q.toString();
     return window.location.pathname + (qs ? '?' + qs : '');
   };
@@ -139,6 +147,38 @@ export function usePlanner() {
   const selectSubFilter = (sub: string) => { track('place_filter', { category: filter, sub }); setSubFilter(sub); };
   // User-initiated panel switch (places ↔ itinerary). Programmatic openView calls stay untracked.
   const switchView = (v: string) => { track('view_switch', { view: v === 'day' ? 'itinerary' : 'places' }); openView(v, 'push'); };
+  const pushUrl = (next: string, historyMode: 'replace' | 'push' = 'push') => {
+    const current = window.location.pathname + window.location.search;
+    if (next !== current) {
+      const state = window.history.state;
+      if (historyMode === 'push') window.history.pushState(state, '', next);
+      else window.history.replaceState(state, '', next);
+    }
+  };
+  const openHotels = (historyMode: 'replace' | 'push' = 'push') => {
+    setHotelsOpen(true);
+    pushUrl(buildSearch(undefined, undefined, 'stays'), historyMode);
+  };
+  const closeHotels = () => {
+    setHotelsOpen(false);
+    pushUrl(buildSearch(undefined, undefined, null), 'push');
+  };
+  const updateHotelCohort = (cohort: string) => {
+    setHotelCohort(cohort);
+    const q = new URLSearchParams(window.location.search);
+    q.set('modal', 'stays');
+    q.set('stay', cohort);
+    q.set('tier', hotelTier);
+    window.history.replaceState(window.history.state, '', window.location.pathname + '?' + q.toString());
+  };
+  const updateHotelTier = (tier: string) => {
+    setHotelTier(tier);
+    const q = new URLSearchParams(window.location.search);
+    q.set('modal', 'stays');
+    q.set('stay', hotelCohort);
+    q.set('tier', tier);
+    window.history.replaceState(window.history.state, '', window.location.pathname + '?' + q.toString());
+  };
 
   // Reset to the fresh landing — clear the plan, restore defaults, drop back to the ready-made
   // list. The URL-sync effect then clears the query (empty plan → bare path).
@@ -186,6 +226,9 @@ export function usePlanner() {
       if (u.view === 'places') { setMobView('places'); setDeskTab('places'); if (u.mode) { setItinView(u.mode); if (u.mode === 'map') setMapActive(true); } }
       else if (u.view === 'about') setMobView('about');
       else if (u.view === 'day') { setMobView('itinerary'); setDeskTab('day'); if (u.mode) { setItinView(u.mode); if (u.mode === 'map') setMapActive(true); } }
+      if (u.stay) setHotelCohort(u.stay);
+      if (u.tier) setHotelTier(u.tier);
+      if (u.modal === 'stays') setHotelsOpen(true);
       hydrated.current = true;
     }).catch(() => setErr(true));
   }, []);
@@ -203,8 +246,8 @@ export function usePlanner() {
   // While browsing the ready-made list the URL drops back to the bare planner path, so "back
   // to itinerary" (and the logo reset) leave a clean URL instead of a stale plan link.
   useEffect(() => {
-    if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', browsing ? window.location.pathname : buildSearch());
-  }, [start, startTime, endTime, stops, loadedId, tripDate, browsing, itinView]);
+    if (hydrated.current && !pendingCurated) window.history.replaceState(window.history.state, '', hotelsOpen ? buildSearch(undefined, undefined, 'stays') : browsing ? window.location.pathname : buildSearch());
+  }, [start, startTime, endTime, stops, loadedId, tripDate, browsing, itinView, hotelsOpen, hotelCohort, hotelTier]);
 
   // Fetch Pondicherry's forecast for the selected date (skip dates outside the model's ~16-day range).
   useEffect(() => {
@@ -228,6 +271,9 @@ export function usePlanner() {
       } else {
         setDeskTab(v === 'places' ? 'places' : 'day');
       }
+      if (u.stay) setHotelCohort(u.stay);
+      if (u.tier) setHotelTier(u.tier);
+      setHotelsOpen(u.modal === 'stays');
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -411,7 +457,7 @@ export function usePlanner() {
     setShareAnchor(null); setMoreAnchor(null);
   };
 
-  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, rentalsOpen, setRentalsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, resetPlanner, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
+  return { isMobile, data, setData, err, setErr, start, setStart, startTime, setStartTime, endTime, setEndTime, stops, setStops, tripDate, setTripDate, weather, weatherLoading, activeDay, setActiveDay, loadedId, setLoadedId, pendingCurated, setPendingCurated, filter, setFilter, subFilter, setSubFilter, planFilter, setPlanFilter, browsing, setBrowsing, collapsed, setCollapsed, toggleCat, shareAnchor, setShareAnchor, moreAnchor, setMoreAnchor, selectedIdx, setSelectedIdx, mobView, setMobView, itinView, setItinView, aboutOpen, setAboutOpen, hotelsOpen, setHotelsOpen, hotelCohort, hotelTier, openHotels, closeHotels, updateHotelCohort, updateHotelTier, rentalsOpen, setRentalsOpen, deskTab, setDeskTab, aiQuery, setAiQuery, aiBusy, setAiBusy, snack, setSnack, mapActive, setMapActive, hydrated, defaultStartRef, initialUrl, stateRef, touchStartX, viewRef, buildSearch, openView, selectPlace, selectFilter, selectSubFilter, activateMap, switchView, resetPlanner, driveMin, driveKm, isStop, starts, byCat, sortByDay, touched, addToggle, removeStop, removeAt, addBreak, move, setStay, optimize, aiPlan, gmapsUrl, loadCurated, shareWhatsApp, copyShareLink, copyPlanText, tripDays, dayData, tripDrive, tripKm, curDay, mapStops };
 }
 
 /** Everything the planner exposes — panels receive this as a single `planner` prop. */

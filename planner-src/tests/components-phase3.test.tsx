@@ -269,7 +269,7 @@ describe('phase 3 planner UX components', () => {
         <ThemePicker />
         <WeatherChip weather={weather} loading={false} outOfRange={false} />
         <WeatherIcon code={2} />
-        <HotelsDialog open={false} onClose={vi.fn()} />
+        <HotelsDialog open={false} onClose={vi.fn()} cohort="family" tier="top" onCohortChange={vi.fn()} onTierChange={vi.fn()} />
         <RentalsDialog open={false} onClose={vi.fn()} />
       </div>,
     );
