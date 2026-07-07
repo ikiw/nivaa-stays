@@ -69,7 +69,7 @@ export default function Insights({ data }: { data: AnalyticsData }) {
   if (weekendNights > 0) actions.push(<><b>{weekendNights} weekend room-night{weekendNights === 1 ? '' : 's'}</b> open ({weekendOpen.slice(0, 3).map((d) => dateLabelShort(d.date)).join(', ')}) — your premium nights; fill first and consider a small uplift, they go quickest.</>);
   if (orphans.length > 0) actions.push(<><b>Lone open nights</b> ({orphans.slice(0, 4).map((d) => dateLabelShort(d.date)).join(', ')}) sit between booked nights — pitch as 1-night / transit / JIPMER-visit stays.</>);
   if (blocks.length > 0) actions.push(<><b>Open runs</b> ({blocks.map((b) => `${dateLabelShort(b[0].date)}–${dateLabelShort(b[b.length - 1].date)}`).join(', ')}) — pitch a multi-night or WFH / long-stay package.</>);
-  if (directShare > 0) actions.push(<>Direct is <b>{directShare}% of revenue</b> at your best rate — push your WhatsApp number + NIVAA10 for these last nights before the OTAs take a cut.</>);
+  if (directShare > 0) actions.push(<>Direct is <b>{directShare}% of revenue</b> at your best rate — push your WhatsApp number for these last nights before the OTAs take a cut.</>);
   if (usePace && pickup > 0) actions.push(<>History says <b>~{fmtFull(pickup)}</b> more typically books in the time you have left.</>);
 
   return (

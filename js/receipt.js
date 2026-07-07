@@ -7,6 +7,7 @@ import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftT
 
 const WHATSAPP = '919620364554';
 const GOOGLE_MAPS = 'https://maps.app.goo.gl/uXmbjQ9tpviANJpm6';
+const CHILD_DEFAULT_AGE = 10; // new children start chargeable; admin sets the exact age
 
 const state = {
   config: null,
@@ -15,7 +16,8 @@ const state = {
   earlyHours: 0,
   lateHours: 0,
   studios: 1,
-  guests: 2,
+  adults: 2,
+  children: [],
   discountType: 'pct',
   discountValue: 0,
   guestName: '',
@@ -83,7 +85,7 @@ function computeAll() {
   if (!q.totalNights) return null;
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
   const studios = state.studios || 1;
-  const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
+  const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
   const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
   const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
   // Custom add-ons are a flat addition on top — not discounted, and they don't
@@ -108,8 +110,15 @@ function parseUrlState() {
   const e = parseInt(p.get('early') || '0', 10); if (e > 0) state.earlyHours = e;
   const l = parseInt(p.get('late') || '0', 10); if (l > 0) state.lateHours = l;
   const s = parseInt(p.get('studios') || '1', 10); state.studios = (s === 2 ? 2 : 1);
-  const g = parseInt(p.get('guests') || '0', 10);
-  state.guests = g > 0 ? g : (state.studios === 2 ? 4 : 2);
+  const a = parseInt(p.get('adults') || '0', 10);
+  state.adults = a > 0 ? a : (state.studios === 2 ? 4 : 2);
+  const childrenParam = p.get('children');
+  if (childrenParam) {
+    state.children = childrenParam.split(',')
+      .map(x => parseInt(x, 10))
+      .filter(n => !Number.isNaN(n) && n >= 0 && n <= 17)
+      .slice(0, (state.config?.childPolicy?.maxPerStudio || 4) * state.studios);
+  }
   const dt = p.get('discType'); if (dt === 'pct' || dt === 'amt') state.discountType = dt;
   const dv = parseFloat(p.get('disc') || '0'); if (dv > 0) state.discountValue = dv;
   state.guestName = p.get('name') || '';
@@ -136,8 +145,9 @@ function buildShareUrl(includeAdmin = false) {
   if (state.earlyHours) p.set('early', String(state.earlyHours));
   if (state.lateHours) p.set('late', String(state.lateHours));
   if (state.studios !== 1) p.set('studios', String(state.studios));
-  const defaultGuests = state.studios === 2 ? 4 : 2;
-  if (state.guests !== defaultGuests) p.set('guests', String(state.guests));
+  const defaultAdults = state.studios === 2 ? 4 : 2;
+  if (state.adults !== defaultAdults) p.set('adults', String(state.adults));
+  if (state.children.length) p.set('children', state.children.join(','));
   if (state.discountValue > 0) {
     p.set('discType', state.discountType);
     p.set('disc', String(state.discountValue));
@@ -215,13 +225,31 @@ function renderAdminForm() {
           </div>
         </div>
         <div class="bc-admin-row">
-          <label class="bc-field-label">Guests</label>
+          <label class="bc-field-label">Adults</label>
           <div class="bc-stepper">
-            <button type="button" class="bc-step-btn" data-action="guests-dec" ${state.guests <= 1 ? 'disabled' : ''}>−</button>
-            <span class="bc-step-val">${state.guests}</span>
-            <button type="button" class="bc-step-btn" data-action="guests-inc" ${state.guests >= maxGuests ? 'disabled' : ''}>+</button>
+            <button type="button" class="bc-step-btn" data-action="adults-dec" ${state.adults <= 1 ? 'disabled' : ''}>−</button>
+            <span class="bc-step-val">${state.adults}</span>
+            <button type="button" class="bc-step-btn" data-action="adults-inc" ${state.adults >= maxGuests ? 'disabled' : ''}>+</button>
           </div>
         </div>
+        <div class="bc-admin-row">
+          <label class="bc-field-label">Children</label>
+          <div class="bc-stepper">
+            <button type="button" class="bc-step-btn" data-action="children-dec" ${state.children.length <= 0 ? 'disabled' : ''}>−</button>
+            <span class="bc-step-val">${state.children.length}</span>
+            <button type="button" class="bc-step-btn" data-action="children-inc" ${state.children.length >= (state.config?.childPolicy?.maxPerStudio || 4) * state.studios ? 'disabled' : ''}>+</button>
+          </div>
+        </div>
+        ${state.children.length ? `
+        <div class="bc-admin-row bc-child-ages">
+          ${state.children.map((age, i) => `
+          <label class="bc-child-age">
+            <span class="bc-child-age-label">Child ${i + 1}</span>
+            <select class="bc-input bc-input-sm" data-input="child-age" data-idx="${i}">
+              ${Array.from({ length: 18 }, (_, n) => `<option value="${n}" ${Number(age) === n ? 'selected' : ''}>${n === 0 ? 'Under 1' : `${n} yr${n === 1 ? '' : 's'}`}${n < (state.config?.childPolicy?.freeUnderAge || 7) ? ' · free' : ''}</option>`).join('')}
+            </select>
+          </label>`).join('')}
+        </div>` : ''}
         <div class="bc-admin-row">
           <label class="bc-field-label">Early check-in</label>
           <div class="bc-stepper">
@@ -303,7 +331,7 @@ function renderReceipt() {
   const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
 
   const nightRows = q.nights.map(n => {
-    const tierLabel = n.tier === 'longWeekend' ? 'Long wknd' : n.tier === 'weekend' ? 'Weekend' : 'Weekday';
+    const tierLabel = n.tier === 'longWeekend' ? 'Peak' : n.tier === 'weekend' ? 'Prime' : 'Base';
     return `<div class="bc-rate-row">
       <span class="bc-rate-date">${fmtPretty(n.date)}</span>
       <span class="bc-rate-tier">${tierLabel}</span>
@@ -323,11 +351,16 @@ function renderReceipt() {
     <span class="bc-rate-amt">${formatINR((q.total + (tt.total || 0)) * studios)}</span>
   </div>` : '';
 
-  const guestRow = guestInfo.fee > 0 ? `<div class="bc-rate-row bc-rate-guest">
-    <span class="bc-rate-date">Extra guests</span>
-    <span class="bc-rate-tier">${guestInfo.extras} × ${formatINR(guestInfo.perGuestPerNight)} × ${q.totalNights}n</span>
-    <span class="bc-rate-amt">${formatINR(guestInfo.fee)}</span>
-  </div>` : '';
+  const guestRow = (guestInfo.extraAdults > 0 ? `<div class="bc-rate-row bc-rate-guest">
+    <span class="bc-rate-date">Extra adults</span>
+    <span class="bc-rate-tier">${guestInfo.extraAdults} × ${formatINR(guestInfo.adultRate)} × ${q.totalNights}n</span>
+    <span class="bc-rate-amt">${formatINR(guestInfo.adultFee)}</span>
+  </div>` : '')
+  + (guestInfo.chargeableChildren > 0 ? `<div class="bc-rate-row bc-rate-guest">
+    <span class="bc-rate-date">Children (7–17)</span>
+    <span class="bc-rate-tier">${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)} × ${q.totalNights}n</span>
+    <span class="bc-rate-amt">${formatINR(guestInfo.childFee)}</span>
+  </div>` : '');
 
   const discountRows = disc.amount > 0 ? `
     <div class="bc-rate-row bc-rate-subtotal">
@@ -379,7 +412,7 @@ function renderReceipt() {
           <div><div class="bc-label">Check-in</div><div class="bc-value">${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="bc-pill">+${state.earlyHours}h early</span>` : ''}</div></div>
           <div><div class="bc-label">Check-out</div><div class="bc-value">${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="bc-pill">+${state.lateHours}h late</span>` : ''}</div></div>
           <div><div class="bc-label">Nights</div><div class="bc-value">${q.totalNights}</div></div>
-          <div><div class="bc-label">Room</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'}${state.guests ? ` · ${state.guests} guest${state.guests === 1 ? '' : 's'}` : ''}</div></div>
+          <div><div class="bc-label">Room</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'} · ${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}</div></div>
         </div>
       </div>
 
@@ -433,7 +466,7 @@ function renderPrintReceipt() {
   const receiptId = state.bookingId || `NV-${ymd(today).replace(/-/g, '')}-${(state.guestMobile || '').replace(/\D/g, '').slice(-4) || 'XXXX'}`;
 
   const nightRows = q.nights.map(n => {
-    const tier = n.tier === 'longWeekend' ? 'Long weekend' : n.tier === 'weekend' ? 'Weekend' : 'Weekday';
+    const tier = n.tier === 'longWeekend' ? 'Peak' : n.tier === 'weekend' ? 'Prime' : 'Base';
     return `<tr><td>${fmtPretty(n.date)}</td><td>${tier}</td><td class="num">${formatINR(n.rate)}</td></tr>`;
   }).join('');
 
@@ -443,9 +476,12 @@ function renderPrintReceipt() {
   const studiosRow = studios > 1
     ? `<tr class="studios-row"><td>Per studio subtotal</td><td>× ${studios} studios</td><td class="num">${formatINR((q.total + (tt.total || 0)) * studios)}</td></tr>`
     : '';
-  const guestPdfRow = guestInfo.fee > 0
-    ? `<tr class="guest-row"><td>Extra guests</td><td>${guestInfo.extras} × ${formatINR(guestInfo.perGuestPerNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.fee)}</td></tr>`
-    : '';
+  const guestPdfRow = (guestInfo.extraAdults > 0
+    ? `<tr class="guest-row"><td>Extra adults</td><td>${guestInfo.extraAdults} × ${formatINR(guestInfo.adultRate)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.adultFee)}</td></tr>`
+    : '')
+    + (guestInfo.chargeableChildren > 0
+    ? `<tr class="guest-row"><td>Children (7–17)</td><td>${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.childFee)}</td></tr>`
+    : '');
   const subtotalRow = disc.amount > 0
     ? `<tr class="subtotal-row"><td colspan="2">Subtotal</td><td class="num">${formatINR(subtotal)}</td></tr>
        <tr class="discount-row"><td colspan="2">Discount · ${disc.label}</td><td class="num">−${formatINR(disc.amount)}</td></tr>`
@@ -485,7 +521,8 @@ function renderPrintReceipt() {
           <tr><td>Check-out</td><td>${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="br-pill">+${state.lateHours}h late</span>` : ''}</td></tr>
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
           <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'}</td></tr>
-          <tr><td>Guests</td><td>${state.guests}${guestInfo.extras > 0 ? ` (${guestInfo.extras} extra)` : ''}</td></tr>
+          <tr><td>Guests</td><td>${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}${guestInfo.extraAdults > 0 ? ` (${guestInfo.extraAdults} extra adult${guestInfo.extraAdults === 1 ? '' : 's'})` : ''}${guestInfo.chargeableChildren > 0 ? ` · ${guestInfo.chargeableChildren} paid` : ''}</td></tr>
+          ${state.children.length ? `<tr><td>Children</td><td>Ages ${state.children.map(a => Number(a) === 0 ? '<1' : a).join(', ')}</td></tr>` : ''}
         </table>
       </section>
 
@@ -569,20 +606,28 @@ function onClick(e) {
   if (a === 'studios-1') {
     state.studios = 1;
     const max = (state.config?.guestPolicy?.maxPerStudio || 4);
-    if (state.guests > max) state.guests = max;
+    if (state.adults > max) state.adults = max;
+    const maxKids = (state.config?.childPolicy?.maxPerStudio || 4);
+    if (state.children.length > maxKids) state.children = state.children.slice(0, maxKids);
     render(); return;
   }
   if (a === 'studios-2') {
     state.studios = 2;
-    if (state.guests <= 2) state.guests = 4;
+    if (state.adults <= 2) state.adults = 4;
     render(); return;
   }
-  if (a === 'guests-inc') {
+  if (a === 'adults-inc') {
     const max = (state.config?.guestPolicy?.maxPerStudio || 4) * state.studios;
-    state.guests = Math.min(max, state.guests + 1);
+    state.adults = Math.min(max, state.adults + 1);
     render(); return;
   }
-  if (a === 'guests-dec') { state.guests = Math.max(1, state.guests - 1); render(); return; }
+  if (a === 'adults-dec') { state.adults = Math.max(1, state.adults - 1); render(); return; }
+  if (a === 'children-inc') {
+    const maxKids = (state.config?.childPolicy?.maxPerStudio || 4) * state.studios;
+    if (state.children.length < maxKids) state.children = [...state.children, CHILD_DEFAULT_AGE];
+    render(); return;
+  }
+  if (a === 'children-dec') { state.children = state.children.slice(0, -1); render(); return; }
   if (a === 'early-inc') { state.earlyHours = Math.min(tx.maxEarlyHours || 6, state.earlyHours + 1); render(); return; }
   if (a === 'early-dec') { state.earlyHours = Math.max(0, state.earlyHours - 1); render(); return; }
   if (a === 'late-inc')  { state.lateHours  = Math.min(tx.maxLateHours || 9, state.lateHours + 1);  render(); return; }
@@ -667,6 +712,16 @@ function onInput(e) {
   if (key === 'notes')       { state.notes = input.value; updatePreview(); return; }
   if (key === 'discValue')   { state.discountValue = Math.max(0, parseFloat(input.value) || 0); updatePreview(); return; }
   if (key === 'advancePaid') { state.advancePaid = Math.max(0, parseInt(input.value) || 0); updatePreview(); return; }
+  if (key === 'child-age') {
+    const idx = parseInt(input.getAttribute('data-idx'), 10);
+    if (!Number.isNaN(idx) && idx >= 0 && idx < state.children.length) {
+      const next = state.children.slice();
+      next[idx] = Math.max(0, parseInt(input.value, 10) || 0);
+      state.children = next;
+      updatePreview();
+    }
+    return;
+  }
   // In-progress "add a line" inputs — store without re-rendering (they only matter on "Add").
   if (key === 'addonLabel')  { state.newAddonLabel = input.value; return; }
   if (key === 'addonAmount') { state.newAddonAmount = input.value; return; }

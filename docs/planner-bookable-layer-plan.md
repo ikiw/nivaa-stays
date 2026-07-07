@@ -15,7 +15,7 @@ Both are delivered by adding **one optional field** to the `Place` type. No sche
 
 | Stop | Itinerary idx | Link | Type | Confidence / note |
 |---|---|---|---|---|
-| **Nivaa Stays** (home base) | 0 | `https://nivaastays.com/booking` | stay | High — rate-picker → WhatsApp (`wa.me/919620364554`, code NIVAA10). No instant checkout. |
+| **Nivaa Stays** (home base) | 0 | `https://nivaastays.com/booking` | stay | High — rate-picker → WhatsApp (`wa.me/919620364554`). No instant checkout. |
 | **Matrimandir (Auroville)** | 62 | `https://matrimandir.org/how-to-visit/` | ticket | High. Free Viewing-Point pass in person at the Visitors Centre **+** Inner-Chamber **advance online pass** (`mmaccess.auroville.org.in`, time-gated 7am–12pm IST, closed Sun/Tue, maintenance May 18–Jun 14 2026). ⚠️ Do **not** use `auroville.org/page/matrimandir-pass` — returns HTTP 500. |
 | **Auroville Visitor Centre** | 106 | `https://matrimandir.org/how-to-visit/` | ticket | High — where the free viewing pass is collected; same link. |
 | **Scuba** (Temple Adventures) | 19 | `https://www.templeadventures.com/book-appointments/` | activity | High operator. **Contact-to-book** by phone (+91 99402 19449) / email (`bookings@templeadventures.com`), not instant checkout. ⚠️ `templeadventures.in` is down. |

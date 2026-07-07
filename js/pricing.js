@@ -1,5 +1,5 @@
 // Nivaa Stays — pricing logic (pure, no DOM).
-// Rules: weekday Mon–Fri = ₹2k; weekend Sat/Sun = ₹2.5k.
+// Rules: weekday Mon–Thu = ₹2k; weekend Fri/Sat/Sun = ₹2.5k.
 // Long-weekend bump (₹3k) — only the first two nights of the 3-day block:
 //   • Fri-holiday  → bump Fri + Sat (Sun stays at normal weekend rate)
 //   • Mon-holiday  → bump Sat + Sun (Mon stays at normal weekday rate)
@@ -152,18 +152,44 @@ export function autoDiscountFor(quoteContext, config) {
   return matching.reduce((best, r) => (best && best.value > r.value ? best : r));
 }
 
-// Compute capacity + fees for the requested guest count.
-// Charges flat ₹extraGuestFeePerNight for each guest above the included
-// (default × studios) capacity, multiplied by the number of nights.
-export function guestFeeFor(guests, studios, nights, config) {
+// Compute capacity + fees for the requested adults + children.
+// Adults: ₹extraGuestFeePerNight each above the included (default × studios)
+// capacity. Children: free under childPolicy.freeUnderAge, else ₹feePerNight
+// each for ages freeUnderAge…maxChildAge. All fees are per night.
+// `childAges` may be an array of ages (numbers) or a bare count (treated as
+// that many chargeable children).
+export function guestFeeFor(adults, childAges, studios, nights, config) {
   const gp = config.guestPolicy;
-  if (!gp) return { included: 0, max: 0, extras: 0, fee: 0 };
+  if (!gp) return { included: 0, max: 0, extras: 0, extraAdults: 0, adultRate: 0, adultFee: 0, childrenTotal: 0, chargeableChildren: 0, childRate: 0, childFee: 0, fee: 0, perGuestPerNight: 0 };
   const included = gp.defaultPerStudio * studios;
   const max = gp.maxPerStudio * studios;
-  const clamped = Math.max(1, Math.min(guests || included, max));
-  const extras = Math.max(0, clamped - included);
-  const fee = extras * (gp.extraGuestFeePerNight || 0) * nights;
-  return { included, max, extras, fee, perGuestPerNight: gp.extraGuestFeePerNight || 0 };
+  const adultRate = gp.extraGuestFeePerNight || 0;
+  const clampedAdults = Math.max(1, Math.min(adults || included, max));
+  const extraAdults = Math.max(0, clampedAdults - included);
+  const adultFee = extraAdults * adultRate * nights;
+
+  const cp = config.childPolicy || {};
+  const freeUnder = cp.freeUnderAge != null ? cp.freeUnderAge : 0;
+  const maxChildAge = cp.maxChildAge != null ? cp.maxChildAge : 17;
+  const childRate = cp.feePerNight || 0;
+  const ages = Array.isArray(childAges)
+    ? childAges.map(Number).filter(a => !Number.isNaN(a))
+    : [];
+  const childrenTotal = Array.isArray(childAges) ? ages.length : Math.max(0, Number(childAges) || 0);
+  const chargeableChildren = Array.isArray(childAges)
+    ? ages.filter(a => a >= freeUnder && a <= maxChildAge).length
+    : childrenTotal; // bare count → assume all chargeable
+  const childFee = chargeableChildren * childRate * nights;
+
+  const fee = adultFee + childFee;
+  return {
+    included, max,
+    extraAdults, adultRate, adultFee,
+    childrenTotal, chargeableChildren, childRate, childFee,
+    fee,
+    // Back-compat aliases (older callers that referenced a single extra-guest fee)
+    extras: extraAdults, perGuestPerNight: adultRate
+  };
 }
 
 // Flat pet charge: a single ₹feePerNight add-on per night when the guest is

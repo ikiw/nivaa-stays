@@ -574,27 +574,6 @@ header.sticky-nav {
 }
 .room-carousel .rc-dot.active::before { background: #fff; transform: scale(1.3); }
 
-.coupon-banner {
-  background: linear-gradient(135deg, var(--brand-teal) 0%, var(--brand-teal-soft) 100%);
-  color: #fff;
-  border: 1px dashed var(--brand-gold);
-  border-radius: 14px;
-  padding: 1.5rem;
-  display: flex; align-items: center; gap: 1.25rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
-.coupon-code {
-  font-family: 'Fraunces', serif;
-  font-size: 1.6rem;
-  color: var(--brand-gold);
-  letter-spacing: 0.12em;
-  border: 1px dashed var(--brand-gold);
-  padding: 0.4rem 1rem;
-  border-radius: 8px;
-  background: rgba(0,0,0,0.15);
-}
-
 .whatsapp-float {
   position: fixed;
   bottom: 20px; right: 20px;
@@ -930,7 +909,7 @@ footer a:hover { color: var(--brand-gold-soft); }
         "priceCurrency": "INR",
         "price": "2000",
         "unitCode": "DAY",
-        "name": "Per night, weekday rate (Sat/Sun ₹2,500; long-weekend nights ₹3,000)"
+        "name": "Per night, base rate (Prime nights ₹2,500; Peak nights ₹3,000)"
       },
       "availability": "https://schema.org/InStock",
       "itemOffered": { "@id": "https://nivaastays.com/#room-blue-suite" }
@@ -946,7 +925,7 @@ footer a:hover { color: var(--brand-gold-soft); }
         "priceCurrency": "INR",
         "price": "2000",
         "unitCode": "DAY",
-        "name": "Per night, weekday rate (Sat/Sun ₹2,500; long-weekend nights ₹3,000)"
+        "name": "Per night, base rate (Prime nights ₹2,500; Peak nights ₹3,000)"
       },
       "availability": "https://schema.org/InStock",
       "itemOffered": { "@id": "https://nivaastays.com/#room-family-suite" }
@@ -973,7 +952,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     {
       "@type": "Question",
       "name": "What are the room rates at Nivaa Stays?",
-      "acceptedAnswer": { "@type": "Answer", "text": "Weekday rates start at ₹2,000 per night, weekends at ₹2,500, and long weekends at ₹3,000. Book via our website with code NIVAA10 for an additional 10% discount." }
+      "acceptedAnswer": { "@type": "Answer", "text": "Rooms start at ₹2,000 per night on Base nights, ₹2,500 on Prime nights, and ₹3,000 on Peak nights. Book direct via WhatsApp or phone for our best rate." }
     },
     {
       "@type": "Question",
@@ -1160,7 +1139,7 @@ footer a:hover { color: var(--brand-gold-soft); }
           <div class="flex items-center justify-between mt-auto">
             <div>
               <div class="serif text-2xl text-teal" data-today-rate>₹2,000<span class="text-sm text-[color:var(--brand-muted)] font-normal">*/tonight</span></div>
-              <div class="text-xs text-[color:var(--brand-muted)]" data-today-tier>Today's rate · 10% off with NIVAA10</div>
+              <div class="text-xs text-[color:var(--brand-muted)]" data-today-tier>Today's rate</div>
             </div>
             <a href="booking.html" class="btn-outline-teal text-sm">Book</a>
           </div>
@@ -1191,7 +1170,7 @@ footer a:hover { color: var(--brand-gold-soft); }
           <div class="flex items-center justify-between mt-auto">
             <div>
               <div class="serif text-2xl text-teal" data-today-rate>₹2,000<span class="text-sm text-[color:var(--brand-muted)] font-normal">*/tonight</span></div>
-              <div class="text-xs text-[color:var(--brand-muted)]" data-today-tier>Today's rate · 10% off with NIVAA10</div>
+              <div class="text-xs text-[color:var(--brand-muted)]" data-today-tier>Today's rate</div>
             </div>
             <a href="booking.html" class="btn-outline-teal text-sm">Book</a>
           </div>
@@ -1199,22 +1178,11 @@ footer a:hover { color: var(--brand-gold-soft); }
       </article>
     </div>
 
-    <p class="text-xs text-[color:var(--brand-muted)] mt-4">*T&C apply. Rates may vary based on season and availability. Offers may not be applicable during long weekends and peak periods.</p>
+    <p class="text-xs text-[color:var(--brand-muted)] mt-4">*T&C apply. Rates may vary based on season and availability. Offers may not be applicable during peak periods.</p>
 
     <div class="mt-8 text-center">
       <a href="booking.html" class="btn-gold">Check Live Rates & Book →</a>
       <p class="text-xs text-[color:var(--brand-muted)] mt-3">Pick your dates to see exact per-night pricing and book on WhatsApp.</p>
-    </div>
-
-    <!-- Coupon -->
-    <div class="coupon-banner mt-10">
-      <div>
-        <div class="eyebrow mb-1" style="color:var(--brand-gold-soft)">Website-Exclusive Offer</div>
-        <div class="serif text-2xl mb-1">Save 10% when you book direct</div>
-        <p class="text-white/80 text-sm">Mention this code on WhatsApp or call to claim your discount.</p>
-      </div>
-      <div class="coupon-code">NIVAA10</div>
-      <a href="https://wa.me/919620364554?text=Hi%2C%20I%27d%20like%20to%20book%20with%20coupon%20NIVAA10" target="_blank" rel="noopener" class="btn-gold">Claim on WhatsApp</a>
     </div>
 
     <!-- OTA strip -->
@@ -1222,7 +1190,7 @@ footer a:hover { color: var(--brand-gold-soft); }
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
         <div class="text-center md:text-left">
           <div class="eyebrow mb-1" style="color:var(--brand-muted)">Also Bookable On</div>
-          <p class="text-sm text-[color:var(--brand-muted)]">Prefer an OTA? We're listed on leading platforms. <span class="text-teal font-semibold">Book direct for 10% off with NIVAA10.</span></p>
+          <p class="text-sm text-[color:var(--brand-muted)]">Prefer an OTA? We're listed on leading platforms. <span class="text-teal font-semibold">Book direct with us for our best rate.</span></p>
         </div>
         <div class="flex flex-wrap items-center justify-center gap-3">
           <a href="https://www.airbnb.co.in/rooms/1437389882932703471" target="_blank" rel="noopener" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-[#e8ebe8] hover:border-gold transition bg-white text-sm font-semibold text-teal">
@@ -1760,7 +1728,7 @@ footer a:hover { color: var(--brand-gold-soft); }
     <details class="faq-item"><summary>Do you serve food?</summary><div>Yes. We offer home-cooked meals on request — vegetarian, non-vegetarian, and our specialty seafood dishes. Please request meals at the time of booking or on arrival.</div></details>
     <details class="faq-item"><summary>Do you have bike rentals?</summary><div>Yes. Two-wheeler rentals are available at the property — convenient for exploring Puducherry, getting to JIPMER, or running errands.</div></details>
     <details class="faq-item"><summary>Can you arrange birthday or anniversary decorations?</summary><div>Absolutely. We arrange custom celebration decorations — balloons, rose-petal setups, cake, bathtub rose-petal baths for anniversaries, and more. Tell us the occasion at booking and we'll handle the setup.</div></details>
-    <details class="faq-item"><summary>What are the room rates?</summary><div>Weekday (Mon–Fri) rates start at ₹2,000/night, weekend (Sat/Sun) at ₹2,500/night. Long-weekend nights — Fri+Sat when a Friday is a public holiday, or Sat+Sun when a Monday is a public holiday — are at ₹3,000/night. Use code <strong>NIVAA10</strong> when booking through our website for an extra 10% off.</div></details>
+    <details class="faq-item"><summary>What are the room rates?</summary><div>Rooms start at ₹2,000/night on Base nights, ₹2,500 on Prime nights, and ₹3,000 on Peak (holiday) nights. The live rate calendar shows the exact price for every date. Book direct via WhatsApp or phone for our best rate.</div></details>
     <details class="faq-item"><summary>Do the rooms have bathtub facilities?</summary><div>Yes — our rooms include spacious bathtub bathrooms with premium tiling.</div></details>
     <details class="faq-item"><summary>What are check-in and check-out times?</summary><div>Check-in is from 12:00 PM and check-out is at 11:00 AM. Flexible timing can often be arranged for full-house bookings — please ask.</div></details>
     <details class="faq-item"><summary>Is Nivaa Stays suitable for students and parents visiting JIPMER?</summary><div>Absolutely. It's popular with students joining JIPMER, families visiting for counselling or exams, and anyone needing more space than a hotel room.</div></details>
@@ -1775,10 +1743,10 @@ footer a:hover { color: var(--brand-gold-soft); }
     <div class="eyebrow">Book Your Stay</div>
     <div class="divider-gold divider-center"></div>
     <h2 class="serif text-3xl md:text-5xl mb-6 max-w-3xl mx-auto">Ready for a calm, comfortable stay near JIPMER?</h2>
-    <p class="text-white/80 max-w-xl mx-auto mb-10">Call or WhatsApp us directly — we'll confirm availability and hold your dates. Use code <strong class="text-gold">NIVAA10</strong> for 10% off.</p>
+    <p class="text-white/80 max-w-xl mx-auto mb-10">Call or WhatsApp us directly — we'll confirm availability and hold your dates.</p>
 
     <div class="flex flex-wrap justify-center gap-3 mb-12">
-      <a href="https://wa.me/919620364554?text=Hi%20Nivaa%20Stays%2C%20I%27d%20like%20to%20check%20availability%20%28code%20NIVAA10%29." class="btn-whatsapp" target="_blank" rel="noopener">
+      <a href="https://wa.me/919620364554?text=Hi%20Nivaa%20Stays%2C%20I%27d%20like%20to%20check%20availability." class="btn-whatsapp" target="_blank" rel="noopener">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
         WhatsApp +91 96203 64554
       </a>
@@ -1939,12 +1907,12 @@ footer a:hover { color: var(--brand-gold-soft); }
       const t = new Date();
       const ymd = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
       const r = rateForDate(ymd, cfg);
-      const label = r.tier === 'longWeekend' ? 'Long-weekend rate' : r.tier === 'weekend' ? 'Weekend rate' : 'Weekday rate';
+      const label = r.tier === 'longWeekend' ? 'Peak rate' : r.tier === 'weekend' ? 'Prime rate' : 'Base rate';
       document.querySelectorAll('[data-today-rate]').forEach(el => {
         el.innerHTML = `${formatINR(r.rate)}<span class="text-sm text-[color:var(--brand-muted)] font-normal">*/tonight</span>`;
       });
       document.querySelectorAll('[data-today-tier]').forEach(el => {
-        el.textContent = `${label} for today · 10% off with NIVAA10`;
+        el.textContent = `${label} for today`;
       });
     } catch (e) { /* keep static fallback */ }
   })();

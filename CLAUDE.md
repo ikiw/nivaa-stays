@@ -152,13 +152,13 @@ Room booking cards on `index.html` use a small vanilla JS carousel: `[data-carou
 
 ## Pricing config
 
-Live rates and the inline rate-picker calendar on `index.html` are driven by `pricing.json`. Three tiers:
+Live rates and the inline rate-picker calendar on `index.html` are driven by `pricing.json`. Three tiers — customer-facing labels are **Base / Prime / Peak** (internal keys stay `weekday`/`weekend`/`longWeekend`, so a Friday priced as Prime doesn't read to guests as "a weekday charged at the weekend rate"):
 
-| Tier | Default rate | Days |
-|---|---|---|
-| Weekday | ₹2,000 | Mon–Thu nights |
-| Weekend | ₹2,500 | Fri/Sat/Sun nights |
-| Long weekend | ₹3,000 | Full Fri+Sat+Sun block when a holiday in `holidays[]` falls on Mon or Fri |
+| Tier (internal key) | Label | Default rate | Nights |
+|---|---|---|---|
+| `weekday` | Base | ₹2,000 | Mon–Thu nights |
+| `weekend` | Prime | ₹2,500 | Fri/Sat/Sun nights |
+| `longWeekend` | Peak | ₹3,000 | Full Fri+Sat+Sun block when a holiday in `holidays[]` falls on Mon or Fri |
 
 Files:
 - `data/pricing.json` — tiers, weekend day indices, holiday list, manual long-weekend overrides, advance-payment policy, auto-discounts (4+ nights = 5%), transit/late-checkout fees, bike rental rates.
@@ -170,7 +170,7 @@ Long-weekend trigger logic:
 - Holiday on **Monday** → bump the prior Fri/Sat/Sun.
 - Holiday on Tue/Wed/Thu/Sat/Sun → no auto-bump (use `manualLongWeekends` if needed).
 
-Hardcoded price text on landing pages (`*-stay-*.html`, `guest-house-near-jipmer.html`) needs to stay in sync with `pricing.json` manually — the picker only lives on `index.html`. Standard line is `Weekday ₹2,000* · Weekend ₹2,500* · Long weekend ₹3,000*.`
+Hardcoded price text on landing pages (`*-stay-*.html`, `guest-house-near-jipmer.html`) needs to stay in sync with `pricing.json` manually — the picker only lives on `index.html`. Standard line is `Base ₹2,000* · Prime ₹2,500* · Peak ₹3,000*.`
 
 Edit `pricing.json` when:
 - A holiday year rolls over (add the next year's holidays).
