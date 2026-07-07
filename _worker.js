@@ -23,15 +23,22 @@ function withSecurityHeaders(res, cacheControl) {
 // are immutable; stable media/fonts get a month.
 function cacheControlFor(url) {
   const p = url.pathname;
+  const last = p.slice(p.lastIndexOf('/'));
+  const isDocument = p.endsWith('/') || p.endsWith('.html') || !last.includes('.');
+
+  // HTML / SPA navigation docs must always revalidate so deploys ship instantly.
+  // Check this BEFORE the ?v= rule: the planner SPA uses ?v=day (a view param) on
+  // its document URL, which must NOT be treated as an immutable fingerprinted asset
+  // — otherwise the browser caches a stale HTML shell pointing at a deleted bundle.
+  if (isDocument) {
+    return 'public, max-age=0, must-revalidate';
+  }
+  // Fingerprinted assets: cache-busted ?v=<hash> refs on js/css + Vite content-hashed bundles.
   if (url.searchParams.has('v') || p.includes('/pondicherry-itinerary/assets/')) {
     return 'public, max-age=31536000, immutable';
   }
   if (/\.(avif|webp|png|jpe?g|gif|svg|ico|woff2?|ttf|otf)$/i.test(p)) {
     return 'public, max-age=2592000';
-  }
-  const last = p.slice(p.lastIndexOf('/'));
-  if (p.endsWith('/') || p.endsWith('.html') || !last.includes('.')) {
-    return 'public, max-age=0, must-revalidate';
   }
   return null; // leave manifest/json/etc. as served
 }
