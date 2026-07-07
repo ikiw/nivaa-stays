@@ -249,7 +249,7 @@ export default function App() {
       {/* top bar card — Pondicherry French-quarter vibe behind a dark scrim */}
       <Paper elevation={0} sx={{ flexShrink: 0, borderRadius: 0, border: 'none',
         bgcolor: 'transparent' }}>
-        <Box sx={{ width: '100%', maxWidth: showDesktopLanding ? 1300 : 'none', mx: 'auto', display: 'flex', alignItems: 'center', gap: 2, px: 0.75, py: 0.75 }}>
+        <Box sx={{ width: '100%', maxWidth: showDesktopLanding ? 1300 : 'none', mx: 'auto', display: 'flex', alignItems: 'center', gap: 2, px: 0.75, py: 0.75, '@media (min-width: 1660px)': { maxWidth: showDesktopLanding ? 1680 : 'none' } }}>
           <Box sx={{ flex: '0 0 300px', minWidth: 0 }}>{<Brand onClick={resetPlanner} />}</Box>
           <Box sx={{ flex: '0 1 540px', minWidth: 360 }}>{<AiBar isMobile={isMobile} query={aiQuery} setQuery={setAiQuery} onPlan={aiPlan} busy={aiBusy} />}</Box>
           <Stack direction="row" spacing={1.25} alignItems="center" sx={{ ml: 'auto', minWidth: 0 }}>
@@ -270,8 +270,11 @@ export default function App() {
       <HotelsDialog open={hotelsOpen} onClose={closeHotels} cohort={hotelCohort} tier={hotelTier} onCohortChange={updateHotelCohort} onTierChange={updateHotelTier} />
       <RentalsDialog open={rentalsOpen} onClose={() => setRentalsOpen(false)} />
       {showDesktopLanding ? (
-        <Box sx={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 1300, mx: 'auto' }}>
+        <Box sx={{ flex: 1, minHeight: 0, width: '100%', maxWidth: 1300, mx: 'auto', '@media (min-width: 1660px)': { maxWidth: 1680 } }}>
           <PlannerLanding planner={planner} />
+          {selectedIdx != null && data.places[selectedIdx] && (
+            <PlaceInfoCard key={selectedIdx} place={data.places[selectedIdx]} onClose={() => setSelectedIdx(null)} />
+          )}
         </Box>
       ) : (
       <Box sx={{ flex: 1, minHeight: 0, width: '100%', display: 'grid', gap: 1.25,
