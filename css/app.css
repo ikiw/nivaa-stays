@@ -20,7 +20,7 @@
   flex-wrap: wrap;
   justify-content: space-between;
 }
-.rp-studios-group, .rp-guests-group, .rp-pets-group {
+.rp-studios-group, .rp-guests-group, .rp-pets-group, .rp-children-group {
   display: flex;
   align-items: center;
   gap: 0.6rem;
@@ -40,6 +40,26 @@
   color: var(--brand-muted);
   letter-spacing: 0.04em;
 }
+.rp-child-ages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px dashed #e8ebe8;
+}
+.rp-child-age { display: inline-flex; align-items: center; gap: 0.4rem; }
+.rp-child-age-label { font-size: 0.78rem; color: var(--brand-muted); font-weight: 600; }
+.rp-child-age-select {
+  border: 1px solid #d8dedb;
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--brand-ink);
+}
+.rp-child-age-select:focus { outline: none; border-color: var(--brand-teal); }
 .rp-studios-label {
   font-size: 0.78rem;
   letter-spacing: 0.14em;
@@ -88,6 +108,8 @@
 .rp-row-guest .rp-row-tier { color: var(--brand-muted); font-size: 0.74rem; }
 .rp-row-pet { color: #8b6f12; }
 .rp-row-pet .rp-row-tier { color: var(--brand-muted); font-size: 0.74rem; }
+.rp-row-addon { color: #8b6f12; }
+.rp-row-addon .rp-row-tier { color: var(--brand-muted); font-size: 0.74rem; }
 .rp-header {
   display: flex;
   align-items: center;
@@ -497,6 +519,10 @@
 .rp-admin-name { flex: 1; min-width: 140px; }
 .rp-admin-mobile { flex: 1; min-width: 140px; }
 .rp-share-btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+.rp-admin-addons { display: flex; flex-direction: column; gap: 0.6rem; }
+.rp-admin-addon-item { justify-content: space-between; }
+.rp-admin-addon-label { flex: 1; min-width: 0; font-size: 0.88rem; color: var(--brand-ink); }
+.rp-admin-addon-amt { font-variant-numeric: tabular-nums; font-weight: 600; color: var(--brand-teal-dark); font-size: 0.88rem; }
 
 /* Print-only quotation. Hidden on screen, shown on print. */
 #rp-print-quote { display: none; }
@@ -604,6 +630,8 @@
   .pq-rate-tbl .guest-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .pq-rate-tbl .pet-row td { padding: 5pt 4pt; color: #8b6f12; }
   .pq-rate-tbl .pet-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
+  .pq-rate-tbl .addon-row td { padding: 5pt 4pt; color: #8b6f12; }
+  .pq-rate-tbl .addon-row td:nth-child(2) { color: #5B6B68; font-size: 9pt; }
   .pq-rate-tbl .subtotal-row td { padding-top: 8pt; color: #5B6B68; border-top: 1pt dashed #d8dedb; border-bottom: none; }
   .pq-rate-tbl .discount-row td { color: #1a7a4a; font-weight: 600; border-bottom: none; }
   /* Render the TOTAL/Advance/Balance footer ONCE — browsers otherwise repeat a
@@ -1263,6 +1291,9 @@
   box-shadow: 0 0 0 2px rgba(201,162,39,0.15);
 }
 .bc-input-sm { flex: 0 0 auto; width: 5rem; }
+.bc-child-ages { flex-wrap: wrap; gap: 0.6rem; }
+.bc-child-age { display: inline-flex; align-items: center; gap: 0.35rem; }
+.bc-child-age-label { font-size: 0.8rem; color: var(--brand-muted); font-weight: 600; }
 .bc-toggle {
   display: flex;
   border: 1px solid #d8dedb;

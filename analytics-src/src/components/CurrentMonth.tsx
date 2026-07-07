@@ -45,7 +45,7 @@ export default function CurrentMonth({ data }: { data: AnalyticsData }) {
     ? <>On pace for <b>{fmtFull(projected)}</b> ({projPct}% of target).</>
     : <>At the current pace you'll land ~<b>{fmtFull(projected)}</b> ({projPct}%) — close the gap below.</>);
   if (openWkndNights > 0) tips.push(<><b>{openWkndNights}</b> weekend room-night{openWkndNights === 1 ? '' : 's'} open (premium rate) — fill {openWknd.slice(0, 3).map((d) => dateLabelShort(d.date)).join(', ')} first.</>);
-  if (openNights > 0) tips.push(<><b>{openNights}</b> room-night{openNights === 1 ? '' : 's'} still open this month — push direct bookings (code NIVAA10) and refresh OTA calendars.</>);
+  if (openNights > 0) tips.push(<><b>{openNights}</b> room-night{openNights === 1 ? '' : 's'} still open this month — push direct bookings and refresh OTA calendars.</>);
   else tips.push(<>Rest of the month is fully booked 🙌</>);
 
   const lvl = tgtLevel(pct);
