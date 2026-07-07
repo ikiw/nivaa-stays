@@ -6,7 +6,7 @@
 //   • Apps Script API requests: never cached (always live data)
 //   • External CDN (google fonts, GSI): pass through (browser cache)
 
-const CACHE_VERSION = 'nivaa-1f7bbec8';
+const CACHE_VERSION = 'nivaa-d2cee40c';
 const SHELL_ASSETS = [
   '/admin.html',
   '/admin-rank.html',
@@ -53,6 +53,24 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+// This SW is admin-shell-focused, but registering it from /sw.js gives it
+// root scope over the whole origin. Only intercept requests that belong to the
+// admin shell; let everything else fall through to the network + Cloudflare
+// cache headers. Critically, this keeps the SW away from:
+//   • the /pondicherry-itinerary/ + /admin-analytics/ SPAs — they ship their
+//     own content-hashed bundles, so a stale cached HTML shell would point at a
+//     deleted hash and 404 (the "stuck on About shell after deploy" bug).
+//   • public marketing pages (they intentionally don't use the SW).
+//   • Google's /kmcd/ first-party gtag endpoint (must always hit the network).
+function isAdminScope(url) {
+  const p = url.pathname;
+  if (p === '/admin.html' || p === '/admin-rank.html' || p === '/admin-competitors.html') return true;
+  if (p === '/manifest.json' || p === '/data/pricing.json') return true;
+  if (p.startsWith('/css/') || p.startsWith('/js/')) return true;
+  if (p.startsWith('/assets/') || p.startsWith('/images/qr/')) return true;
+  return false;
+}
+
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
@@ -66,6 +84,9 @@ self.addEventListener('fetch', (event) => {
 
   // Pass through other cross-origin (Google Fonts, Tailwind CDN, gtag, GSI)
   if (url.origin !== self.location.origin) return;
+
+  // Everything outside the admin shell bypasses the SW entirely
+  if (!isAdminScope(url)) return;
 
   // HTML pages: network-first
   const isHtml = req.headers.get('accept')?.includes('text/html') ||
