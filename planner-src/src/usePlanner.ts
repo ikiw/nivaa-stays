@@ -106,8 +106,11 @@ export function usePlanner() {
           : stops.map(enc).join('-'));
       }
     }
-    if (view === 'day' || view === 'places' || view === 'about') q.set('v', view);
-    if ((view === 'day' || view === 'places') && (mode === 'timeline' || mode === 'map')) q.set('m', mode);
+    // 'day' + 'timeline' are the defaults — leave them off the URL so the entry
+    // point stays a clean /pondicherry-itinerary/ (parseSearch/hydration fall back
+    // to day+timeline when absent). Only non-default views/modes are worth encoding.
+    if (view === 'places' || view === 'about') q.set('v', view);
+    if ((view === 'day' || view === 'places') && mode === 'map') q.set('m', mode);
     if (tripDate && tripDate !== todayISO()) q.set('d', tripDate);  // only a non-today date is worth sharing
     const modal = modalOverride === undefined ? (hotelsOpen ? 'stays' : null) : modalOverride;
     if (modal === 'stays') {
