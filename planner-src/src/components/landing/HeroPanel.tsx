@@ -85,7 +85,7 @@ export default function HeroPanel({ planner }: { planner: Planner }) {
                 sx={{ overflow: 'hidden', display: 'grid', gridTemplateColumns: '76px minmax(0, 1fr) 36px', alignItems: 'stretch', minHeight: 62, borderRadius: '18px', cursor: 'pointer',
                   border: '1.25px solid rgba(230,195,90,0.28)',
                   background: 'linear-gradient(135deg, rgba(255,255,255,0.13), rgba(17,19,25,0.34) 40%, rgba(6,8,13,0.22))',
-                  backdropFilter: 'blur(24px) saturate(1.28)',
+                  backdropFilter: 'blur(4px) saturate(1.12)',
                   boxShadow: '0 12px 30px rgba(0,0,0,0.20), inset 0 1px 0 rgba(255,255,255,0.14), inset 0 -1px 0 rgba(230,195,90,0.08)',
                   transition: 'transform .12s, border-color .12s, background-color .12s',
                   '&:hover': { transform: 'translateY(-1px)', borderColor: 'rgba(230,195,90,0.50)', background: 'linear-gradient(135deg, rgba(255,255,255,0.17), rgba(17,19,25,0.40) 40%, rgba(6,8,13,0.28))' } }}>
