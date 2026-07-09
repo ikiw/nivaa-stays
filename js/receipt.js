@@ -761,7 +761,7 @@ async function init() {
     const q = quoteForRange(state.checkIn, state.checkOut, state.config);
     const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
     const studios = state.studios || 1;
-    const guestInfo = guestFeeFor(state.guests, studios, q.totalNights, state.config);
+    const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
     const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
     if (subtotal > state.sheetAmount) {
       state.discountType = 'amt';

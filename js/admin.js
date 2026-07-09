@@ -46,7 +46,7 @@ function receiptUrl(b) {
   const platform = b.platform || b.onlineOffline || '';
   if (platform && platform !== 'Direct') p.set('platform', platform);
   const guests = parseInt(b.num_guests) || 0;
-  if (guests > 0) p.set('guests', String(guests));
+  if (guests > 0) p.set('adults', String(guests));
   const advRaw = String(b.advance || b.paid || '').replace(/[^0-9.]/g, '');
   const adv = parseInt(advRaw) || 0;
   if (adv > 0) p.set('adv', String(adv));
