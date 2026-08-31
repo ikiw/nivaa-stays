@@ -754,9 +754,8 @@ async function init() {
 
   parseUrlState();
 
-  // Auto-calculate discount from sheet amount: if the bookings sheet total is
-  // lower than the computed subtotal, the difference is applied as a ₹ discount
-  // so the receipt total matches the sheet exactly.
+  // Reconcile the live-rate subtotal with the authoritative bookings-sheet
+  // amount so negotiated or manually entered bookings retain their exact total.
   if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
     const q = quoteForRange(state.checkIn, state.checkOut, state.config);
     const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
@@ -766,6 +765,11 @@ async function init() {
     if (subtotal > state.sheetAmount) {
       state.discountType = 'amt';
       state.discountValue = subtotal - state.sheetAmount;
+    } else if (subtotal < state.sheetAmount) {
+      state.addons.unshift({
+        label: 'Booking rate adjustment',
+        amount: state.sheetAmount - subtotal
+      });
     }
   }
 

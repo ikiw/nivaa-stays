@@ -1,7 +1,7 @@
 // Nivaa Stays — inline two-month calendar picker with per-night pricing.
 // Renders into <div id="rate-picker"></div>. Uses pricing.js for rate lookups.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, advancePaymentFor, guestFeeFor, petFeeFor } from './pricing.js';
+import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, advancePaymentFor, guestFeeFor, petFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const CHILD_DEFAULT_AGE = 10; // new children start chargeable; user sets the exact age
@@ -125,7 +125,7 @@ function computeQuote() {
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
   const petInfo = petFeeFor(state.hasPet, q.totalNights, state.config);
   const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee;
-  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
+  const disc = computeDiscount(subtotal);
   // Custom add-ons are a flat addition on top — not discounted.
   const addonsTotal = state.addons.reduce((s, a) => s + (Number(a.amount) || 0), 0);
   const grandTotal = Math.max(0, subtotal - disc.amount) + addonsTotal;
@@ -261,8 +261,8 @@ function renderBreakdown() {
   </div>`;
 }
 
-function computeDiscount(subtotal, quoteContext) {
-  // Manual discount (set via admin or URL) overrides auto.
+function computeDiscount(subtotal) {
+  // Discounts on quotes are applied only when explicitly set by an admin or URL.
   const manual = Number(state.discountValue) || 0;
   if (manual > 0) {
     if (state.discountType === 'pct') {
@@ -272,44 +272,16 @@ function computeDiscount(subtotal, quoteContext) {
     const amt = Math.min(subtotal, manual);
     return { amount: amt, label: `${formatINR(amt)} off`, source: 'manual' };
   }
-  // Fall back to the best-matching auto-discount rule.
-  const rule = quoteContext ? autoDiscountFor(quoteContext, state.config) : null;
-  if (!rule) return { amount: 0, label: '', source: null };
-  if (rule.type === 'pct') {
-    return {
-      amount: Math.round(subtotal * rule.value / 100),
-      label: `${rule.value}% off · ${rule.name}`,
-      source: 'auto',
-      ruleId: rule.id
-    };
-  }
-  return {
-    amount: Math.min(subtotal, rule.value),
-    label: `${formatINR(rule.value)} off · ${rule.name}`,
-    source: 'auto',
-    ruleId: rule.id
-  };
+  return { amount: 0, label: '', source: null };
 }
 
 function renderAdminPanel() {
-  // Surface any active auto-discount so admin knows what would apply if they
-  // leave the manual field at 0.
-  let autoNote = '';
-  if (state.checkIn && state.checkOut) {
-    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const rule = autoDiscountFor({ totalNights: q.totalNights }, state.config);
-    if (rule) {
-      const v = rule.type === 'pct' ? `${rule.value}%` : formatINR(rule.value);
-      autoNote = `<div class="rp-admin-auto">Auto-applied: <strong>${v}</strong> · ${rule.name}. Set a manual value below to override.</div>`;
-    }
-  }
   const canExport = state.checkIn && state.checkOut;
   return `<details class="rp-admin" open>
     <summary>🔒 Admin · Build a quote</summary>
     <div class="rp-admin-body">
-      ${autoNote}
       <div class="rp-admin-row">
-        <label class="rp-admin-label">Override</label>
+        <label class="rp-admin-label">Discount</label>
         <select class="rp-admin-input" data-input="discType">
           <option value="pct" ${state.discountType === 'pct' ? 'selected' : ''}>% off</option>
           <option value="amt" ${state.discountType === 'amt' ? 'selected' : ''}>₹ off</option>
@@ -794,8 +766,8 @@ function parseUrlState() {
     if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
   } catch (_) { /* malformed addons param — ignore */ }
 
-  // Only sticky-apply manual discounts. Auto values (discSrc=auto) are
-  // informational in the URL — the rules engine recomputes them on render.
+  // Legacy auto-discount URLs must not turn the old default offer into a
+  // manual discount. Explicit manual discounts remain shareable.
   const isAuto = p.get('discSrc') === 'auto';
   if (!isAuto) {
     const dt = p.get('discType'); if (dt === 'pct' || dt === 'amt') state.discountType = dt;
@@ -824,22 +796,10 @@ function buildShareUrl(includeAdmin = false) {
   if (state.hasPet) p.set('pet', '1');
   if (state.addons.length) p.set('addons', JSON.stringify(state.addons));
 
-  // Always reflect the effective discount in the URL. Manual values are sticky
-  // (parser writes them back to state). Auto values are tagged with discSrc=auto
-  // so the parser knows to leave state alone and let the rules engine compute
-  // fresh from dates — useful when the customer adjusts their range.
+  // Only explicit discounts are included in shared quote URLs.
   if (state.discountValue > 0) {
     p.set('discType', state.discountType);
     p.set('disc', String(state.discountValue));
-  } else if (state.checkIn && state.checkOut && state.config) {
-    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const rule = autoDiscountFor({ totalNights: q.totalNights }, state.config);
-    if (rule) {
-      p.set('discType', rule.type);
-      p.set('disc', String(rule.value));
-      p.set('discSrc', 'auto');
-      p.set('discRule', rule.id);
-    }
   }
 
   if (includeAdmin && state.isAdmin) p.set('mode', 'admin');
