@@ -202,6 +202,15 @@ export function petFeeFor(hasPet, nights, config) {
   return { hasPet: true, perNight, fee: perNight * nights };
 }
 
+// Optional bathtub charge, applied per booked studio for every booked night.
+export function bathtubFeeFor(hasBathtub, nights, studios, config) {
+  const bp = config.bathtubPolicy;
+  const perNight = bp ? (bp.feePerNight || 0) : 0;
+  const quantity = hasBathtub ? Math.max(1, Number(studios) || 1) : 0;
+  if (!bp || !hasBathtub) return { hasBathtub: false, quantity: 0, perNight, fee: 0 };
+  return { hasBathtub: true, quantity, perNight, fee: quantity * perNight * nights };
+}
+
 // Compute the advance-payment amount required to confirm a booking.
 // Rules are evaluated top-down; first matching rule wins. Each rule may
 // gate on minTotal / maxTotal of the grand total.

@@ -1,7 +1,7 @@
 // Nivaa Stays — inline two-month calendar picker with per-night pricing.
 // Renders into <div id="rate-picker"></div>. Uses pricing.js for rate lookups.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, advancePaymentFor, guestFeeFor, petFeeFor } from './pricing.js';
+import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, advancePaymentFor, guestFeeFor, petFeeFor, bathtubFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const CHILD_DEFAULT_AGE = 10; // new children start chargeable; user sets the exact age
@@ -21,6 +21,7 @@ const state = {
   adults: 2,             // adult count across the booking (2 included/studio)
   children: [],          // ages of accompanying children (each 0–17)
   hasPet: false,         // travelling with a pet → flat ₹/night pet charge
+  hasBathtub: false,     // optional bathtub → flat ₹/night charge
   addons: [],            // [{ label, amount }] custom line items added on top (admin)
   newAddonLabel: '',     // in-progress "add a line" inputs (admin panel)
   newAddonAmount: '',
@@ -124,12 +125,13 @@ function computeQuote() {
   const transitSubtotal = (tt.total || 0) * studios;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
   const petInfo = petFeeFor(state.hasPet, q.totalNights, state.config);
-  const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee;
-  const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
+  const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
+  const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee + bathtubInfo.fee;
+  const disc = computeDiscount(subtotal);
   // Custom add-ons are a flat addition on top — not discounted.
   const addonsTotal = state.addons.reduce((s, a) => s + (Number(a.amount) || 0), 0);
   const grandTotal = Math.max(0, subtotal - disc.amount) + addonsTotal;
-  return { q, tt, studios, roomTotal, transitSubtotal, guestInfo, petInfo, subtotal, disc, addonsTotal, grandTotal };
+  return { q, tt, studios, roomTotal, transitSubtotal, guestInfo, petInfo, bathtubInfo, subtotal, disc, addonsTotal, grandTotal };
 }
 
 // Build the WhatsApp booking message + deep link from a computeQuote() result.
@@ -150,9 +152,10 @@ function buildBookingMessage(c) {
   ].filter(Boolean).join(', ');
   const guestsMsgPart = ` ${state.adults} adult${state.adults === 1 ? '' : 's'}${kids ? ` + ${kids} child${kids === 1 ? '' : 'ren'}` : ''}${paidNote ? ` (${paidNote})` : ''}.`;
   const petsMsgPart = c.petInfo.fee > 0 ? ` Travelling with a pet (+${formatINR(c.petInfo.fee)}).` : '';
+  const bathtubMsgPart = ` ${state.hasBathtub ? `With ${c.bathtubInfo.quantity === 1 ? 'bathtub' : `${c.bathtubInfo.quantity} bathtubs`} (+${formatINR(c.bathtubInfo.fee)})` : 'Without bathtub'}.`;
   const addonsMsgPart = c.addonsTotal > 0 ? ` Add-ons: ${state.addons.map(a => `${a.label} (${formatINR(a.amount)})`).join(', ')}.` : '';
   const quoteUrl = buildShareUrl(false);
-  const msg = `Hi Nivaa Stays, I'd like to book ${c.q.totalNights} night${c.q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart}${petsMsgPart}${addonsMsgPart} Total ${formatINR(c.grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
+  const msg = `Hi Nivaa Stays, I'd like to book ${c.q.totalNights} night${c.q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart}${petsMsgPart}${bathtubMsgPart}${addonsMsgPart} Total ${formatINR(c.grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
   return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -181,6 +184,7 @@ function renderBreakdown() {
   const transitSubtotal = c.transitSubtotal;
   const guestInfo = c.guestInfo;
   const petInfo = c.petInfo;
+  const bathtubInfo = c.bathtubInfo;
   const subtotal = c.subtotal;
   const disc = c.disc;
   const grandTotal = c.grandTotal;
@@ -222,6 +226,13 @@ function renderBreakdown() {
         <span class="rp-row-rate">${formatINR(petInfo.fee)}</span>
       </div>`
     : '';
+  const bathtubScreenRow = bathtubInfo.fee > 0
+      ? `<div class="rp-row rp-row-guest">
+          <span class="rp-row-date">Bathtub charge</span>
+          <span class="rp-row-tier">${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)} × ${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</span>
+          <span class="rp-row-rate">${formatINR(bathtubInfo.fee)}</span>
+        </div>`
+      : '';
 
   const subtotalRow = disc.amount > 0
     ? `<div class="rp-row rp-row-subtotal"><span class="rp-row-date">Subtotal</span><span></span><span class="rp-row-rate">${formatINR(subtotal)}</span></div>
@@ -239,7 +250,7 @@ function renderBreakdown() {
       <div><strong>${fmtPretty(state.checkIn)}</strong> → <strong>${fmtPretty(state.checkOut)}</strong></div>
       <div class="rp-nights">${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</div>
     </div>
-    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${petScreenRow}${subtotalRow}${addonScreenRows}</div>
+    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${petScreenRow}${bathtubScreenRow}${subtotalRow}${addonScreenRows}</div>
     <div class="rp-total">
       <span>Total</span>
       <span class="rp-total-amt">${formatINR(grandTotal)}</span>
@@ -261,8 +272,8 @@ function renderBreakdown() {
   </div>`;
 }
 
-function computeDiscount(subtotal, quoteContext) {
-  // Manual discount (set via admin or URL) overrides auto.
+function computeDiscount(subtotal) {
+  // Discounts on quotes are applied only when explicitly set by an admin or URL.
   const manual = Number(state.discountValue) || 0;
   if (manual > 0) {
     if (state.discountType === 'pct') {
@@ -272,44 +283,16 @@ function computeDiscount(subtotal, quoteContext) {
     const amt = Math.min(subtotal, manual);
     return { amount: amt, label: `${formatINR(amt)} off`, source: 'manual' };
   }
-  // Fall back to the best-matching auto-discount rule.
-  const rule = quoteContext ? autoDiscountFor(quoteContext, state.config) : null;
-  if (!rule) return { amount: 0, label: '', source: null };
-  if (rule.type === 'pct') {
-    return {
-      amount: Math.round(subtotal * rule.value / 100),
-      label: `${rule.value}% off · ${rule.name}`,
-      source: 'auto',
-      ruleId: rule.id
-    };
-  }
-  return {
-    amount: Math.min(subtotal, rule.value),
-    label: `${formatINR(rule.value)} off · ${rule.name}`,
-    source: 'auto',
-    ruleId: rule.id
-  };
+  return { amount: 0, label: '', source: null };
 }
 
 function renderAdminPanel() {
-  // Surface any active auto-discount so admin knows what would apply if they
-  // leave the manual field at 0.
-  let autoNote = '';
-  if (state.checkIn && state.checkOut) {
-    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const rule = autoDiscountFor({ totalNights: q.totalNights }, state.config);
-    if (rule) {
-      const v = rule.type === 'pct' ? `${rule.value}%` : formatINR(rule.value);
-      autoNote = `<div class="rp-admin-auto">Auto-applied: <strong>${v}</strong> · ${rule.name}. Set a manual value below to override.</div>`;
-    }
-  }
   const canExport = state.checkIn && state.checkOut;
   return `<details class="rp-admin" open>
     <summary>🔒 Admin · Build a quote</summary>
     <div class="rp-admin-body">
-      ${autoNote}
       <div class="rp-admin-row">
-        <label class="rp-admin-label">Override</label>
+        <label class="rp-admin-label">Discount</label>
         <select class="rp-admin-input" data-input="discType">
           <option value="pct" ${state.discountType === 'pct' ? 'selected' : ''}>% off</option>
           <option value="amt" ${state.discountType === 'amt' ? 'selected' : ''}>₹ off</option>
@@ -440,6 +423,13 @@ function render() {
           </div>
           <span class="rp-guests-hint">+${formatINR(state.config?.petPolicy?.feePerNight || 0)}/night</span>
         </div>
+        <div class="rp-pets-group rp-bathtub-group">
+          <span class="rp-studios-label">Bathtub</span>
+          <div class="rp-studios-toggle">
+            <button type="button" class="rp-studio-opt ${state.hasBathtub ? 'active' : ''}" data-action="bathtub-toggle" aria-pressed="${state.hasBathtub}">${state.hasBathtub ? (state.studios === 2 ? 'With 2 bathtubs' : 'With bathtub') : `+ Add ${state.studios === 2 ? '2 bathtubs' : 'bathtub'}`}</button>
+          </div>
+          <span class="rp-guests-hint">+${formatINR(state.config?.bathtubPolicy?.feePerNight || 0)}/bathtub/night</span>
+        </div>
       </div>
       ${state.children.length ? `<div class="rp-child-ages">
         ${state.children.map((age, i) => `
@@ -496,7 +486,7 @@ function renderPrintQuote() {
     return;
   }
   const c = computeQuote();
-  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo;
+  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo, bathtubInfo = c.bathtubInfo;
   const subtotal = c.subtotal, disc = c.disc, grandTotal = c.grandTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
@@ -528,6 +518,9 @@ function renderPrintQuote() {
     : '');
   const petPdfRow = petInfo.fee > 0
     ? `<tr class="pet-row"><td>Pet charge</td><td>${formatINR(petInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(petInfo.fee)}</td></tr>`
+    : '';
+  const bathtubPdfRow = bathtubInfo.fee > 0
+    ? `<tr class="guest-row"><td>Bathtub charge</td><td>${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(bathtubInfo.fee)}</td></tr>`
     : '';
   const addonPdfRows = state.addons.map(a =>
     `<tr class="addon-row"><td>${escapeHtml(a.label)}</td><td>Add-on</td><td class="num">${formatINR(a.amount)}</td></tr>`).join('');
@@ -564,7 +557,7 @@ function renderPrintQuote() {
           <tr><td>Check-in</td><td>${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="pq-pill">+${state.earlyHours}h early</span>` : ''}</td></tr>
           <tr><td>Check-out</td><td>${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="pq-pill">+${state.lateHours}h late</span>` : ''}</td></tr>
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
-          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'}</td></tr>
+          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'})</td></tr>
           <tr><td>Guests</td><td>${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}${guestInfo.extraAdults > 0 ? ` <span class="pq-pill">${guestInfo.extraAdults} extra adult${guestInfo.extraAdults === 1 ? '' : 's'}</span>` : ''}${guestInfo.chargeableChildren > 0 ? ` <span class="pq-pill">${guestInfo.chargeableChildren} paid child${guestInfo.chargeableChildren === 1 ? '' : 'ren'}</span>` : ''}</td></tr>
           ${state.children.length ? `<tr><td>Children</td><td>Ages ${state.children.map(a => Number(a) === 0 ? '<1' : a).join(', ')}</td></tr>` : ''}
           ${petInfo.fee > 0 ? `<tr><td>Pet</td><td>Travelling with a pet <span class="pq-pill">+${formatINR(petInfo.perNight)}/night</span></td></tr>` : ''}
@@ -581,6 +574,7 @@ function renderPrintQuote() {
             ${studiosMultRow}
             ${guestPdfRow}
             ${petPdfRow}
+            ${bathtubPdfRow}
             ${subtotalRow}
             ${addonPdfRows}
           </tbody>
@@ -692,6 +686,7 @@ function onClick(e) {
       render(); return;
     }
     if (a === 'pet-toggle') { state.hasPet = !state.hasPet; render(); return; }
+    if (a === 'bathtub-toggle') { state.hasBathtub = !state.hasBathtub; render(); return; }
     if (a === 'disc-clear') { state.discountValue = 0; render(); return; }
     if (a === 'addon-add') {
       const label = (state.newAddonLabel || '').trim();
@@ -789,13 +784,14 @@ function parseUrlState() {
       .slice(0, (state.config?.childPolicy?.maxPerStudio || 4) * state.studios);
   }
   state.hasPet = p.get('pet') === '1';
+  state.hasBathtub = p.get('bathtub') === '1';
   try {
     const ad = JSON.parse(p.get('addons') || '[]');
     if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
   } catch (_) { /* malformed addons param — ignore */ }
 
-  // Only sticky-apply manual discounts. Auto values (discSrc=auto) are
-  // informational in the URL — the rules engine recomputes them on render.
+  // Legacy auto-discount URLs must not turn the old default offer into a
+  // manual discount. Explicit manual discounts remain shareable.
   const isAuto = p.get('discSrc') === 'auto';
   if (!isAuto) {
     const dt = p.get('discType'); if (dt === 'pct' || dt === 'amt') state.discountType = dt;
@@ -822,24 +818,13 @@ function buildShareUrl(includeAdmin = false) {
   if (state.adults && state.adults !== defaultAdults) p.set('adults', String(state.adults));
   if (state.children.length) p.set('children', state.children.join(','));
   if (state.hasPet) p.set('pet', '1');
+  if (state.hasBathtub) p.set('bathtub', '1');
   if (state.addons.length) p.set('addons', JSON.stringify(state.addons));
 
-  // Always reflect the effective discount in the URL. Manual values are sticky
-  // (parser writes them back to state). Auto values are tagged with discSrc=auto
-  // so the parser knows to leave state alone and let the rules engine compute
-  // fresh from dates — useful when the customer adjusts their range.
+  // Only explicit discounts are included in shared quote URLs.
   if (state.discountValue > 0) {
     p.set('discType', state.discountType);
     p.set('disc', String(state.discountValue));
-  } else if (state.checkIn && state.checkOut && state.config) {
-    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const rule = autoDiscountFor({ totalNights: q.totalNights }, state.config);
-    if (rule) {
-      p.set('discType', rule.type);
-      p.set('disc', String(rule.value));
-      p.set('discSrc', 'auto');
-      p.set('discRule', rule.id);
-    }
   }
 
   if (includeAdmin && state.isAdmin) p.set('mode', 'admin');

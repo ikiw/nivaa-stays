@@ -37,6 +37,10 @@
     return (d.length === 12 && d.indexOf('91') === 0) ? d.slice(2) : d;
   }
 
+  function truthy_(value) {
+    return value === true || /^(1|yes|y|true|with bathtub|included)$/i.test(String(value || '').trim());
+  }
+
   function ymd_(d) {
     if (!d) return '';
     if (Object.prototype.toString.call(d) === '[object Date]') {
@@ -60,7 +64,8 @@
       num_guests: row[idx('Number of guests')] || '',                                                                                                        
       amount: row[idx('Amount')] || '',
       advance: row[idx('Advance')] || '',
-      paid: row[idx('Paid To Manju')] || ''                                                                                                                  
+      paid: row[idx('Paid To Manju')] || '',
+      bathtub: truthy_(row[idx('Bathtub')])
     };                                                                                                                                                       
   }
                                                                                                                                                              
@@ -115,6 +120,9 @@
       if (p.action === 'order')  return recordOrder_(p);
       if (p.action === 'rental') return recordRental_(p);
       if (p.action === 'addon')  return recordAddon_(p);
+
+      // Admin-triggered booking confirmation email
+      if (p.action === 'sendConfirmation') return sendConfirmation_(p);
 
       // Save ID file to Drive                                                                                                                                                                                      
       let idFileUrl = '';
@@ -250,6 +258,239 @@
       'View in HTML',
       { htmlBody: body }
     );
+  }
+
+  // ---------- booking confirmation email (admin-triggered) ----------
+
+  function sendConfirmation_(p) {
+    try {
+      const id = String(p.id || '').trim();
+      const email = String(p.email || '').trim();
+      const m = id.match(/^(\d+)-(\d{4}-\d{2}-\d{2})$/);
+      if (!m) return jsonOut_({ success: false, error: 'invalid booking id' });
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return jsonOut_({ success: false, error: 'invalid email' });
+
+      // Only send for a booking that actually exists in the sheet — this ties
+      // every send to a real reservation so the endpoint can't be abused to
+      // blast Nivaa-branded email to arbitrary recipients.
+      const b = findBooking_(m[1], m[2]);
+      if (!b) return jsonOut_({ success: false, error: 'booking not found' });
+
+      // The luggage emoji lives only in the HTML body headline (as &#x1F9F3;).
+      // GmailApp mangles supplementary-plane emoji in the Subject header to "?",
+      // so the subject line is kept plain text.
+      const subject = 'Pack your bags! Your stay at Nivaa Stays is confirmed';
+      GmailApp.sendEmail(
+        email,
+        subject,
+        buildConfirmationText_(b),
+        { name: 'Nivaa Stays', htmlBody: buildConfirmationHtml_(b), replyTo: HOST_EMAIL, bcc: HOST_EMAIL }
+      );
+      return jsonOut_({ success: true });
+    } catch (err) {
+      return jsonOut_({ success: false, error: String(err && err.message || err) });
+    }
+  }
+
+  // Indian-grouped rupee integer, e.g. 100000 -> "1,00,000".
+  function inrGroup_(n) {
+    n = Math.round(Number(n) || 0);
+    const neg = n < 0;
+    const s = String(Math.abs(n));
+    let last3 = s.slice(-3);
+    let rest = s.slice(0, -3);
+    if (rest) { last3 = ',' + last3; rest = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ','); }
+    return (neg ? '-' : '') + rest + last3;
+  }
+
+  function buildConfirmationText_(b) {
+    const bookingId = b.phone + '-' + b.checkin;
+    const fullHouse = /(?:full\s*house|both|(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2)/i.test(String(b.room || ''));
+    const bathtubLabel = b.bathtub ? (fullHouse ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub';
+    return [
+      'Dear ' + (b.name || 'Guest') + ',',
+      '',
+      'Your stay at Nivaa Stays is confirmed.',
+      '',
+      'Booking reference: ' + bookingId,
+      'Room: ' + (b.room || '—') + ' (' + bathtubLabel + ')',
+      'Check-in:  ' + b.checkin + ' (from 12 PM)',
+      'Check-out: ' + b.checkout + ' (by 11 AM)',
+      '',
+      'Address: 13, Saibaba Koil Street, Puducherry 605009 (near Pondicherry Gate, near JIPMER)',
+      'Map: https://maps.app.goo.gl/uXmbjQ9tpviANJpm6',
+      'Your welcome kit: ' + SITE_BASE + '/welcome.html?id=' + bookingId,
+      '',
+      'Good to know: check-in from 12 PM, check-out by 11 AM (late check-out on request). Please carry a valid photo ID for all guests.',
+      '',
+      'Questions? WhatsApp or call us 24/7 at +91 96203 64554.',
+      '',
+      'Warm regards,',
+      'The Nivaa Stays Team',
+      'nivaastays.com'
+    ].join('\n');
+  }
+
+  // Branded HTML email. Mirror of buildEmailHtml() in js/confirmation.js
+  // (the browser preview) — keep the two visually in sync.
+  function buildConfirmationHtml_(b) {
+    const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    const rawId = b.phone + '-' + b.checkin;
+    const bookingId = esc(rawId);
+    const fmt = ymd => {
+      const parts = String(ymd || '').split('-').map(Number);
+      if (parts.length !== 3 || !parts[0]) return esc(ymd);
+      return Utilities.formatDate(new Date(parts[0], parts[1] - 1, parts[2]), TZ, 'EEE, d MMM yyyy');
+    };
+    const num = v => { const n = parseInt(String(v || '').replace(/[^0-9.]/g, ''), 10); return isNaN(n) ? 0 : n; };
+    const nights = (function () {
+      const a = String(b.checkin || '').split('-').map(Number);
+      const c = String(b.checkout || '').split('-').map(Number);
+      if (a.length !== 3 || c.length !== 3) return 0;
+      return Math.max(0, Math.round((new Date(c[0], c[1] - 1, c[2]) - new Date(a[0], a[1] - 1, a[2])) / 86400000));
+    })();
+    const total = num(b.amount);
+    const adv = num(b.advance) || num(b.paid);
+    const balance = Math.max(0, total - adv);
+    const name = esc(b.name || 'Guest');
+    const room = esc(b.room || '—');
+    const fullHouse = /(?:full\s*house|both|(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2)/i.test(String(b.room || ''));
+    const bathtubLabel = esc(b.bathtub ? (fullHouse ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub');
+    const guests = esc(b.num_guests || '—');
+    const ciPretty = esc(fmt(b.checkin));
+    const coPretty = esc(fmt(b.checkout));
+    const welcomeUrl = SITE_BASE + '/welcome.html?id=' + encodeURIComponent(rawId);
+
+    const paymentBlock = total > 0 ? `
+        <tr>
+          <td style="padding:16px 32px 4px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #EAE3D2; border-radius:10px;">
+              <tr><td style="padding:18px 20px;">
+                <div style="font-family:Arial,Helvetica,sans-serif; color:#C9A227; font-size:11px; letter-spacing:2px; text-transform:uppercase; font-weight:bold; margin-bottom:10px;">Payment</div>
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif; font-size:14px;">
+                  <tr><td style="padding:5px 0; color:#5B6B68;">Total</td><td style="padding:5px 0; color:#14201E; text-align:right;">₹${inrGroup_(total)}</td></tr>
+                  <tr><td style="padding:5px 0; color:#5B6B68;">Advance paid</td><td style="padding:5px 0; color:#14201E; text-align:right;">− ₹${inrGroup_(adv)}</td></tr>
+                  <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
+                  <tr><td style="padding:8px 0 0 0; color:#0E3B35; font-weight:bold;">Balance due at check-in</td><td style="padding:8px 0 0 0; color:#0E3B35; font-weight:bold; text-align:right; font-size:16px;">₹${inrGroup_(balance)}</td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </td>
+        </tr>` : '';
+
+    return `<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0; padding:0; background:#FAF6EC;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF6EC; padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px; max-width:600px; background:#ffffff; border-radius:14px; overflow:hidden; border:1px solid #EAE3D2;">
+
+        <tr>
+          <td style="background:#0E3B35; padding:26px 32px;">
+            <img src="https://nivaastays.com/assets/logo.png" width="52" height="52" alt="Nivaa Stays" style="display:inline-block; vertical-align:middle; border-radius:50%; background:#082623;">
+            <span style="display:inline-block; vertical-align:middle; margin-left:12px;">
+              <span style="display:block; font-family:'Georgia','Times New Roman',serif; color:#ffffff; font-size:20px; line-height:1.1;">Nivaa Stays</span>
+              <span style="display:block; font-family:Arial,Helvetica,sans-serif; color:#E6C35A; font-size:10px; letter-spacing:3px; text-transform:uppercase; margin-top:4px;">Le Affordable Luxury</span>
+            </span>
+          </td>
+        </tr>
+        <tr><td style="height:4px; background:#C9A227; line-height:4px; font-size:0;">&nbsp;</td></tr>
+
+        <tr>
+          <td style="padding:34px 32px 8px 32px;">
+            <div style="font-family:Arial,Helvetica,sans-serif; color:#C9A227; font-size:12px; letter-spacing:2px; text-transform:uppercase; font-weight:bold;">You're all set</div>
+            <div style="font-family:'Georgia','Times New Roman',serif; color:#14201E; font-size:26px; line-height:1.25; margin-top:8px;">Pack your bags! &#x1F9F3; Your stay at Nivaa Stays is confirmed</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:12px 32px 4px 32px;">
+            <p style="margin:0; font-family:Arial,Helvetica,sans-serif; color:#14201E; font-size:15px; line-height:1.65;">Dear ${name},</p>
+            <p style="margin:14px 0 0 0; font-family:Arial,Helvetica,sans-serif; color:#5B6B68; font-size:15px; line-height:1.65;">Thank you for booking with Nivaa Stays. We're delighted to host you and have confirmed the details below. We can't wait to welcome you.</p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 4px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF6EC; border:1px solid #EAE3D2; border-radius:10px;">
+              <tr><td style="padding:18px 20px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif; font-size:14px;">
+                  <tr><td style="padding:7px 0; color:#5B6B68; width:44%;">Booking reference</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${bookingId}</td></tr>
+                  <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Room</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${room} (${bathtubLabel})</td></tr>
+                  <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Check-in</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${ciPretty} <span style="color:#5B6B68; font-weight:normal;">· from 12 PM</span></td></tr>
+                  <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Check-out</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${coPretty} <span style="color:#5B6B68; font-weight:normal;">· by 11 AM</span></td></tr>
+                  <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Nights · Guests</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${nights} nights · ${guests} guests</td></tr>
+                </table>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+${paymentBlock}
+        <tr>
+          <td style="padding:22px 32px 4px 32px;">
+            <div style="font-family:'Georgia','Times New Roman',serif; color:#14201E; font-size:18px;">Getting here</div>
+            <p style="margin:8px 0 0 0; font-family:Arial,Helvetica,sans-serif; color:#5B6B68; font-size:14px; line-height:1.6;">13, Saibaba Koil Street, Puducherry 605009<br>Near Pondicherry Gate · 5 minutes from JIPMER</p>
+            <div style="margin-top:14px;"><a href="https://maps.app.goo.gl/uXmbjQ9tpviANJpm6" target="_blank" style="display:inline-block; background:#0E3B35; color:#ffffff; text-decoration:none; font-family:Arial,Helvetica,sans-serif; font-size:14px; font-weight:bold; padding:12px 22px; border-radius:8px;">Open in Google Maps →</a></div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 4px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0E3B35; border-radius:10px;">
+              <tr><td style="padding:20px 22px;">
+                <div style="font-family:'Georgia','Times New Roman',serif; color:#ffffff; font-size:17px;">Your digital welcome kit</div>
+                <p style="margin:8px 0 14px 0; font-family:Arial,Helvetica,sans-serif; color:#E6C35A; font-size:13px; line-height:1.6;">Wi-Fi, house guide, food menu, bike rentals and a local Pondicherry guide, all in one place.</p>
+                <a href="${welcomeUrl}" target="_blank" style="display:inline-block; background:#C9A227; color:#14201E; text-decoration:none; font-family:Arial,Helvetica,sans-serif; font-size:14px; font-weight:bold; padding:11px 20px; border-radius:8px;">Open my welcome page →</a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 4px 32px;">
+            <div style="font-family:'Georgia','Times New Roman',serif; color:#14201E; font-size:18px;">Good to know</div>
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif; color:#5B6B68; font-size:14px; line-height:1.6; margin-top:8px;">
+              <tr><td style="padding:4px 0;">• Check-in from 12 PM · check-out by 11 AM.</td></tr>
+              <tr><td style="padding:4px 0;">• Need a late check-out? Just message us and we'll do our best around the next booking.</td></tr>
+              <tr><td style="padding:4px 0;">• Home-cooked meals and on-site bike rentals available on request.</td></tr>
+              <tr><td style="padding:4px 0;">• Please carry a valid government photo ID for all guests.</td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:22px 32px 6px 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#FAF6EC; border:1px solid #EAE3D2; border-radius:10px;">
+              <tr><td style="padding:18px 20px;" align="center">
+                <p style="margin:0 0 12px 0; font-family:Arial,Helvetica,sans-serif; color:#5B6B68; font-size:14px; line-height:1.6;">Any questions before you arrive? We're on WhatsApp 24/7.</p>
+                <a href="https://wa.me/919620364554" target="_blank" style="display:inline-block; background:#0E3B35; color:#ffffff; text-decoration:none; font-family:Arial,Helvetica,sans-serif; font-size:14px; font-weight:bold; padding:11px 20px; border-radius:8px; margin:2px;">WhatsApp us</a>
+                <a href="tel:+919620364554" style="display:inline-block; background:#ffffff; color:#0E3B35; text-decoration:none; font-family:Arial,Helvetica,sans-serif; font-size:14px; font-weight:bold; padding:11px 20px; border-radius:8px; border:1px solid #0E3B35; margin:2px;">Call +91 96203 64554</a>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:20px 32px 28px 32px;">
+            <p style="margin:0; font-family:Arial,Helvetica,sans-serif; color:#14201E; font-size:15px; line-height:1.65;">Warm regards,<br><span style="font-family:'Georgia','Times New Roman',serif; font-size:17px;">The Nivaa Stays Team</span></p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="background:#082623; padding:22px 32px;">
+            <p style="margin:0; font-family:Arial,Helvetica,sans-serif; color:#ffffff; font-size:13px; line-height:1.6;">Nivaa Stays · Le Affordable Luxury</p>
+            <p style="margin:6px 0 0 0; font-family:Arial,Helvetica,sans-serif; color:rgba(255,255,255,0.6); font-size:12px; line-height:1.6;">13, Saibaba Koil Street, Puducherry 605009, India<br><a href="https://nivaastays.com" style="color:#E6C35A; text-decoration:none;">nivaastays.com</a> · <a href="mailto:nivaastays@gmail.com" style="color:#E6C35A; text-decoration:none;">nivaastays@gmail.com</a> · +91 96203 64554</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
   }
 
   // ---------- guest hub: orders / rentals / addons ----------
@@ -420,7 +661,7 @@
   //   arriving — check-in == date
   //   inhouse  — check-in <  date  AND  check-out >  date
   //   leaving  — check-out == date
-  //   upcoming — check-in in (date, date+7]
+  //   upcoming — check-in in (date, date+21]
   function activeBookings_(dateStr) {
     const today = (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr))
       ? dateStr
@@ -428,7 +669,7 @@
     const upcomingHorizon = (function () {
       const [y, m, d] = today.split('-').map(Number);
       const dt = new Date(y, m - 1, d);
-      dt.setDate(dt.getDate() + 7);
+      dt.setDate(dt.getDate() + 21);
       return Utilities.formatDate(dt, TZ, 'yyyy-MM-dd');
     })();
 
@@ -831,4 +1072,3 @@
     if (!triggers.length) { Logger.log('No triggers.'); return; }
     triggers.forEach(t => Logger.log(`${t.getHandlerFunction()} · ${t.getEventType()} · ${t.getTriggerSource()}`));
   }
-
