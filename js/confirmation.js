@@ -49,6 +49,12 @@ function inr(n) {
   return Number(n || 0).toLocaleString('en-IN');
 }
 
+function studiosForRoom(room) {
+  const value = String(room || '').trim().toLowerCase();
+  if (value.replace(/[^a-z0-9]/g, '') === 'fullhouse' || value === 'both') return 2;
+  return /(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2/.test(value) ? 2 : 1;
+}
+
 function readBooking() {
   const p = qp();
   return {
@@ -57,6 +63,7 @@ function readBooking() {
     checkin: p.get('ci') || '',
     checkout: p.get('co') || '',
     room: p.get('room') || '',
+    bathtub: p.get('bathtub') === '1',
     guests: p.get('guests') || '',
     total: parseInt(p.get('amt') || '0', 10) || 0,
     advance: parseInt(p.get('adv') || '0', 10) || 0,
@@ -71,6 +78,9 @@ function buildEmailHtml(b) {
   const name = escapeHtml(b.name || 'Guest');
   const bookingId = escapeHtml(b.bookingId);
   const room = escapeHtml(b.room || '—');
+  const bathtubLabel = b.bathtub
+    ? (studiosForRoom(b.room) === 2 ? 'With 2 bathtubs' : 'With bathtub')
+    : 'Without bathtub';
   const guests = escapeHtml(b.guests || '—');
   const ciPretty = escapeHtml(fmtLong(b.checkin));
   const coPretty = escapeHtml(fmtLong(b.checkout));
@@ -136,7 +146,7 @@ function buildEmailHtml(b) {
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif; font-size:14px;">
                   <tr><td style="padding:7px 0; color:#5B6B68; width:44%;">Booking reference</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${bookingId}</td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
-                  <tr><td style="padding:7px 0; color:#5B6B68;">Room</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${room}</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Room</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${room} (${bathtubLabel})</td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
                   <tr><td style="padding:7px 0; color:#5B6B68;">Check-in</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${ciPretty} <span style="color:#5B6B68; font-weight:normal;">· from 12 PM</span></td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>

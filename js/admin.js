@@ -41,6 +41,15 @@ function studiosForRoom(room) {
   return /(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2/.test(value) ? 2 : 1;
 }
 
+function bookingHasBathtub(value) {
+  return value === true || /^(1|yes|y|true|with bathtub|included)$/i.test(String(value || '').trim());
+}
+
+function bathtubLabelForBooking(b) {
+  if (!bookingHasBathtub(b.bathtub)) return 'Without bathtub';
+  return studiosForRoom(b.room) === 2 ? 'With 2 bathtubs' : 'With bathtub';
+}
+
 function receiptUrl(b) {
   const p = new URLSearchParams();
   p.set('mode', 'admin');
@@ -52,6 +61,7 @@ function receiptUrl(b) {
   const platform = b.platform || b.onlineOffline || '';
   if (platform && platform !== 'Direct') p.set('platform', platform);
   if (studiosForRoom(b.room) === 2) p.set('studios', '2');
+  if (bookingHasBathtub(b.bathtub)) p.set('bathtub', '1');
   const guests = parseInt(b.num_guests) || 0;
   if (guests > 0) p.set('adults', String(guests));
   const advRaw = String(b.advance || b.paid || '').replace(/[^0-9.]/g, '');
@@ -71,6 +81,7 @@ function confirmationUrl(b) {
   if (b.checkin) p.set('ci', b.checkin);
   if (b.checkout) p.set('co', b.checkout);
   if (b.room) p.set('room', b.room);
+  if (bookingHasBathtub(b.bathtub)) p.set('bathtub', '1');
   const guests = parseInt(b.num_guests) || 0;
   if (guests > 0) p.set('guests', String(guests));
   const platform = b.platform || b.onlineOffline || '';
@@ -100,6 +111,7 @@ function bookingRow(b) {
           <span class="adm-sep">·</span>
           <span>${escapeHtml(b.platform || b.onlineOffline || 'Direct')}</span>
           ${b.num_guests ? `<span class="adm-sep">·</span><span>${escapeHtml(String(b.num_guests))} guests</span>` : ''}
+          <span class="adm-sep">·</span><span>${bathtubLabelForBooking(b)}</span>
         </div>
         <div class="adm-meta adm-phone">
           +91 ${b.phone}

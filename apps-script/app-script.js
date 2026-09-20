@@ -37,6 +37,10 @@
     return (d.length === 12 && d.indexOf('91') === 0) ? d.slice(2) : d;
   }
 
+  function truthy_(value) {
+    return value === true || /^(1|yes|y|true|with bathtub|included)$/i.test(String(value || '').trim());
+  }
+
   function ymd_(d) {
     if (!d) return '';
     if (Object.prototype.toString.call(d) === '[object Date]') {
@@ -60,7 +64,8 @@
       num_guests: row[idx('Number of guests')] || '',                                                                                                        
       amount: row[idx('Amount')] || '',
       advance: row[idx('Advance')] || '',
-      paid: row[idx('Paid To Manju')] || ''                                                                                                                  
+      paid: row[idx('Paid To Manju')] || '',
+      bathtub: truthy_(row[idx('Bathtub')])
     };                                                                                                                                                       
   }
                                                                                                                                                              
@@ -300,12 +305,15 @@
 
   function buildConfirmationText_(b) {
     const bookingId = b.phone + '-' + b.checkin;
+    const fullHouse = /(?:full\s*house|both|(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2)/i.test(String(b.room || ''));
+    const bathtubLabel = b.bathtub ? (fullHouse ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub';
     return [
       'Dear ' + (b.name || 'Guest') + ',',
       '',
       'Your stay at Nivaa Stays is confirmed.',
       '',
       'Booking reference: ' + bookingId,
+      'Room: ' + (b.room || '—') + ' (' + bathtubLabel + ')',
       'Check-in:  ' + b.checkin + ' (from 12 PM)',
       'Check-out: ' + b.checkout + ' (by 11 AM)',
       '',
@@ -346,6 +354,8 @@
     const balance = Math.max(0, total - adv);
     const name = esc(b.name || 'Guest');
     const room = esc(b.room || '—');
+    const fullHouse = /(?:full\s*house|both|(?:room(?:s)?\s*)?1\s*(?:&|\+|,|\/|and)\s*2)/i.test(String(b.room || ''));
+    const bathtubLabel = esc(b.bathtub ? (fullHouse ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub');
     const guests = esc(b.num_guests || '—');
     const ciPretty = esc(fmt(b.checkin));
     const coPretty = esc(fmt(b.checkout));
@@ -407,7 +417,7 @@
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family:Arial,Helvetica,sans-serif; font-size:14px;">
                   <tr><td style="padding:7px 0; color:#5B6B68; width:44%;">Booking reference</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${bookingId}</td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
-                  <tr><td style="padding:7px 0; color:#5B6B68;">Room</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${room}</td></tr>
+                  <tr><td style="padding:7px 0; color:#5B6B68;">Room</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${room} (${bathtubLabel})</td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
                   <tr><td style="padding:7px 0; color:#5B6B68;">Check-in</td><td style="padding:7px 0; color:#14201E; font-weight:bold; text-align:right;">${ciPretty} <span style="color:#5B6B68; font-weight:normal;">· from 12 PM</span></td></tr>
                   <tr><td colspan="2" style="border-top:1px solid #EAE3D2; font-size:0; line-height:0;">&nbsp;</td></tr>
@@ -1062,4 +1072,3 @@ ${paymentBlock}
     if (!triggers.length) { Logger.log('No triggers.'); return; }
     triggers.forEach(t => Logger.log(`${t.getHandlerFunction()} · ${t.getEventType()} · ${t.getTriggerSource()}`));
   }
-

@@ -3,7 +3,7 @@
 // Admin mode (?mode=admin) shows an editable form; guest mode shows the receipt.
 // Uses pricing.js for rate calculation — same engine as the quote builder.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, guestFeeFor } from './pricing.js';
+import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, guestFeeFor, bathtubFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const GOOGLE_MAPS = 'https://maps.app.goo.gl/uXmbjQ9tpviANJpm6';
@@ -18,6 +18,7 @@ const state = {
   studios: 1,
   adults: 2,
   children: [],
+  hasBathtub: false,
   discountType: 'pct',
   discountValue: 0,
   guestName: '',
@@ -29,6 +30,8 @@ const state = {
   addons: [],          // [{ label, amount }] custom line items added on top of the total
   newAddonLabel: '',   // the in-progress "add a line" inputs (admin form)
   newAddonAmount: '',
+  baseRateOverride: 0,
+  primeRateOverride: 0,
   sheetAmount: 0,   // final price from the bookings sheet (used to auto-calc discount)
   isAdmin: false,
   root: null
@@ -86,7 +89,8 @@ function computeAll() {
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
   const studios = state.studios || 1;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
-  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
+  const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
+  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee + bathtubInfo.fee;
   const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
   // Custom add-ons are a flat addition on top — not discounted, and they don't
   // disturb the sheet-amount auto-match (which works on the room subtotal).
@@ -97,7 +101,7 @@ function computeAll() {
   const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
   const adv = Number(state.advancePaid) || 0;
   const balance = Math.max(0, grandTotal - adv);
-  return { q, tt, studios, guestInfo, subtotal, disc, addonsTotal, grandTotal, ciTime, coTime, adv, balance, tx };
+  return { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, addonsTotal, grandTotal, ciTime, coTime, adv, balance, tx };
 }
 
 /* ---------- URL state ---------- */
@@ -127,6 +131,17 @@ function parseUrlState() {
   state.bookingId = p.get('bid') || '';
   state.platform = p.get('platform') || 'Direct';
   state.notes = p.get('notes') || '';
+  state.hasBathtub = p.get('bathtub') === '1';
+  const base = parseInt(p.get('base') || '0', 10);
+  const prime = parseInt(p.get('prime') || '0', 10);
+  if (base > 0) {
+    state.baseRateOverride = base;
+    state.config.tiers.weekday = base;
+  }
+  if (prime > 0) {
+    state.primeRateOverride = prime;
+    state.config.tiers.weekend = prime;
+  }
   try {
     const ad = JSON.parse(p.get('addons') || '[]');
     if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
@@ -158,6 +173,9 @@ function buildShareUrl(includeAdmin = false) {
   if (state.bookingId) p.set('bid', state.bookingId);
   if (state.platform && state.platform !== 'Direct') p.set('platform', state.platform);
   if (state.notes) p.set('notes', state.notes);
+  if (state.hasBathtub) p.set('bathtub', '1');
+  if (state.baseRateOverride > 0) p.set('base', String(state.baseRateOverride));
+  if (state.primeRateOverride > 0) p.set('prime', String(state.primeRateOverride));
   if (state.addons.length) p.set('addons', JSON.stringify(state.addons));
   if (includeAdmin && state.isAdmin) p.set('mode', 'admin');
   return location.origin + location.pathname + (p.toString() ? '?' + p.toString() : '');
@@ -223,6 +241,13 @@ function renderAdminForm() {
             <button type="button" class="bc-toggle-btn ${state.studios === 1 ? 'active' : ''}" data-action="studios-1">1 Studio</button>
             <button type="button" class="bc-toggle-btn ${state.studios === 2 ? 'active' : ''}" data-action="studios-2">Full House</button>
           </div>
+        </div>
+        <div class="bc-admin-row">
+          <label class="bc-field-label">Bathtub</label>
+          <div class="bc-toggle">
+            <button type="button" class="bc-toggle-btn ${state.hasBathtub ? 'active' : ''}" data-action="bathtub-toggle" aria-pressed="${state.hasBathtub}">${state.hasBathtub ? (state.studios === 2 ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub'}</button>
+          </div>
+          <span class="bc-field-label">+${formatINR(state.config?.bathtubPolicy?.feePerNight || 0)}/bathtub/night</span>
         </div>
         <div class="bc-admin-row">
           <label class="bc-field-label">Adults</label>
@@ -328,7 +353,7 @@ function renderReceipt() {
     </div>`;
   }
 
-  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
 
   const nightRows = q.nights.map(n => {
     const tierLabel = n.tier === 'longWeekend' ? 'Peak' : n.tier === 'weekend' ? 'Prime' : 'Base';
@@ -361,6 +386,11 @@ function renderReceipt() {
     <span class="bc-rate-tier">${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)} × ${q.totalNights}n</span>
     <span class="bc-rate-amt">${formatINR(guestInfo.childFee)}</span>
   </div>` : '');
+  const bathtubRow = bathtubInfo.fee > 0 ? `<div class="bc-rate-row bc-rate-guest">
+    <span class="bc-rate-date">Bathtub charge</span>
+    <span class="bc-rate-tier">${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)} × ${q.totalNights}n</span>
+    <span class="bc-rate-amt">${formatINR(bathtubInfo.fee)}</span>
+  </div>` : '';
 
   const discountRows = disc.amount > 0 ? `
     <div class="bc-rate-row bc-rate-subtotal">
@@ -412,13 +442,13 @@ function renderReceipt() {
           <div><div class="bc-label">Check-in</div><div class="bc-value">${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="bc-pill">+${state.earlyHours}h early</span>` : ''}</div></div>
           <div><div class="bc-label">Check-out</div><div class="bc-value">${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="bc-pill">+${state.lateHours}h late</span>` : ''}</div></div>
           <div><div class="bc-label">Nights</div><div class="bc-value">${q.totalNights}</div></div>
-          <div><div class="bc-label">Room</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'} · ${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}</div></div>
+          <div><div class="bc-label">Room</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'}) · ${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}</div></div>
         </div>
       </div>
 
       <div class="bc-rates">
         <div class="bc-rates-title">Rate Breakdown</div>
-        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${discountRows}${addonRows}</div>
+        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${bathtubRow}${discountRows}${addonRows}</div>
         <div class="bc-payment">${paymentRows}</div>
       </div>
 
@@ -459,7 +489,7 @@ function renderPrintReceipt() {
   const c = computeAll();
   if (!c) { host.innerHTML = ''; return; }
 
-  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
 
   const today = new Date();
   const todayStr = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -482,6 +512,9 @@ function renderPrintReceipt() {
     + (guestInfo.chargeableChildren > 0
     ? `<tr class="guest-row"><td>Children (7–17)</td><td>${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.childFee)}</td></tr>`
     : '');
+  const bathtubPdfRow = bathtubInfo.fee > 0
+    ? `<tr class="guest-row"><td>Bathtub charge</td><td>${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(bathtubInfo.fee)}</td></tr>`
+    : '';
   const subtotalRow = disc.amount > 0
     ? `<tr class="subtotal-row"><td colspan="2">Subtotal</td><td class="num">${formatINR(subtotal)}</td></tr>
        <tr class="discount-row"><td colspan="2">Discount · ${disc.label}</td><td class="num">−${formatINR(disc.amount)}</td></tr>`
@@ -520,7 +553,7 @@ function renderPrintReceipt() {
           <tr><td>Check-in</td><td>${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="br-pill">+${state.earlyHours}h early</span>` : ''}</td></tr>
           <tr><td>Check-out</td><td>${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="br-pill">+${state.lateHours}h late</span>` : ''}</td></tr>
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
-          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'}</td></tr>
+          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'})</td></tr>
           <tr><td>Guests</td><td>${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}${guestInfo.extraAdults > 0 ? ` (${guestInfo.extraAdults} extra adult${guestInfo.extraAdults === 1 ? '' : 's'})` : ''}${guestInfo.chargeableChildren > 0 ? ` · ${guestInfo.chargeableChildren} paid` : ''}</td></tr>
           ${state.children.length ? `<tr><td>Children</td><td>Ages ${state.children.map(a => Number(a) === 0 ? '<1' : a).join(', ')}</td></tr>` : ''}
         </table>
@@ -535,6 +568,7 @@ function renderPrintReceipt() {
             ${transitRow}
             ${studiosRow}
             ${guestPdfRow}
+            ${bathtubPdfRow}
             ${subtotalRow}
             ${addonPdfRows}
           </tbody>
@@ -628,6 +662,7 @@ function onClick(e) {
     render(); return;
   }
   if (a === 'children-dec') { state.children = state.children.slice(0, -1); render(); return; }
+  if (a === 'bathtub-toggle') { state.hasBathtub = !state.hasBathtub; render(); return; }
   if (a === 'early-inc') { state.earlyHours = Math.min(tx.maxEarlyHours || 6, state.earlyHours + 1); render(); return; }
   if (a === 'early-dec') { state.earlyHours = Math.max(0, state.earlyHours - 1); render(); return; }
   if (a === 'late-inc')  { state.lateHours  = Math.min(tx.maxLateHours || 9, state.lateHours + 1);  render(); return; }
@@ -761,7 +796,8 @@ async function init() {
     const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
     const studios = state.studios || 1;
     const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
-    const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
+    const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
+    const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee + bathtubInfo.fee;
     if (subtotal > state.sheetAmount) {
       state.discountType = 'amt';
       state.discountValue = subtotal - state.sheetAmount;

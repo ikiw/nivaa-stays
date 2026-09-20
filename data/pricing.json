@@ -57,6 +57,10 @@
     "feePerNight": 500,
     "label": "Pet charge"
   },
+  "bathtubPolicy": {
+    "feePerNight": 500,
+    "label": "Bathtub charge"
+  },
   "advancePayment": {
     "minAmount": 1000,
     "maxAmount": 3000,

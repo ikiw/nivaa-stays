@@ -5,7 +5,7 @@
 // The Bookings sheet column order (matches rowToBooking_ in app-script.js).
 export const BOOKING_HEADERS = [
   'Name', 'Mobile', 'Check-In', 'Check-Out', 'Room Number',
-  'Platform', 'Online/Offline', 'Number of guests', 'Amount', 'Advance', 'Paid To Manju',
+  'Platform', 'Online/Offline', 'Number of guests', 'Amount', 'Advance', 'Paid To Manju', 'Bathtub',
 ];
 
 /** Build a booking row (array in BOOKING_HEADERS order) from a {Header: value} object. */

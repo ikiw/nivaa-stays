@@ -32,12 +32,24 @@ test('helpers: normalizePhone_, ymd_, rowToBooking_', () => {
   assert.equal(app.ymd_(new Date(2026, 5, 1)), '2026-06-01');
   const b = app.rowToBooking_(BOOKING_HEADERS, mkRow({
     Name: 'A', Mobile: '9620364554', 'Check-In': new Date(2026, 5, 1), 'Check-Out': new Date(2026, 5, 3),
-    'Room Number': '1', Platform: 'Airbnb', Amount: '₹4,000',
+    'Room Number': '1', Platform: 'Airbnb', Amount: '₹4,000', Bathtub: 'Yes',
   }));
   assert.equal(b.name, 'A');
   assert.equal(b.phone, '9620364554');
   assert.equal(b.room, '1');
   assert.equal(b.platform, 'Airbnb');
+  assert.equal(b.bathtub, true);
+});
+
+test('confirmation email identifies bathtub selection and full-house quantity', () => {
+  const app = appWith([]);
+  const booking = {
+    name: 'A', phone: '9620364554', checkin: '2026-06-01', checkout: '2026-06-03',
+    room: '1 & 2', num_guests: 4, amount: 7000, advance: 2000, bathtub: true,
+  };
+  assert.match(app.buildConfirmationText_(booking), /Room: 1 & 2 \(With 2 bathtubs\)/);
+  assert.match(app.buildConfirmationHtml_(booking), /1 &amp; 2 \(With 2 bathtubs\)/);
+  assert.match(app.buildConfirmationHtml_({ ...booking, room: '1', bathtub: false }), /1 \(Without bathtub\)/);
 });
 
 test('parseDate_: Date / ISO / D-MMM-YYYY / DD-MM-YYYY parse; junk rejected', () => {
