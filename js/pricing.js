@@ -110,26 +110,28 @@ export function formatINR(n) {
 }
 
 // Integer hours of early check-in or late checkout. Returns the fee for one side.
-// 0–1 hr free; 2–4 hr → ₹250 per paid hour; 5–6 hr → ₹1,000 flat (transit add-on);
-// 7+ hr → ₹1,500 flat (extended transit, late checkout only). Beyond max → null.
-export function transitFee(hours, config, side /* 'early' | 'late' */) {
+// 1–3 hr → ₹250 per hour; 4–6 hr → ₹1,000 flat (half day);
+// 7+ hr → the applicable full-day room rate. Beyond max → null.
+export function transitFee(hours, config, side /* 'early' | 'late' */, fullDayRate = null) {
   const t = config.transit;
   if (hours == null || hours <= t.freeHours) return 0;
   const max = side === 'early' ? t.maxEarlyHours : t.maxLateHours;
   if (hours > max) return null;
-  if (hours <= 4) return (hours - t.freeHours) * t.hourlyRate;
+  if (hours <= 3) return (hours - t.freeHours) * t.hourlyRate;
   if (hours <= 6) return t.halfDayFee;
-  return t.extendedFee;
+  return fullDayRate;
 }
 
 // Apply combined cap across early + late on the same booking.
-export function transitTotal(earlyHours, lateHours, config) {
-  const ef = transitFee(earlyHours, config, 'early');
-  const lf = transitFee(lateHours, config, 'late');
+// Full-day charges are extra nights and are not reduced by the transit cap.
+export function transitTotal(earlyHours, lateHours, config, fullDayRates = {}) {
+  const ef = transitFee(earlyHours, config, 'early', fullDayRates.early);
+  const lf = transitFee(lateHours, config, 'late', fullDayRates.late);
   if (ef === null || lf === null) return { early: ef, late: lf, total: null, capped: false };
   const raw = ef + lf;
   const cap = config.transit.combinedCap;
-  if (raw > cap) return { early: ef, late: lf, total: cap, capped: true };
+  const hasFullDay = earlyHours > 6 || lateHours > 6;
+  if (!hasFullDay && raw > cap) return { early: ef, late: lf, total: cap, capped: true };
   return { early: ef, late: lf, total: raw, capped: false };
 }
 

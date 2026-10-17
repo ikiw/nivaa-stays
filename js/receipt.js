@@ -21,6 +21,7 @@ const state = {
   hasBathtub: false,
   discountType: 'pct',
   discountValue: 0,
+  autoDiscountEnabled: true,
   guestName: '',
   guestMobile: '',
   advancePaid: 0,
@@ -74,7 +75,7 @@ function computeDiscount(subtotal, quoteContext) {
     }
     return { amount: Math.min(subtotal, manual), label: `${formatINR(manual)} off`, source: 'manual' };
   }
-  const rule = quoteContext ? autoDiscountFor(quoteContext, state.config) : null;
+  const rule = state.autoDiscountEnabled && quoteContext ? autoDiscountFor(quoteContext, state.config) : null;
   if (!rule) return { amount: 0, label: '', source: null };
   if (rule.type === 'pct') {
     return { amount: Math.round(subtotal * rule.value / 100), label: `${rule.value}% off · ${rule.name}`, source: 'auto', ruleId: rule.id };
@@ -86,7 +87,8 @@ function computeAll() {
   if (!state.checkIn || !state.checkOut || !state.config) return null;
   const q = quoteForRange(state.checkIn, state.checkOut, state.config);
   if (!q.totalNights) return null;
-  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
   const studios = state.studios || 1;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
   const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
@@ -147,6 +149,8 @@ function parseUrlState() {
     if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
   } catch (_) { /* malformed addons param — ignore */ }
   state.sheetAmount = parseInt(p.get('amt') || '0', 10);
+  // Sheet prices already include any agreed discount; keep it disabled on shares.
+  state.autoDiscountEnabled = state.sheetAmount <= 0 && p.get('autoDisc') !== '0';
   // Admin mode: URL flag (?mode=admin) OR a signed-in admin via Google Sign-In.
   const urlAdmin = p.get('mode') === 'admin';
   const authAdmin = !!(window.NivaaAuth && window.NivaaAuth.isAdmin());
@@ -167,6 +171,7 @@ function buildShareUrl(includeAdmin = false) {
     p.set('discType', state.discountType);
     p.set('disc', String(state.discountValue));
   }
+  if (!state.autoDiscountEnabled) p.set('autoDisc', '0');
   if (state.guestName) p.set('name', state.guestName);
   if (state.guestMobile) p.set('mobile', state.guestMobile);
   if (state.advancePaid > 0) p.set('adv', String(state.advancePaid));
@@ -793,7 +798,8 @@ async function init() {
   // amount so negotiated or manually entered bookings retain their exact total.
   if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
     const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+    const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+    const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
     const studios = state.studios || 1;
     const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
     const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);

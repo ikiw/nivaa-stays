@@ -25,10 +25,9 @@
     "defaultCheckOut": "11:00",
     "earliestCheckIn": "06:00",
     "latestCheckOut": "20:00",
-    "freeHours": 1,
+    "freeHours": 0,
     "hourlyRate": 250,
     "halfDayFee": 1000,
-    "extendedFee": 1500,
     "maxEarlyHours": 6,
     "maxLateHours": 9,
     "combinedCap": 2500
