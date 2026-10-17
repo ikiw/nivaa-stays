@@ -222,24 +222,65 @@ async function postAddon(payload) {
   return res.json();
 }
 
-// Mirror pricing.js → transitFee for 'late' side. Loaded from pricing.json
-// at init; falls back to defaults if the fetch fails.
-const LATE_CFG = { freeHours: 1, hourlyRate: 250, halfDayFee: 1000, extendedFee: 1500, maxLateHours: 9 };
+// Mirror pricing.js transit rules for the guest late-checkout request.
+const LATE_CFG = { freeHours: 0, hourlyRate: 250, halfDayFee: 1000, maxLateHours: 9 };
+let PRICING_CFG = {
+  tiers: { weekday: 2000, weekend: 2500, longWeekend: 3000 },
+  weekendDays: [5, 6, 0],
+  longWeekendTriggerDays: [1, 5],
+  holidays: [],
+  manualLongWeekends: []
+};
 fetch('data/pricing.json', { cache: 'no-cache' }).then(r => r.json()).then(cfg => {
+  PRICING_CFG = cfg;
   if (cfg && cfg.transit) {
     if (cfg.transit.freeHours    != null) LATE_CFG.freeHours    = cfg.transit.freeHours;
     if (cfg.transit.hourlyRate   != null) LATE_CFG.hourlyRate   = cfg.transit.hourlyRate;
     if (cfg.transit.halfDayFee   != null) LATE_CFG.halfDayFee   = cfg.transit.halfDayFee;
-    if (cfg.transit.extendedFee  != null) LATE_CFG.extendedFee  = cfg.transit.extendedFee;
     if (cfg.transit.maxLateHours != null) LATE_CFG.maxLateHours = cfg.transit.maxLateHours;
   }
 }).catch(() => {});
 
-function lateCheckoutFee(hours) {
+function ymdLocal(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function fullDayRateFor(dateStr) {
+  const date = new Date(`${dateStr}T00:00:00`);
+  const bumps = new Set();
+  const triggers = new Set(PRICING_CFG.longWeekendTriggerDays || []);
+
+  for (const holiday of PRICING_CFG.holidays || []) {
+    const holidayDate = new Date(`${holiday.date}T00:00:00`);
+    const dow = holidayDate.getDay();
+    if (!triggers.has(dow)) continue;
+    const offsets = dow === 5 ? [0, 1] : dow === 1 ? [-2, -1] : [];
+    offsets.forEach(offset => {
+      const bumped = new Date(holidayDate);
+      bumped.setDate(bumped.getDate() + offset);
+      bumps.add(ymdLocal(bumped));
+    });
+  }
+
+  for (const range of PRICING_CFG.manualLongWeekends || []) {
+    const current = new Date(`${range.from}T00:00:00`);
+    const end = new Date(`${range.to}T00:00:00`);
+    while (current <= end) {
+      bumps.add(ymdLocal(current));
+      current.setDate(current.getDate() + 1);
+    }
+  }
+
+  if (bumps.has(dateStr)) return PRICING_CFG.tiers.longWeekend;
+  if ((PRICING_CFG.weekendDays || []).includes(date.getDay())) return PRICING_CFG.tiers.weekend;
+  return PRICING_CFG.tiers.weekday;
+}
+
+function lateCheckoutFee(hours, checkoutDate) {
   if (hours <= LATE_CFG.freeHours) return 0;
-  if (hours <= 4) return (hours - LATE_CFG.freeHours) * LATE_CFG.hourlyRate;
+  if (hours <= 3) return (hours - LATE_CFG.freeHours) * LATE_CFG.hourlyRate;
   if (hours <= 6) return LATE_CFG.halfDayFee;
-  return LATE_CFG.extendedFee;
+  return fullDayRateFor(checkoutDate);
 }
 
 function fmtLateCheckoutTime(hours) {
@@ -323,13 +364,14 @@ function activateLateForm() {
   const timeEl = card.querySelector('#late-checkout-time');
   const feeEl  = card.querySelector('#late-fee-display');
   const status = card.querySelector('[data-late-status]');
+  const checkoutDate = HUB_DATA && HUB_DATA.booking ? HUB_DATA.booking.checkout : '';
   let hours = 2;
 
   function rerender() {
     valEl.textContent = String(hours);
     timeEl.textContent = '→ check-out ' + fmtLateCheckoutTime(hours);
-    const fee = lateCheckoutFee(hours);
-    feeEl.textContent = fee === 0 ? 'Free (grace period)' : '₹' + fee.toLocaleString('en-IN');
+    const fee = lateCheckoutFee(hours, checkoutDate);
+    feeEl.textContent = fee === 0 ? 'No charge' : '₹' + fee.toLocaleString('en-IN');
   }
   rerender();
 
@@ -345,7 +387,7 @@ function activateLateForm() {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     if (!HUB_BOOKING_ID) return;
-    const fee = lateCheckoutFee(hours);
+    const fee = lateCheckoutFee(hours, checkoutDate);
     const notes = String(new FormData(form).get('notes') || '').trim();
 
     const submit = form.querySelector('button[type="submit"]');

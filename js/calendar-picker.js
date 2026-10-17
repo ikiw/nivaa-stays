@@ -119,7 +119,8 @@ function renderInstruction() {
 // the sticky bar, and the printable quote so the four totals can never drift.
 function computeQuote() {
   const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-  const tt = transitTotal(state.earlyHours, state.lateHours, state.config);
+  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
   const studios = state.studios || 1;
   const roomTotal = q.total * studios;
   const transitSubtotal = (tt.total || 0) * studios;
@@ -337,12 +338,13 @@ function renderTransit(tx, tt) {
   const earlyLabel = state.earlyHours === 0 ? 'No early check-in' : `+${state.earlyHours} hr early (in ${shiftTime(tx.defaultCheckIn, state.earlyHours)})`;
   const lateLabel = state.lateHours === 0 ? 'No late checkout' : `+${state.lateHours} hr late (out ${shiftTime(tx.defaultCheckOut, -state.lateHours)})`;
   const earlyFee = transitFee(state.earlyHours, state.config, 'early');
-  const lateFee = transitFee(state.lateHours, state.config, 'late');
+  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const lateFee = transitFee(state.lateHours, state.config, 'late', lateFullDayRate);
 
   return `<details class="rp-transit" ${state.earlyHours || state.lateHours ? 'open' : ''}>
     <summary>Need early check-in or late checkout?</summary>
     <div class="rp-transit-body">
-      <p class="rp-transit-intro">Default check-in <strong>12 PM</strong>, check-out <strong>11 AM</strong>. First hour free; ₹250/hr beyond. 5–6 hr block ₹1,000 (transit add-on); 7+ hr block ₹1,500. Earliest check-in <strong>6 AM</strong>, latest checkout <strong>8 PM</strong>. Combined cap ₹${tx.combinedCap.toLocaleString('en-IN')}.</p>
+      <p class="rp-transit-intro">Default check-in <strong>12 PM</strong>, check-out <strong>11 AM</strong>. ₹250/hr for 1–3 hours; 4–6 hours ₹1,000 (half day); beyond 6 hours is charged at that date’s full room rate. Earliest check-in <strong>6 AM</strong>, latest checkout <strong>8 PM</strong>.</p>
 
       <div class="rp-stepper">
         <div class="rp-stepper-label">
