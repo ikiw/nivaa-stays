@@ -19,7 +19,7 @@ const PAGES = [
   'work-from-home-pondicherry.html', 'pet-friendly-stay-pondicherry.html',
   'conference-stay-jipmer.html', 'marine-training-stay-jipmer.html',
   'patient-family-stay-jipmer.html', 'student-family-stay-jipmer.html',
-  'guest-house-near-jipmer.html', 'hotels-near-jipmer.html',
+  'guest-house-near-jipmer.html', 'homestay-near-jipmer.html', 'hotels-near-jipmer.html',
   'hotel-with-bathtub-pondicherry.html', 'pondicherry-travel-guide.html',
   'stay-guide.html',
 ];
