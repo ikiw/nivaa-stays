@@ -2,7 +2,7 @@
 
 > **Date:** 2026-06-27 · **Status:** analysis only (nothing built) · **Method:** 6-analyst deep SEO audit (keyword/on-page, maps-local under the category constraint, planner, AEO, technical/schema, off-page), grounded against the live repo + site.
 >
-> Property: 2-room owner-run guest house, ~1.5 km / ~5 min from JIPMER, Gorimedu, Puducherry. "Le Affordable Luxury." Both rooms have private bathtubs. Static HTML + Cloudflare Workers; React planner at `/pondicherry-itinerary`.
+> Property: 2-room owner-run guest house, ~820 m / < 1 km from JIPMER, Gorimedu, Puducherry. "Le Affordable Luxury." Both rooms have private bathtubs. Static HTML + Cloudflare Workers; React planner at `/pondicherry-itinerary`.
 >
 > **Target keywords** (from `apps-script/rank-app-script.js`): *hotel intent (primary)* — hotels near JIPMER, hotel near JIPMER, premium hotels near JIPMER, hotels in Pondicherry, budget hotel near JIPMER, rooms near JIPMER · *bathtub niche* — hotels with bathtub in Pondicherry, hotel with bathtub near JIPMER · *guest-house (legacy)* — guest house near JIPMER + JIPMER patient/student variants.
 
@@ -56,7 +56,7 @@
 10. **Hero LCP on landing pages.** Above-fold hero AVIF carries `loading="lazy"` with no preload/`fetchpriority`. Drop `lazy` from the single hero, add `fetchpriority="high"` + `<link rel=preload as=image>` matching the rendered variant. Fix the index preload href to match the rendered `-sm.avif`.
 11. **Resolve the two travel-guide pages** (`stay-guide.html` vs `pondicherry-travel-guide.html`) cannibalizing the same query. Keep `pondicherry-travel-guide.html` public; retarget `stay-guide.html` to an in-stay guest angle + noindex; re-point internal links.
 12. **Add Speakable spec** to the FAQ answer block + headline fact on index/hotels-near-jipmer/bathtub (pure JSON-LD).
-13. **Add llms.txt + AI-crawler `Allow`** (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot). Entity card: one-line definition, NAP, "~5 min / 1.5 km from JIPMER", "2 rooms both with private bathtubs", rates, phone, booking link, canonical page links + OTA listings. Add to `.assetsignore` exceptions so it serves.
+13. **Add llms.txt + AI-crawler `Allow`** (GPTBot, ClaudeBot, PerplexityBot, Google-Extended, CCBot). Entity card: one-line definition, NAP, "~820 m / < 1 km from JIPMER", "2 rooms both with private bathtubs", rates, phone, booking link, canonical page links + OTA listings. Add to `.assetsignore` exceptions so it serves.
 
 ## 4. Maps / Local SEO
 
