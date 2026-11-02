@@ -272,7 +272,8 @@ function fullDayRateFor(dateStr) {
   }
 
   if (bumps.has(dateStr)) return PRICING_CFG.tiers.longWeekend;
-  if ((PRICING_CFG.weekendDays || []).includes(date.getDay())) return PRICING_CFG.tiers.weekend;
+  if ((PRICING_CFG.weekendDays || []).includes(date.getDay()) ||
+      (PRICING_CFG.manualPrimeDates || []).includes(dateStr)) return PRICING_CFG.tiers.weekend;
   return PRICING_CFG.tiers.weekday;
 }
 

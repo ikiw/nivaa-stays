@@ -78,7 +78,7 @@ export function rateForDate(dateStr, config) {
   if (bumps.has(dateStr)) {
     return { tier: 'longWeekend', rate: config.tiers.longWeekend, isLongWeekend: true, longWeekendName: bumps.get(dateStr) };
   }
-  if (weekendSet.has(dow)) {
+  if (weekendSet.has(dow) || (config.manualPrimeDates || []).includes(dateStr)) {
     return { tier: 'weekend', rate: config.tiers.weekend, isLongWeekend: false, longWeekendName: null };
   }
   return { tier: 'weekday', rate: config.tiers.weekday, isLongWeekend: false, longWeekendName: null };
