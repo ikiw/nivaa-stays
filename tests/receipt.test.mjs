@@ -34,6 +34,68 @@ async function receipt(search) {
   return { context, root, print };
 }
 
+test('November 9 and 10 use Prime rates in quotes and receipts without changing adjacent dates', async () => {
+  const quote = pricing.quoteForRange('2026-11-08', '2026-11-12', config);
+  assert.deepEqual(quote.nights.map(({ tier, rate }) => ({ tier, rate })), [
+    { tier: 'weekend', rate: 2500 },
+    { tier: 'weekend', rate: 2500 },
+    { tier: 'weekend', rate: 2500 },
+    { tier: 'weekday', rate: 2000 }
+  ]);
+  const { context, root } = await receipt('ci=2026-11-09&co=2026-11-11');
+  assert.equal(context.computeAll().subtotal, 5000);
+  assert.match(root.innerHTML, /Prime/);
+});
+
+test('December holiday overrides apply Prime and Peak rates across quotes and receipts', async () => {
+  const quote = pricing.quoteForRange('2026-12-21', '2027-01-01', config);
+  assert.deepEqual(quote.nights.map(({ tier }) => tier), [
+    'weekend', 'weekend', 'weekend', 'weekend',
+    'longWeekend', 'longWeekend', 'longWeekend',
+    'longWeekend', 'longWeekend', 'longWeekend', 'longWeekend'
+  ]);
+  assert.equal(quote.total, 31000);
+  assert.equal(pricing.rateForDate('2026-12-17', config).tier, 'weekday');
+  assert.equal(pricing.rateForDate('2027-01-04', config).tier, 'weekday');
+
+  const { context, root } = await receipt('ci=2026-12-24&co=2026-12-28');
+  assert.equal(context.computeAll().subtotal, 11500);
+  assert.match(root.innerHTML, /Prime/);
+  assert.match(root.innerHTML, /Peak/);
+});
+
+test('Christmas and New Year Peak rates cover December 25 through January 3 inclusively', async () => {
+  const quote = pricing.quoteForRange('2026-12-24', '2027-01-05', config);
+  assert.deepEqual(quote.nights.map(({ tier, rate }) => ({ tier, rate })), [
+    { tier: 'weekend', rate: 2500 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'weekday', rate: 2000 }
+  ]);
+  const { context, root } = await receipt('ci=2026-12-27&co=2027-01-04');
+  assert.equal(context.computeAll().subtotal, 24000);
+  assert.match(root.innerHTML, /Peak/);
+});
+
+test('Prime date overrides are optional and do not replace Peak rates', () => {
+  const { manualPrimeDates, ...withoutOverrides } = config;
+  assert.equal(pricing.rateForDate('2026-11-09', withoutOverrides).tier, 'weekday');
+  const peakConfig = {
+    ...config,
+    manualPrimeDates,
+    manualLongWeekends: [{ from: '2026-11-09', to: '2026-11-09', name: 'Peak override' }]
+  };
+  assert.equal(pricing.rateForDate('2026-11-09', peakConfig).tier, 'longWeekend');
+});
+
 for (const amount of [7000, 7600, 8000, 9000]) {
   test(`sheet amount ${amount} overrides long-stay pricing across receipt, PDF and share reloads`, async () => {
     const { context, root, print } = await receipt(`${stay}&amt=${amount}`);
