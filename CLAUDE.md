@@ -31,7 +31,7 @@ To add a new dynamic endpoint, add another `if (url.pathname === '/api/xyz') { .
 - `index.html` — homepage with rate-picker calendar, full LodgingBusiness + HotelRoom×2 + FAQPage + Review + AggregateRating + ReserveAction JSON-LD
 - `gallery.html`, `booking.html`
 - JIPMER cluster: `hotels-near-jipmer.html`, `guest-house-near-jipmer.html`, `homestay-near-jipmer.html`, `patient-family-stay-jipmer.html`, `student-family-stay-jipmer.html`, `conference-stay-jipmer.html`
-- Pondicherry cluster: `celebration-stay-pondicherry.html`, `pet-friendly-stay-pondicherry.html`, `full-house-stay-pondicherry.html`, `work-from-home-pondicherry.html`
+- Pondicherry cluster: `boutique-hotel-pondicherry.html`, `couple-friendly-hotel-pondicherry.html`, `hotel-with-bathtub-pondicherry.html`, `celebration-stay-pondicherry.html`, `pet-friendly-stay-pondicherry.html`, `full-house-stay-pondicherry.html`, `work-from-home-pondicherry.html`
 - `guides.html` — hub for content articles (CollectionPage schema)
 
 **Content guides** (indexable, in `guides/` directory):

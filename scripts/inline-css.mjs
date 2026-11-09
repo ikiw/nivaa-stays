@@ -21,7 +21,8 @@ const PAGES = [
   'patient-family-stay-jipmer.html', 'student-family-stay-jipmer.html',
   'guest-house-near-jipmer.html', 'homestay-near-jipmer.html', 'hotels-near-jipmer.html',
   'hotel-with-bathtub-pondicherry.html', 'pondicherry-travel-guide.html',
-  'stay-guide.html',
+  'stay-guide.html', 'couple-friendly-hotel-pondicherry.html',
+  'boutique-hotel-pondicherry.html',
 ];
 const START = '<style id="inline-css">';
 
