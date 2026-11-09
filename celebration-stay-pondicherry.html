@@ -856,7 +856,7 @@ footer a:hover { color: var(--brand-gold-soft); }
   /* Photo strip with rotated polaroid frames */
   .celeb-photo-strip {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     padding: 0.5rem 0;
   }
@@ -885,13 +885,14 @@ footer a:hover { color: var(--brand-gold-soft); }
   .celeb-photo:nth-child(1) { transform: rotate(-3deg); }
   .celeb-photo:nth-child(2) { transform: rotate(1.5deg); margin-top: 1.5rem; }
   .celeb-photo:nth-child(3) { transform: rotate(-1.5deg); }
+  .celeb-photo:nth-child(4) { transform: rotate(2.5deg); margin-top: 0.75rem; }
   .celeb-photo:hover {
     transform: rotate(0) translateY(-4px) scale(1.04);
     box-shadow: 0 18px 38px -10px rgba(14,32,30,0.28);
     z-index: 2;
   }
   @media (max-width: 720px) {
-    .celeb-photo-strip { grid-template-columns: 1fr; gap: 1.5rem; }
+    .celeb-photo-strip { grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
     .celeb-photo:nth-child(n) { margin-top: 0; }
     .celeb-photo:nth-child(odd)  { transform: rotate(-1.5deg); }
     .celeb-photo:nth-child(even) { transform: rotate(1.5deg); }
@@ -1026,7 +1027,7 @@ footer a:hover { color: var(--brand-gold-soft); }
       "@id": "https://nivaastays.com/#lodging",
       "name": "Nivaa Stays",
       "url": "https://nivaastays.com/",
-      "image": "https://nivaastays.com/images/exterior-main-gate.jpg",
+      "image": ["https://nivaastays.com/images/exterior-main-gate.jpg", "https://nivaastays.com/images/romantic-room-decoration-pondicherry.jpg", "https://nivaastays.com/images/couple-room-candlelight-pondicherry.jpg"],
       "logo": "https://nivaastays.com/assets/logo.png",
       "telephone": "+919620364554",
       "email": "nivaastays@gmail.com",
@@ -1109,6 +1110,10 @@ footer a:hover { color: var(--brand-gold-soft); }
     </div>
     <div class="celeb-photo-strip">
       <a href="gallery.html" class="celeb-photo">
+        <img src="images/romantic-room-decoration-square.jpg" alt="Romantic room decoration with a rose-petal heart message on the bed at Nivaa Stays, Pondicherry" loading="lazy" decoding="async">
+        <span class="celeb-photo-cap">rose petals, for two</span>
+      </a>
+      <a href="gallery.html" class="celeb-photo">
         <img src="images/celebration-birthday-2.jpg" alt="Birthday balloon setup with rose-petal heart at Nivaa Stays" loading="lazy" decoding="async">
         <span class="celeb-photo-cap">a birthday surprise</span>
       </a>
@@ -1120,6 +1125,16 @@ footer a:hover { color: var(--brand-gold-soft); }
         <img src="images/celebration-setup.jpg" alt="Rose-petal bathtub setup for an anniversary at Nivaa Stays" loading="lazy" decoding="async">
         <span class="celeb-photo-cap">an anniversary soak</span>
       </a>
+    </div>
+    <div class="grid md:grid-cols-2 gap-5 mt-10">
+      <figure>
+        <img src="images/romantic-room-decoration-pondicherry.avif" alt="Anniversary room decoration with a rose-petal heart message, candles and petals on the floor at Nivaa Stays, Pondicherry" class="rounded-xl card-shadow w-full aspect-[4/3] object-cover" loading="lazy" decoding="async">
+        <figcaption class="text-center text-sm italic text-[color:var(--brand-muted)] mt-3">A rose-petal heart, candles and petals across the floor.</figcaption>
+      </figure>
+      <figure>
+        <img src="images/couple-room-candlelight-pondicherry.avif" alt="The same anniversary room setup by candlelight with the lights dimmed at Nivaa Stays, Pondicherry" class="rounded-xl card-shadow w-full aspect-[4/3] object-cover" loading="lazy" decoding="async">
+        <figcaption class="text-center text-sm italic text-[color:var(--brand-muted)] mt-3">The same room after dark, lit by candles and lamps.</figcaption>
+      </figure>
     </div>
   </div>
 </section>
