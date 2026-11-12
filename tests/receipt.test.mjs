@@ -147,3 +147,29 @@ test('custom add-ons remain additional and are not duplicated on shared receipts
   const shared = await receipt(new URL(context.buildShareUrl()).search.slice(1));
   assert.equal(shared.context.computeAll().grandTotal, 9500);
 });
+
+test('bathtub receipts use the selected room rate for full-day late checkout', async () => {
+  const { context } = await receipt('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7');
+  assert.equal(context.computeAll().tt.late, 3500);
+  assert.equal(context.computeAll().grandTotal, 9500);
+  const { context: sheet } = await receipt('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7&amt=9500');
+  assert.equal(sheet.computeAll().disc.amount, 0);
+  assert.equal(sheet.computeAll().addonsTotal, 0);
+});
+
+test('receipt and PDF show room type separately from the studio booking', async () => {
+  for (const studios of [1, 2]) {
+    for (const bathtub of [0, 1]) {
+      const { context, root, print } = await receipt(`${stay}&studios=${studios}&bathtub=${bathtub}`);
+      const roomType = bathtub ? 'Room with bathtub' : 'Room only';
+      const booking = studios === 2 ? '2 Studios · Full House' : '1 Studio';
+      assert.ok(root.innerHTML.includes(`<div class="bc-label">Room type</div><div class="bc-value">${roomType}</div>`));
+      assert.ok(root.innerHTML.includes(`<div class="bc-label">Booking</div><div class="bc-value">${booking} ·`));
+      assert.doesNotMatch(root.innerHTML, /\((?:With(?: \d+)?|Without) bathtub/);
+      context.renderPrintReceipt();
+      assert.ok(print.innerHTML.includes(`<tr><td>Room type</td><td>${roomType}</td></tr>`));
+      assert.ok(print.innerHTML.includes(`<tr><td>Booking</td><td>${booking}</td></tr>`));
+      assert.doesNotMatch(print.innerHTML, /\((?:With(?: \d+)?|Without) bathtub/);
+    }
+  }
+});

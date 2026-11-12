@@ -1,6 +1,7 @@
 {
   "currency": "INR",
   "tiers": { "weekday": 2000, "weekend": 2500, "longWeekend": 3000 },
+  "roomWithBathtubTiers": { "weekday": 2500, "weekend": 3000, "longWeekend": 3500 },
   "weekendDays": [5, 6, 0],
   "manualPrimeDates": [
     "2026-11-09", "2026-11-10",

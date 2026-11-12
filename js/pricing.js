@@ -69,22 +69,27 @@ function bumpsFor(config) {
   return _cachedBumps;
 }
 
-export function rateForDate(dateStr, config) {
+export function tiersForRoom(config, roomType = 'roomOnly') {
+  return roomType === 'withBathtub' ? config.roomWithBathtubTiers : config.tiers;
+}
+
+export function rateForDate(dateStr, config, roomType = 'roomOnly') {
   const bumps = bumpsFor(config);
+  const tiers = tiersForRoom(config, roomType);
   const d = parseYmd(dateStr);
   const dow = d.getDay();
   const weekendSet = new Set(config.weekendDays);
 
   if (bumps.has(dateStr)) {
-    return { tier: 'longWeekend', rate: config.tiers.longWeekend, isLongWeekend: true, longWeekendName: bumps.get(dateStr) };
+    return { tier: 'longWeekend', rate: tiers.longWeekend, isLongWeekend: true, longWeekendName: bumps.get(dateStr) };
   }
   if (weekendSet.has(dow) || (config.manualPrimeDates || []).includes(dateStr)) {
-    return { tier: 'weekend', rate: config.tiers.weekend, isLongWeekend: false, longWeekendName: null };
+    return { tier: 'weekend', rate: tiers.weekend, isLongWeekend: false, longWeekendName: null };
   }
-  return { tier: 'weekday', rate: config.tiers.weekday, isLongWeekend: false, longWeekendName: null };
+  return { tier: 'weekday', rate: tiers.weekday, isLongWeekend: false, longWeekendName: null };
 }
 
-export function quoteForRange(checkInStr, checkOutStr, config) {
+export function quoteForRange(checkInStr, checkOutStr, config, roomType = 'roomOnly') {
   const ci = parseYmd(checkInStr);
   const co = parseYmd(checkOutStr);
   if (co.getTime() <= ci.getTime()) {
@@ -94,7 +99,7 @@ export function quoteForRange(checkInStr, checkOutStr, config) {
   let total = 0;
   for (let cur = new Date(ci); cur.getTime() < co.getTime(); cur = addDays(cur, 1)) {
     const ds = ymd(cur);
-    const r = rateForDate(ds, config);
+    const r = rateForDate(ds, config, roomType);
     nights.push({ date: ds, tier: r.tier, rate: r.rate, longWeekendName: r.longWeekendName });
     total += r.rate;
   }
