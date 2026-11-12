@@ -1,7 +1,7 @@
 // Nivaa Stays — inline two-month calendar picker with per-night pricing.
 // Renders into <div id="rate-picker"></div>. Uses pricing.js for rate lookups.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, advancePaymentFor, guestFeeFor, petFeeFor, bathtubFeeFor } from './pricing.js';
+import { tiersForRoom, rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, advancePaymentFor, guestFeeFor, petFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const CHILD_DEFAULT_AGE = 10; // new children start chargeable; user sets the exact age
@@ -21,7 +21,7 @@ const state = {
   adults: 2,             // adult count across the booking (2 included/studio)
   children: [],          // ages of accompanying children (each 0–17)
   hasPet: false,         // travelling with a pet → flat ₹/night pet charge
-  hasBathtub: false,     // optional bathtub → flat ₹/night charge
+  roomType: 'roomOnly',  // 'roomOnly' | 'withBathtub'
   addons: [],            // [{ label, amount }] custom line items added on top (admin)
   newAddonLabel: '',     // in-progress "add a line" inputs (admin panel)
   newAddonAmount: '',
@@ -79,7 +79,7 @@ function renderMonth(monthStart, isMobile) {
   for (let day = 1; day <= daysInMonth; day++) {
     const dStr = `${y}-${String(m + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
     const past = dStr < state.today;
-    const r = rateForDate(dStr, state.config);
+    const r = rateForDate(dStr, state.config, state.roomType);
     const cls = ['rp-cell', `rp-tier-${r.tier}`];
     if (past) cls.push('rp-past');
     if (dStr === state.checkIn) cls.push('rp-ci');
@@ -118,21 +118,20 @@ function renderInstruction() {
 // Single source of truth for the money math — used by the on-screen breakdown,
 // the sticky bar, and the printable quote so the four totals can never drift.
 function computeQuote() {
-  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const q = quoteForRange(state.checkIn, state.checkOut, state.config, state.roomType);
+  const lateFullDayRate = rateForDate(state.checkOut, state.config, state.roomType).rate;
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
   const studios = state.studios || 1;
   const roomTotal = q.total * studios;
   const transitSubtotal = (tt.total || 0) * studios;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
   const petInfo = petFeeFor(state.hasPet, q.totalNights, state.config);
-  const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
-  const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee + bathtubInfo.fee;
+  const subtotal = roomTotal + transitSubtotal + guestInfo.fee + petInfo.fee;
   const disc = computeDiscount(subtotal);
   // Custom add-ons are a flat addition on top — not discounted.
   const addonsTotal = state.addons.reduce((s, a) => s + (Number(a.amount) || 0), 0);
   const grandTotal = Math.max(0, subtotal - disc.amount) + addonsTotal;
-  return { q, tt, studios, roomTotal, transitSubtotal, guestInfo, petInfo, bathtubInfo, subtotal, disc, addonsTotal, grandTotal };
+  return { q, tt, studios, roomTotal, transitSubtotal, guestInfo, petInfo, subtotal, disc, addonsTotal, grandTotal };
 }
 
 // Build the WhatsApp booking message + deep link from a computeQuote() result.
@@ -153,10 +152,10 @@ function buildBookingMessage(c) {
   ].filter(Boolean).join(', ');
   const guestsMsgPart = ` ${state.adults} adult${state.adults === 1 ? '' : 's'}${kids ? ` + ${kids} child${kids === 1 ? '' : 'ren'}` : ''}${paidNote ? ` (${paidNote})` : ''}.`;
   const petsMsgPart = c.petInfo.fee > 0 ? ` Travelling with a pet (+${formatINR(c.petInfo.fee)}).` : '';
-  const bathtubMsgPart = ` ${state.hasBathtub ? `With ${c.bathtubInfo.quantity === 1 ? 'bathtub' : `${c.bathtubInfo.quantity} bathtubs`} (+${formatINR(c.bathtubInfo.fee)})` : 'Without bathtub'}.`;
+  const roomTypeMsgPart = ` ${state.roomType === 'withBathtub' ? 'Room with bathtub' : 'Room only'}.`;
   const addonsMsgPart = c.addonsTotal > 0 ? ` Add-ons: ${state.addons.map(a => `${a.label} (${formatINR(a.amount)})`).join(', ')}.` : '';
   const quoteUrl = buildShareUrl(false);
-  const msg = `Hi Nivaa Stays, I'd like to book ${c.q.totalNights} night${c.q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart}${petsMsgPart}${bathtubMsgPart}${addonsMsgPart} Total ${formatINR(c.grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
+  const msg = `Hi Nivaa Stays, I'd like to book ${c.q.totalNights} night${c.q.totalNights === 1 ? '' : 's'}: check-in ${state.checkIn} ${ciTime}, check-out ${state.checkOut} ${coTime}.${studiosMsgPart}${guestsMsgPart}${petsMsgPart}${roomTypeMsgPart}${addonsMsgPart} Total ${formatINR(c.grandTotal)}.${transitMsgPart}${discMsgPart}\n\nQuote: ${quoteUrl}`;
   return `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(msg)}`;
 }
 
@@ -185,7 +184,6 @@ function renderBreakdown() {
   const transitSubtotal = c.transitSubtotal;
   const guestInfo = c.guestInfo;
   const petInfo = c.petInfo;
-  const bathtubInfo = c.bathtubInfo;
   const subtotal = c.subtotal;
   const disc = c.disc;
   const grandTotal = c.grandTotal;
@@ -227,14 +225,6 @@ function renderBreakdown() {
         <span class="rp-row-rate">${formatINR(petInfo.fee)}</span>
       </div>`
     : '';
-  const bathtubScreenRow = bathtubInfo.fee > 0
-      ? `<div class="rp-row rp-row-guest">
-          <span class="rp-row-date">Bathtub charge</span>
-          <span class="rp-row-tier">${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)} × ${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</span>
-          <span class="rp-row-rate">${formatINR(bathtubInfo.fee)}</span>
-        </div>`
-      : '';
-
   const subtotalRow = disc.amount > 0
     ? `<div class="rp-row rp-row-subtotal"><span class="rp-row-date">Subtotal</span><span></span><span class="rp-row-rate">${formatINR(subtotal)}</span></div>
        <div class="rp-row rp-row-discount"><span class="rp-row-date">Discount</span><span class="rp-row-tier">${disc.label}</span><span class="rp-row-rate">−${formatINR(disc.amount)}</span></div>`
@@ -251,7 +241,7 @@ function renderBreakdown() {
       <div><strong>${fmtPretty(state.checkIn)}</strong> → <strong>${fmtPretty(state.checkOut)}</strong></div>
       <div class="rp-nights">${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</div>
     </div>
-    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${petScreenRow}${bathtubScreenRow}${subtotalRow}${addonScreenRows}</div>
+    <div class="rp-rows">${rows}${transitTotalRow}${studiosScreenRow}${guestScreenRow}${petScreenRow}${subtotalRow}${addonScreenRows}</div>
     <div class="rp-total">
       <span>Total</span>
       <span class="rp-total-amt">${formatINR(grandTotal)}</span>
@@ -338,7 +328,7 @@ function renderTransit(tx, tt) {
   const earlyLabel = state.earlyHours === 0 ? 'No early check-in' : `+${state.earlyHours} hr early (in ${shiftTime(tx.defaultCheckIn, state.earlyHours)})`;
   const lateLabel = state.lateHours === 0 ? 'No late checkout' : `+${state.lateHours} hr late (out ${shiftTime(tx.defaultCheckOut, -state.lateHours)})`;
   const earlyFee = transitFee(state.earlyHours, state.config, 'early');
-  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const lateFullDayRate = rateForDate(state.checkOut, state.config, state.roomType).rate;
   const lateFee = transitFee(state.lateHours, state.config, 'late', lateFullDayRate);
 
   return `<details class="rp-transit" ${state.earlyHours || state.lateHours ? 'open' : ''}>
@@ -389,6 +379,7 @@ function render() {
 
   const left = state.anchor;
   const right = addMonths(left, 1);
+  const tiers = tiersForRoom(state.config, state.roomType);
 
   state.root.innerHTML = `
     <div class="rp-wrap">
@@ -425,12 +416,12 @@ function render() {
           </div>
           <span class="rp-guests-hint">+${formatINR(state.config?.petPolicy?.feePerNight || 0)}/night</span>
         </div>
-        <div class="rp-pets-group rp-bathtub-group">
-          <span class="rp-studios-label">Bathtub</span>
-          <div class="rp-studios-toggle">
-            <button type="button" class="rp-studio-opt ${state.hasBathtub ? 'active' : ''}" data-action="bathtub-toggle" aria-pressed="${state.hasBathtub}">${state.hasBathtub ? (state.studios === 2 ? 'With 2 bathtubs' : 'With bathtub') : `+ Add ${state.studios === 2 ? '2 bathtubs' : 'bathtub'}`}</button>
+        <div class="rp-studios-group">
+          <span class="rp-studios-label">Room type</span>
+          <div class="rp-studios-toggle" role="group" aria-label="Room type">
+            <button type="button" class="rp-studio-opt ${state.roomType === 'withBathtub' ? 'active' : ''}" data-action="room-with-bathtub" aria-pressed="${state.roomType === 'withBathtub'}">Room with bathtub</button>
+            <button type="button" class="rp-studio-opt ${state.roomType === 'roomOnly' ? 'active' : ''}" data-action="room-only" aria-pressed="${state.roomType === 'roomOnly'}">Room only</button>
           </div>
-          <span class="rp-guests-hint">+${formatINR(state.config?.bathtubPolicy?.feePerNight || 0)}/bathtub/night</span>
         </div>
       </div>
       ${state.children.length ? `<div class="rp-child-ages">
@@ -445,9 +436,9 @@ function render() {
       <div class="rp-header">
         <button type="button" class="rp-nav" data-action="prev" aria-label="Previous month">‹</button>
         <div class="rp-legend">
-          <span><i class="rp-dot rp-dot-weekday"></i> Base ₹2,000</span>
-          <span><i class="rp-dot rp-dot-weekend"></i> Prime ₹2,500</span>
-          <span><i class="rp-dot rp-dot-longWeekend"></i> Peak ₹3,000</span>
+          <span><i class="rp-dot rp-dot-weekday"></i> Base ${formatINR(tiers.weekday)}</span>
+          <span><i class="rp-dot rp-dot-weekend"></i> Prime ${formatINR(tiers.weekend)}</span>
+          <span><i class="rp-dot rp-dot-longWeekend"></i> Peak ${formatINR(tiers.longWeekend)}</span>
         </div>
         <button type="button" class="rp-nav" data-action="next" aria-label="Next month">›</button>
       </div>
@@ -488,7 +479,7 @@ function renderPrintQuote() {
     return;
   }
   const c = computeQuote();
-  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo, bathtubInfo = c.bathtubInfo;
+  const q = c.q, tt = c.tt, studios = c.studios, guestInfo = c.guestInfo, petInfo = c.petInfo;
   const subtotal = c.subtotal, disc = c.disc, grandTotal = c.grandTotal;
   const tx = state.config.transit;
   const ciTime = state.earlyHours > 0 ? shiftTime(tx.defaultCheckIn, state.earlyHours) : '12:00 PM';
@@ -520,9 +511,6 @@ function renderPrintQuote() {
     : '');
   const petPdfRow = petInfo.fee > 0
     ? `<tr class="pet-row"><td>Pet charge</td><td>${formatINR(petInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(petInfo.fee)}</td></tr>`
-    : '';
-  const bathtubPdfRow = bathtubInfo.fee > 0
-    ? `<tr class="guest-row"><td>Bathtub charge</td><td>${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(bathtubInfo.fee)}</td></tr>`
     : '';
   const addonPdfRows = state.addons.map(a =>
     `<tr class="addon-row"><td>${escapeHtml(a.label)}</td><td>Add-on</td><td class="num">${formatINR(a.amount)}</td></tr>`).join('');
@@ -559,7 +547,7 @@ function renderPrintQuote() {
           <tr><td>Check-in</td><td>${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="pq-pill">+${state.earlyHours}h early</span>` : ''}</td></tr>
           <tr><td>Check-out</td><td>${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="pq-pill">+${state.lateHours}h late</span>` : ''}</td></tr>
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
-          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'})</td></tr>
+          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.roomType === 'withBathtub' ? 'Room with bathtub' : 'Room only'})</td></tr>
           <tr><td>Guests</td><td>${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}${guestInfo.extraAdults > 0 ? ` <span class="pq-pill">${guestInfo.extraAdults} extra adult${guestInfo.extraAdults === 1 ? '' : 's'}</span>` : ''}${guestInfo.chargeableChildren > 0 ? ` <span class="pq-pill">${guestInfo.chargeableChildren} paid child${guestInfo.chargeableChildren === 1 ? '' : 'ren'}</span>` : ''}</td></tr>
           ${state.children.length ? `<tr><td>Children</td><td>Ages ${state.children.map(a => Number(a) === 0 ? '<1' : a).join(', ')}</td></tr>` : ''}
           ${petInfo.fee > 0 ? `<tr><td>Pet</td><td>Travelling with a pet <span class="pq-pill">+${formatINR(petInfo.perNight)}/night</span></td></tr>` : ''}
@@ -576,7 +564,6 @@ function renderPrintQuote() {
             ${studiosMultRow}
             ${guestPdfRow}
             ${petPdfRow}
-            ${bathtubPdfRow}
             ${subtotalRow}
             ${addonPdfRows}
           </tbody>
@@ -688,7 +675,8 @@ function onClick(e) {
       render(); return;
     }
     if (a === 'pet-toggle') { state.hasPet = !state.hasPet; render(); return; }
-    if (a === 'bathtub-toggle') { state.hasBathtub = !state.hasBathtub; render(); return; }
+    if (a === 'room-with-bathtub') { state.roomType = 'withBathtub'; render(); return; }
+    if (a === 'room-only') { state.roomType = 'roomOnly'; render(); return; }
     if (a === 'disc-clear') { state.discountValue = 0; render(); return; }
     if (a === 'addon-add') {
       const label = (state.newAddonLabel || '').trim();
@@ -786,7 +774,7 @@ function parseUrlState() {
       .slice(0, (state.config?.childPolicy?.maxPerStudio || 4) * state.studios);
   }
   state.hasPet = p.get('pet') === '1';
-  state.hasBathtub = p.get('bathtub') === '1';
+  state.roomType = p.get('bathtub') === '1' ? 'withBathtub' : 'roomOnly';
   try {
     const ad = JSON.parse(p.get('addons') || '[]');
     if (Array.isArray(ad)) state.addons = ad.filter(a => a && a.label && Number(a.amount) > 0).map(a => ({ label: String(a.label), amount: Number(a.amount) }));
@@ -820,7 +808,7 @@ function buildShareUrl(includeAdmin = false) {
   if (state.adults && state.adults !== defaultAdults) p.set('adults', String(state.adults));
   if (state.children.length) p.set('children', state.children.join(','));
   if (state.hasPet) p.set('pet', '1');
-  if (state.hasBathtub) p.set('bathtub', '1');
+  if (state.roomType === 'withBathtub') p.set('bathtub', '1');
   if (state.addons.length) p.set('addons', JSON.stringify(state.addons));
 
   // Only explicit discounts are included in shared quote URLs.

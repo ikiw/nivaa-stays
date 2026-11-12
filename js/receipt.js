@@ -87,7 +87,7 @@ function computeAll() {
   if (!state.checkIn || !state.checkOut || !state.config) return null;
   const q = quoteForRange(state.checkIn, state.checkOut, state.config);
   if (!q.totalNights) return null;
-  const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+  const lateFullDayRate = rateForDate(state.checkOut, state.config, state.hasBathtub ? 'withBathtub' : 'roomOnly').rate;
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
   const studios = state.studios || 1;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
@@ -447,7 +447,8 @@ function renderReceipt() {
           <div><div class="bc-label">Check-in</div><div class="bc-value">${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="bc-pill">+${state.earlyHours}h early</span>` : ''}</div></div>
           <div><div class="bc-label">Check-out</div><div class="bc-value">${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="bc-pill">+${state.lateHours}h late</span>` : ''}</div></div>
           <div><div class="bc-label">Nights</div><div class="bc-value">${q.totalNights}</div></div>
-          <div><div class="bc-label">Room</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'}) · ${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}</div></div>
+          <div><div class="bc-label">Booking</div><div class="bc-value">${studios === 2 ? '2 Studios · Full House' : '1 Studio'} · ${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}</div></div>
+          <div><div class="bc-label">Room type</div><div class="bc-value">${state.hasBathtub ? 'Room with bathtub' : 'Room only'}</div></div>
         </div>
       </div>
 
@@ -558,7 +559,8 @@ function renderPrintReceipt() {
           <tr><td>Check-in</td><td>${fmtPretty(state.checkIn)} · ${ciTime}${state.earlyHours > 0 ? ` <span class="br-pill">+${state.earlyHours}h early</span>` : ''}</td></tr>
           <tr><td>Check-out</td><td>${fmtPretty(state.checkOut)} · ${coTime}${state.lateHours > 0 ? ` <span class="br-pill">+${state.lateHours}h late</span>` : ''}</td></tr>
           <tr><td>Duration</td><td>${q.totalNights} night${q.totalNights === 1 ? '' : 's'}</td></tr>
-          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'} (${state.hasBathtub ? (bathtubInfo.quantity === 1 ? 'With bathtub' : `With ${bathtubInfo.quantity} bathtubs`) : 'Without bathtub'})</td></tr>
+          <tr><td>Booking</td><td>${studios === 2 ? '2 Studios · Full House' : '1 Studio'}</td></tr>
+          <tr><td>Room type</td><td>${state.hasBathtub ? 'Room with bathtub' : 'Room only'}</td></tr>
           <tr><td>Guests</td><td>${state.adults} adult${state.adults === 1 ? '' : 's'}${state.children.length ? ` · ${state.children.length} child${state.children.length === 1 ? '' : 'ren'}` : ''}${guestInfo.extraAdults > 0 ? ` (${guestInfo.extraAdults} extra adult${guestInfo.extraAdults === 1 ? '' : 's'})` : ''}${guestInfo.chargeableChildren > 0 ? ` · ${guestInfo.chargeableChildren} paid` : ''}</td></tr>
           ${state.children.length ? `<tr><td>Children</td><td>Ages ${state.children.map(a => Number(a) === 0 ? '<1' : a).join(', ')}</td></tr>` : ''}
         </table>
@@ -798,7 +800,7 @@ async function init() {
   // amount so negotiated or manually entered bookings retain their exact total.
   if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
     const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const lateFullDayRate = rateForDate(state.checkOut, state.config).rate;
+    const lateFullDayRate = rateForDate(state.checkOut, state.config, state.hasBathtub ? 'withBathtub' : 'roomOnly').rate;
     const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
     const studios = state.studios || 1;
     const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
