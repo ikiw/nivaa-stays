@@ -48,24 +48,24 @@ async function picker(search = '') {
 
 test('room selection updates Base, Prime and Peak calendar rates and quotes without a bathtub add-on', async () => {
   const { context, root, click } = await picker('ci=2026-12-24&co=2026-12-28');
-  assert.equal(context.computeQuote().grandTotal, 11500);
+  assert.equal(context.computeQuote().grandTotal, 13000);
   assert.match(root.innerHTML, /data-action="room-only" aria-pressed="true"/);
   assert.doesNotMatch(root.innerHTML, /Add bathtub/);
 
   click('room-with-bathtub');
-  assert.deepEqual(Array.from(context.computeQuote().q.nights, n => n.rate), [3000, 3500, 3500, 3500]);
-  assert.equal(context.computeQuote().grandTotal, 13500);
+  assert.deepEqual(Array.from(context.computeQuote().q.nights, n => n.rate), [3000, 4000, 4000, 4000]);
+  assert.equal(context.computeQuote().grandTotal, 15000);
   assert.match(root.innerHTML, /Base ₹2,500/);
   assert.match(root.innerHTML, /Prime ₹3,000/);
   assert.match(root.innerHTML, /Peak ₹3,500/);
-  for (const [date, rate] of [['2026-12-17', '2.5'], ['2026-12-24', '3.0'], ['2026-12-25', '3.5']]) {
+  for (const [date, rate] of [['2026-12-17', '2.5'], ['2026-12-24', '3.0'], ['2026-12-25', '4.0']]) {
     assert.match(root.innerHTML, new RegExp(`data-date="${date}"[^>]*>[\\s\\S]*?<span class="rp-rate">₹${rate.replace('.', '\\.')}k</span>`));
   }
   assert.equal(pricing.quoteForRange('2026-12-17', '2026-12-18', config, 'withBathtub').total, 2500);
   assert.doesNotMatch(root.innerHTML, /Bathtub charge/);
 
   click('room-only');
-  assert.equal(context.computeQuote().grandTotal, 11500);
+  assert.equal(context.computeQuote().grandTotal, 13000);
   assert.match(root.innerHTML, /Base ₹2,000/);
   assert.match(root.innerHTML, /Prime ₹2,500/);
   assert.match(root.innerHTML, /Peak ₹3,000/);
@@ -78,13 +78,13 @@ test('legacy bathtub links preserve room selection across reloads, WhatsApp, sti
   const quote = context.computeQuote();
   const message = new URL(context.buildBookingMessage(quote)).searchParams.get('text');
   assert.match(message, /Room with bathtub/);
-  assert.match(message, /Total ₹13,500/);
+  assert.match(message, /Total ₹15,000/);
   assert.doesNotMatch(message, /bathtub \(\+/);
-  assert.match(sticky.innerHTML, /₹13,500/);
+  assert.match(sticky.innerHTML, /₹15,000/);
   context.renderPrintQuote();
   assert.match(print.innerHTML, /Room with bathtub/);
-  assert.match(print.innerHTML, /₹3,500/);
-  assert.match(print.innerHTML, /₹13,500/);
+  assert.match(print.innerHTML, /₹4,000/);
+  assert.match(print.innerHTML, /₹15,000/);
   assert.doesNotMatch(print.innerHTML, /Bathtub charge/);
 
   const shared = new URL(context.buildShareUrl());
@@ -99,22 +99,22 @@ test('room rates scale for full house while preserving guest, pet, discount and 
   const { context, click } = await picker(`ci=2026-12-24&co=2026-12-28&studios=2&adults=5&children=6,7&pet=1&disc=10&discType=pct&addons=${addons}`);
   click('room-with-bathtub');
   const quote = context.computeQuote();
-  assert.equal(quote.roomTotal, 27000);
+  assert.equal(quote.roomTotal, 30000);
   assert.equal(quote.guestInfo.fee, 5200);
   assert.equal(quote.petInfo.fee, 2000);
-  assert.equal(quote.grandTotal, 31280);
+  assert.equal(quote.grandTotal, 33980);
   click('room-only');
-  assert.equal(context.computeQuote().grandTotal, 27680);
+  assert.equal(context.computeQuote().grandTotal, 30380);
 });
 
 test('full-day late checkout uses the selected room rate while hourly and half-day fees stay unchanged', async () => {
   const { context, root, click } = await picker('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7');
-  assert.equal(context.computeQuote().tt.late, 3500);
-  assert.equal(context.computeQuote().grandTotal, 9500);
-  assert.match(root.innerHTML, /<span class="rp-step-fee">₹3,500<\/span>/);
+  assert.equal(context.computeQuote().tt.late, 4000);
+  assert.equal(context.computeQuote().grandTotal, 10000);
+  assert.match(root.innerHTML, /<span class="rp-step-fee">₹4,000<\/span>/);
   click('room-only');
-  assert.equal(context.computeQuote().tt.late, 3000);
-  assert.equal(context.computeQuote().grandTotal, 8000);
+  assert.equal(context.computeQuote().tt.late, 3500);
+  assert.equal(context.computeQuote().grandTotal, 8500);
   click('room-with-bathtub');
   click('late-dec');
   assert.equal(context.computeQuote().tt.late, 1000);
@@ -122,4 +122,19 @@ test('full-day late checkout uses the selected room rate while hourly and half-d
   click('late-dec');
   click('late-dec');
   assert.equal(context.computeQuote().tt.late, 750);
+});
+
+test('holiday surcharge covers every night Dec 25 through Jan 3 for both room types only', () => {
+  const baseline = { ...config, dateSurcharges: [] };
+  for (const room of ['roomOnly', 'withBathtub']) {
+    const quote = pricing.quoteForRange('2026-12-24', '2027-01-05', config, room);
+    const original = pricing.quoteForRange('2026-12-24', '2027-01-05', baseline, room);
+    for (const [i, night] of quote.nights.entries()) {
+      const extra = night.date >= '2026-12-25' && night.date <= '2027-01-03' ? 500 : 0;
+      assert.equal(night.rate, original.nights[i].rate + extra, `${room} ${night.date}`);
+    }
+    assert.equal(quote.total, original.total + 5000);
+    assert.equal(pricing.quoteForRange('2026-12-24', '2026-12-25', config, room).total,
+      pricing.rateForDate('2026-12-24', baseline, room).rate);
+  }
 });
