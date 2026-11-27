@@ -26,6 +26,9 @@
     { "from": "2026-10-19", "to": "2026-10-21", "name": "Diwali (manual bump)" },
     { "from": "2026-12-27", "to": "2027-01-03", "name": "New Year (manual bump)" }
   ],
+  "dateSurcharges": [
+    { "from": "2026-12-25", "to": "2027-01-03", "amount": 500 }
+  ],
   "transit": {
     "defaultCheckIn": "12:00",
     "defaultCheckOut": "11:00",

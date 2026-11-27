@@ -79,14 +79,17 @@ export function rateForDate(dateStr, config, roomType = 'roomOnly') {
   const d = parseYmd(dateStr);
   const dow = d.getDay();
   const weekendSet = new Set(config.weekendDays);
+  const surcharge = (config.dateSurcharges || [])
+    .filter(r => dateStr >= r.from && dateStr <= r.to)
+    .reduce((total, r) => total + r.amount, 0);
 
   if (bumps.has(dateStr)) {
-    return { tier: 'longWeekend', rate: tiers.longWeekend, isLongWeekend: true, longWeekendName: bumps.get(dateStr) };
+    return { tier: 'longWeekend', rate: tiers.longWeekend + surcharge, isLongWeekend: true, longWeekendName: bumps.get(dateStr) };
   }
   if (weekendSet.has(dow) || (config.manualPrimeDates || []).includes(dateStr)) {
-    return { tier: 'weekend', rate: tiers.weekend, isLongWeekend: false, longWeekendName: null };
+    return { tier: 'weekend', rate: tiers.weekend + surcharge, isLongWeekend: false, longWeekendName: null };
   }
-  return { tier: 'weekday', rate: tiers.weekday, isLongWeekend: false, longWeekendName: null };
+  return { tier: 'weekday', rate: tiers.weekday + surcharge, isLongWeekend: false, longWeekendName: null };
 }
 
 export function quoteForRange(checkInStr, checkOutStr, config, roomType = 'roomOnly') {

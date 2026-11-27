@@ -54,12 +54,12 @@ test('December holiday overrides apply Prime and Peak rates across quotes and re
     'longWeekend', 'longWeekend', 'longWeekend',
     'longWeekend', 'longWeekend', 'longWeekend', 'longWeekend'
   ]);
-  assert.equal(quote.total, 31000);
+  assert.equal(quote.total, 34500);
   assert.equal(pricing.rateForDate('2026-12-17', config).tier, 'weekday');
   assert.equal(pricing.rateForDate('2027-01-04', config).tier, 'weekday');
 
   const { context, root } = await receipt('ci=2026-12-24&co=2026-12-28');
-  assert.equal(context.computeAll().subtotal, 11500);
+  assert.equal(context.computeAll().subtotal, 13000);
   assert.match(root.innerHTML, /Prime/);
   assert.match(root.innerHTML, /Peak/);
 });
@@ -68,20 +68,20 @@ test('Christmas and New Year Peak rates cover December 25 through January 3 incl
   const quote = pricing.quoteForRange('2026-12-24', '2027-01-05', config);
   assert.deepEqual(quote.nights.map(({ tier, rate }) => ({ tier, rate })), [
     { tier: 'weekend', rate: 2500 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
-    { tier: 'longWeekend', rate: 3000 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
+    { tier: 'longWeekend', rate: 3500 },
     { tier: 'weekday', rate: 2000 }
   ]);
   const { context, root } = await receipt('ci=2026-12-27&co=2027-01-04');
-  assert.equal(context.computeAll().subtotal, 24000);
+  assert.equal(context.computeAll().subtotal, 28000);
   assert.match(root.innerHTML, /Peak/);
 });
 
@@ -150,9 +150,9 @@ test('custom add-ons remain additional and are not duplicated on shared receipts
 
 test('bathtub receipts use the selected room rate for full-day late checkout', async () => {
   const { context } = await receipt('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7');
-  assert.equal(context.computeAll().tt.late, 3500);
-  assert.equal(context.computeAll().grandTotal, 9500);
-  const { context: sheet } = await receipt('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7&amt=9500');
+  assert.equal(context.computeAll().tt.late, 4000);
+  assert.equal(context.computeAll().grandTotal, 10000);
+  const { context: sheet } = await receipt('ci=2026-12-23&co=2026-12-25&bathtub=1&late=7&amt=10000');
   assert.equal(sheet.computeAll().disc.amount, 0);
   assert.equal(sheet.computeAll().addonsTotal, 0);
 });
