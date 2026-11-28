@@ -166,10 +166,55 @@ test('receipt and PDF show room type separately from the studio booking', async 
       assert.ok(root.innerHTML.includes(`<div class="bc-label">Room type</div><div class="bc-value">${roomType}</div>`));
       assert.ok(root.innerHTML.includes(`<div class="bc-label">Booking</div><div class="bc-value">${booking} ·`));
       assert.doesNotMatch(root.innerHTML, /\((?:With(?: \d+)?|Without) bathtub/);
+      assert.doesNotMatch(root.innerHTML, /Bathtub charge/);
       context.renderPrintReceipt();
       assert.ok(print.innerHTML.includes(`<tr><td>Room type</td><td>${roomType}</td></tr>`));
       assert.ok(print.innerHTML.includes(`<tr><td>Booking</td><td>${booking}</td></tr>`));
       assert.doesNotMatch(print.innerHTML, /\((?:With(?: \d+)?|Without) bathtub/);
+      assert.doesNotMatch(print.innerHTML, /Bathtub charge/);
     }
+  }
+});
+
+test('bathtub room rates include the bathtub in nightly receipt and PDF amounts for one or two studios', async () => {
+  for (const studios of [1, 2]) {
+    const { context, root, print } = await receipt(`ci=2026-12-24&co=2026-12-28&bathtub=1&autoDisc=0&studios=${studios}`);
+    const totals = context.computeAll();
+    assert.deepEqual(Array.from(totals.q.nights, n => n.rate), [3000, 4000, 4000, 4000]);
+    assert.equal(totals.grandTotal, 15000 * studios);
+    assert.match(root.innerHTML, /<span class="bc-rate-tier">Peak<\/span>\s*<span class="bc-rate-amt">₹4,000<\/span>/);
+    assert.doesNotMatch(root.innerHTML, /Bathtub charge/);
+    context.renderPrintReceipt();
+    assert.match(print.innerHTML, /<td>Peak<\/td><td class="num">₹4,000<\/td>/);
+    assert.doesNotMatch(print.innerHTML, /Bathtub charge/);
+    const shared = await receipt(new URL(context.buildShareUrl()).search.slice(1));
+    assert.equal(shared.context.computeAll().grandTotal, totals.grandTotal);
+  }
+});
+
+test('legacy custom room rates retain their totals with bathtub included after sharing and toggling', async () => {
+  const { context } = await receipt('ci=2026-06-04&co=2026-06-07&base=1700&prime=2200&bathtub=1');
+  assert.deepEqual(Array.from(context.computeAll().q.nights, n => n.rate), [2200, 2700, 2700]);
+  assert.equal(context.computeAll().grandTotal, 7600);
+  const shared = await receipt(new URL(context.buildShareUrl()).search.slice(1));
+  assert.equal(shared.context.computeAll().grandTotal, 7600);
+  for (const expected of [6100, 7600]) {
+    context.onClick({ target: { closest() { return { getAttribute() { return 'bathtub-toggle'; } }; } } });
+    assert.equal(context.computeAll().grandTotal, expected);
+  }
+});
+
+test('sheet-backed bathtub receipts preserve negotiated totals and extras without a separate bathtub row', async () => {
+  const addons = encodeURIComponent(JSON.stringify([{ label: 'Airport pickup', amount: 500 }]));
+  for (const amount of [9000, 10000, 11000]) {
+    const { context, root, print } = await receipt(`${stay}&bathtub=1&amt=${amount}&addons=${addons}`);
+    assert.equal(context.computeAll().q.total, 10000);
+    assert.equal(context.computeAll().grandTotal, amount + 500);
+    assert.equal(context.computeAll().balance, amount + 500 - 2000);
+    assert.doesNotMatch(root.innerHTML, /Bathtub charge/);
+    context.renderPrintReceipt();
+    assert.doesNotMatch(print.innerHTML, /Bathtub charge/);
+    const shared = await receipt(new URL(context.buildShareUrl()).search.slice(1));
+    assert.equal(shared.context.computeAll().grandTotal, amount + 500);
   }
 });

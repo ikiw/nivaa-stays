@@ -3,7 +3,7 @@
 // Admin mode (?mode=admin) shows an editable form; guest mode shows the receipt.
 // Uses pricing.js for rate calculation — same engine as the quote builder.
 
-import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, guestFeeFor, bathtubFeeFor } from './pricing.js';
+import { rateForDate, quoteForRange, formatINR, transitFee, transitTotal, shiftTime, autoDiscountFor, guestFeeFor } from './pricing.js';
 
 const WHATSAPP = '919620364554';
 const GOOGLE_MAPS = 'https://maps.app.goo.gl/uXmbjQ9tpviANJpm6';
@@ -85,14 +85,14 @@ function computeDiscount(subtotal, quoteContext) {
 
 function computeAll() {
   if (!state.checkIn || !state.checkOut || !state.config) return null;
-  const q = quoteForRange(state.checkIn, state.checkOut, state.config);
+  const roomType = state.hasBathtub ? 'withBathtub' : 'roomOnly';
+  const q = quoteForRange(state.checkIn, state.checkOut, state.config, roomType);
   if (!q.totalNights) return null;
-  const lateFullDayRate = rateForDate(state.checkOut, state.config, state.hasBathtub ? 'withBathtub' : 'roomOnly').rate;
+  const lateFullDayRate = rateForDate(state.checkOut, state.config, roomType).rate;
   const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
   const studios = state.studios || 1;
   const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
-  const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
-  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee + bathtubInfo.fee;
+  const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee;
   const disc = computeDiscount(subtotal, { totalNights: q.totalNights });
   // Custom add-ons are a flat addition on top — not discounted, and they don't
   // disturb the sheet-amount auto-match (which works on the room subtotal).
@@ -103,7 +103,7 @@ function computeAll() {
   const coTime = state.lateHours > 0 ? shiftTime(tx.defaultCheckOut, -state.lateHours) : '11:00 AM';
   const adv = Number(state.advancePaid) || 0;
   const balance = Math.max(0, grandTotal - adv);
-  return { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, addonsTotal, grandTotal, ciTime, coTime, adv, balance, tx };
+  return { q, tt, studios, guestInfo, subtotal, disc, addonsTotal, grandTotal, ciTime, coTime, adv, balance, tx };
 }
 
 /* ---------- URL state ---------- */
@@ -138,10 +138,13 @@ function parseUrlState() {
   const prime = parseInt(p.get('prime') || '0', 10);
   if (base > 0) {
     state.baseRateOverride = base;
+    // Legacy overrides are room-only rates; preserve the room-type difference.
+    state.config.roomWithBathtubTiers.weekday += base - state.config.tiers.weekday;
     state.config.tiers.weekday = base;
   }
   if (prime > 0) {
     state.primeRateOverride = prime;
+    state.config.roomWithBathtubTiers.weekend += prime - state.config.tiers.weekend;
     state.config.tiers.weekend = prime;
   }
   try {
@@ -248,11 +251,10 @@ function renderAdminForm() {
           </div>
         </div>
         <div class="bc-admin-row">
-          <label class="bc-field-label">Bathtub</label>
+          <label class="bc-field-label">Room type</label>
           <div class="bc-toggle">
-            <button type="button" class="bc-toggle-btn ${state.hasBathtub ? 'active' : ''}" data-action="bathtub-toggle" aria-pressed="${state.hasBathtub}">${state.hasBathtub ? (state.studios === 2 ? 'With 2 bathtubs' : 'With bathtub') : 'Without bathtub'}</button>
+            <button type="button" class="bc-toggle-btn ${state.hasBathtub ? 'active' : ''}" data-action="bathtub-toggle" aria-pressed="${state.hasBathtub}">${state.hasBathtub ? 'Room with bathtub' : 'Room only'}</button>
           </div>
-          <span class="bc-field-label">+${formatINR(state.config?.bathtubPolicy?.feePerNight || 0)}/bathtub/night</span>
         </div>
         <div class="bc-admin-row">
           <label class="bc-field-label">Adults</label>
@@ -358,7 +360,7 @@ function renderReceipt() {
     </div>`;
   }
 
-  const { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
 
   const nightRows = q.nights.map(n => {
     const tierLabel = n.tier === 'longWeekend' ? 'Peak' : n.tier === 'weekend' ? 'Prime' : 'Base';
@@ -391,11 +393,6 @@ function renderReceipt() {
     <span class="bc-rate-tier">${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)} × ${q.totalNights}n</span>
     <span class="bc-rate-amt">${formatINR(guestInfo.childFee)}</span>
   </div>` : '');
-  const bathtubRow = bathtubInfo.fee > 0 ? `<div class="bc-rate-row bc-rate-guest">
-    <span class="bc-rate-date">Bathtub charge</span>
-    <span class="bc-rate-tier">${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)} × ${q.totalNights}n</span>
-    <span class="bc-rate-amt">${formatINR(bathtubInfo.fee)}</span>
-  </div>` : '';
 
   const discountRows = disc.amount > 0 ? `
     <div class="bc-rate-row bc-rate-subtotal">
@@ -454,7 +451,7 @@ function renderReceipt() {
 
       <div class="bc-rates">
         <div class="bc-rates-title">Rate Breakdown</div>
-        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${bathtubRow}${discountRows}${addonRows}</div>
+        <div class="bc-rate-rows">${nightRows}${transitRow}${studiosRow}${guestRow}${discountRows}${addonRows}</div>
         <div class="bc-payment">${paymentRows}</div>
       </div>
 
@@ -495,7 +492,7 @@ function renderPrintReceipt() {
   const c = computeAll();
   if (!c) { host.innerHTML = ''; return; }
 
-  const { q, tt, studios, guestInfo, bathtubInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
+  const { q, tt, studios, guestInfo, subtotal, disc, grandTotal, ciTime, coTime, adv, balance } = c;
 
   const today = new Date();
   const todayStr = today.toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
@@ -518,9 +515,6 @@ function renderPrintReceipt() {
     + (guestInfo.chargeableChildren > 0
     ? `<tr class="guest-row"><td>Children (7–17)</td><td>${guestInfo.chargeableChildren} × ${formatINR(guestInfo.childRate)}/night × ${q.totalNights}</td><td class="num">${formatINR(guestInfo.childFee)}</td></tr>`
     : '');
-  const bathtubPdfRow = bathtubInfo.fee > 0
-    ? `<tr class="guest-row"><td>Bathtub charge</td><td>${bathtubInfo.quantity > 1 ? `${bathtubInfo.quantity} × ` : ''}${formatINR(bathtubInfo.perNight)}/night × ${q.totalNights}</td><td class="num">${formatINR(bathtubInfo.fee)}</td></tr>`
-    : '';
   const subtotalRow = disc.amount > 0
     ? `<tr class="subtotal-row"><td colspan="2">Subtotal</td><td class="num">${formatINR(subtotal)}</td></tr>
        <tr class="discount-row"><td colspan="2">Discount · ${disc.label}</td><td class="num">−${formatINR(disc.amount)}</td></tr>`
@@ -575,7 +569,6 @@ function renderPrintReceipt() {
             ${transitRow}
             ${studiosRow}
             ${guestPdfRow}
-            ${bathtubPdfRow}
             ${subtotalRow}
             ${addonPdfRows}
           </tbody>
@@ -798,14 +791,9 @@ async function init() {
 
   // Reconcile the live-rate subtotal with the authoritative bookings-sheet
   // amount so negotiated or manually entered bookings retain their exact total.
-  if (state.sheetAmount > 0 && state.discountValue === 0 && state.checkIn && state.checkOut) {
-    const q = quoteForRange(state.checkIn, state.checkOut, state.config);
-    const lateFullDayRate = rateForDate(state.checkOut, state.config, state.hasBathtub ? 'withBathtub' : 'roomOnly').rate;
-    const tt = transitTotal(state.earlyHours, state.lateHours, state.config, { late: lateFullDayRate });
-    const studios = state.studios || 1;
-    const guestInfo = guestFeeFor(state.adults, state.children, studios, q.totalNights, state.config);
-    const bathtubInfo = bathtubFeeFor(state.hasBathtub, q.totalNights, studios, state.config);
-    const subtotal = (q.total + (tt.total || 0)) * studios + guestInfo.fee + bathtubInfo.fee;
+  const totals = computeAll();
+  if (state.sheetAmount > 0 && state.discountValue === 0 && totals) {
+    const { subtotal } = totals;
     if (subtotal > state.sheetAmount) {
       state.discountType = 'amt';
       state.discountValue = subtotal - state.sheetAmount;
